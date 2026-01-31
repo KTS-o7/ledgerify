@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import '../services/recurring_expense_service.dart';
 import '../services/theme_service.dart';
 import '../theme/ledgerify_theme.dart';
+import 'recurring_list_screen.dart';
 
 /// Settings Screen - Ledgerify Design Language
 ///
 /// Allows users to configure app preferences including theme.
 class SettingsScreen extends StatelessWidget {
   final ThemeService themeService;
+  final RecurringExpenseService recurringService;
 
   const SettingsScreen({
     super.key,
     required this.themeService,
+    required this.recurringService,
   });
 
   @override
@@ -39,6 +43,19 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(LedgerifySpacing.lg),
         children: [
+          // Data section
+          _SectionHeader(title: 'Data', colors: colors),
+          SizedBox(height: LedgerifySpacing.sm),
+          _SettingsCard(
+            colors: colors,
+            child: _RecurringTile(
+              recurringService: recurringService,
+              colors: colors,
+            ),
+          ),
+
+          SizedBox(height: LedgerifySpacing.xl),
+
           // Appearance section
           _SectionHeader(title: 'Appearance', colors: colors),
           SizedBox(height: LedgerifySpacing.sm),
@@ -301,6 +318,57 @@ class _ThemeOption extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Recurring expenses navigation tile
+class _RecurringTile extends StatelessWidget {
+  final RecurringExpenseService recurringService;
+  final LedgerifyColorScheme colors;
+
+  const _RecurringTile({
+    required this.recurringService,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: LedgerifySpacing.lg,
+        vertical: LedgerifySpacing.xs,
+      ),
+      leading: Icon(
+        Icons.repeat_rounded,
+        color: colors.textSecondary,
+      ),
+      title: Text(
+        'Recurring Expenses',
+        style: LedgerifyTypography.bodyLarge.copyWith(
+          color: colors.textPrimary,
+        ),
+      ),
+      subtitle: Text(
+        'Manage subscriptions and bills',
+        style: LedgerifyTypography.bodySmall.copyWith(
+          color: colors.textTertiary,
+        ),
+      ),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: colors.textTertiary,
+      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RecurringListScreen(
+              recurringService: recurringService,
+            ),
+          ),
+        );
+      },
     );
   }
 }

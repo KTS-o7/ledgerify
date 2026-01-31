@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/expense.dart';
 import '../services/expense_service.dart';
+import '../services/recurring_expense_service.dart';
 import '../services/theme_service.dart';
 import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
@@ -22,11 +23,13 @@ import 'settings_screen.dart';
 class HomeScreen extends StatefulWidget {
   final ExpenseService expenseService;
   final ThemeService themeService;
+  final RecurringExpenseService recurringService;
 
   const HomeScreen({
     super.key,
     required this.expenseService,
     required this.themeService,
+    required this.recurringService,
   });
 
   @override
@@ -65,6 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(
         builder: (context) => SettingsScreen(
           themeService: widget.themeService,
+          recurringService: widget.recurringService,
         ),
       ),
     );

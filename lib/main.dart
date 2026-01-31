@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'services/expense_service.dart';
+import 'services/recurring_expense_service.dart';
 import 'services/theme_service.dart';
 import 'screens/home_screen.dart';
 import 'theme/ledgerify_theme.dart';
@@ -25,10 +26,17 @@ void main() async {
   final themeService = ThemeService();
   await themeService.init();
 
+  final recurringService = RecurringExpenseService();
+  await recurringService.init();
+
+  // Generate due recurring expenses on app open
+  await recurringService.generateDueExpenses(expenseService);
+
   // Run the app
   runApp(LedgerifyApp(
     expenseService: expenseService,
     themeService: themeService,
+    recurringService: recurringService,
   ));
 }
 
@@ -39,11 +47,13 @@ void main() async {
 class LedgerifyApp extends StatelessWidget {
   final ExpenseService expenseService;
   final ThemeService themeService;
+  final RecurringExpenseService recurringService;
 
   const LedgerifyApp({
     super.key,
     required this.expenseService,
     required this.themeService,
+    required this.recurringService,
   });
 
   @override
@@ -68,6 +78,7 @@ class LedgerifyApp extends StatelessWidget {
           home: HomeScreen(
             expenseService: expenseService,
             themeService: themeService,
+            recurringService: recurringService,
           ),
         );
       },
