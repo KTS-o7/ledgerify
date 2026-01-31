@@ -1,8 +1,8 @@
 # UX Improvements Plan - Navigation & Recurring Visibility
 
 **Date:** January 31, 2026  
-**Branch:** `feature/ux-improvements`  
-**Status:** Planning
+**Branch:** `feature/ledgerify-basics`  
+**Status:** In Progress (Phase A Complete)
 
 ---
 
@@ -341,32 +341,32 @@ Note (optional)
 
 ## 6. Implementation Tasks
 
-### Phase A: Bottom Navigation (High Priority)
+### Phase A: Bottom Navigation (High Priority) - COMPLETED
 
-| # | Task | Est. |
-|---|------|------|
-| A.1 | Create MainShell widget with bottom nav | 45m |
-| A.2 | Design bottom nav bar (Ledgerify style) | 30m |
-| A.3 | Update main.dart to use MainShell | 15m |
-| A.4 | Update HomeScreen (remove settings icon) | 15m |
-| A.5 | Update RecurringListScreen (remove back button) | 15m |
-| A.6 | Update SettingsScreen (remove recurring tile) | 15m |
-| A.7 | Add badge for due recurring count | 30m |
-| A.8 | Test navigation flow | 20m |
+| # | Task | Est. | Status |
+|---|------|------|--------|
+| A.1 | Create MainShell widget with bottom nav | 45m | Done |
+| A.2 | Design bottom nav bar (Ledgerify style) | 30m | Done |
+| A.3 | Update main.dart to use MainShell | 15m | Done |
+| A.4 | Update HomeScreen (remove settings icon) | 15m | Done |
+| A.5 | Update RecurringListScreen (remove back button) | 15m | Done |
+| A.6 | Update SettingsScreen (remove recurring tile) | 15m | Done |
+| A.7 | Add badge for due recurring count | 30m | Done |
+| A.8 | Test navigation flow | 20m | Done |
 
-**Phase A Total: ~3 hours**
+**Phase A Total: ~3 hours** - Committed: `d1c484c`
 
-### Phase B: Upcoming Card on Home (Medium Priority)
+### Phase B: Upcoming Card on Home (Medium Priority) - COMPLETED
 
-| # | Task | Est. |
-|---|------|------|
-| B.1 | Create UpcomingRecurringCard widget | 45m |
-| B.2 | Create UpcomingRecurringTile (list item) | 30m |
-| B.3 | Add card to HomeScreen | 15m |
-| B.4 | Implement "View all" navigation to tab | 15m |
-| B.5 | Test with various scenarios | 20m |
+| # | Task | Est. | Status |
+|---|------|------|--------|
+| B.1 | Create UpcomingRecurringCard widget | 45m | Done |
+| B.2 | Create UpcomingRecurringTile (list item) | 30m | Done |
+| B.3 | Add card to HomeScreen | 15m | Done |
+| B.4 | Implement "View all" navigation to tab | 15m | Done |
+| B.5 | Test with various scenarios | 20m | Done |
 
-**Phase B Total: ~2 hours**
+**Phase B Total: ~2 hours** - Committed: (pending)
 
 ### Phase C: Make Recurring from Expense (Medium Priority)
 
@@ -489,17 +489,17 @@ Light Theme:
 ## 10. Acceptance Criteria
 
 ### Must Have
-- [ ] Bottom navigation with 3 tabs: Home, Recurring, Settings
-- [ ] Recurring tab shows full list (same as current RecurringListScreen)
-- [ ] Settings no longer has "Recurring Expenses" tile
-- [ ] Navigation state preserved when switching tabs
-- [ ] FABs work correctly on each tab
-- [ ] Theme applies correctly to bottom nav
+- [x] Bottom navigation with 3 tabs: Home, Recurring, Settings
+- [x] Recurring tab shows full list (same as current RecurringListScreen)
+- [x] Settings no longer has "Recurring Expenses" tile
+- [x] Navigation state preserved when switching tabs
+- [x] FABs work correctly on each tab
+- [x] Theme applies correctly to bottom nav
 
 ### Should Have
-- [ ] Upcoming Recurring Card on home screen
+- [x] Upcoming Recurring Card on home screen
 - [ ] "Make this recurring" button in expense edit mode
-- [ ] Badge on Recurring tab showing due count
+- [x] Badge on Recurring tab showing due count
 
 ### Nice to Have
 - [ ] Smart defaults with collapsible advanced options

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/expense.dart';
+import '../models/recurring_expense.dart';
 import '../services/expense_service.dart';
 import '../services/recurring_expense_service.dart';
 import '../theme/ledgerify_theme.dart';
@@ -8,7 +9,9 @@ import '../utils/currency_formatter.dart';
 import '../widgets/expense_list_tile.dart';
 import '../widgets/monthly_summary_card.dart';
 import '../widgets/category_breakdown_card.dart';
+import '../widgets/upcoming_recurring_card.dart';
 import 'add_expense_screen.dart';
+import 'add_recurring_screen.dart';
 
 /// Home Screen - Ledgerify Design Language
 ///
@@ -87,6 +90,18 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _navigateToEditRecurring(RecurringExpense recurring) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddRecurringScreen(
+          recurringService: widget.recurringService,
+          recurringToEdit: recurring,
+        ),
+      ),
+    );
+  }
+
   Future<void> _confirmDelete(Expense expense) async {
     final colors = LedgerifyColors.of(context);
 
@@ -94,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: colors.surfaceElevated,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusXl,
         ),
         title: Text(
@@ -204,6 +219,28 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: SizedBox(height: LedgerifySpacing.xl),
               ),
 
+              // Upcoming Recurring Card
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: LedgerifySpacing.lg,
+                  ),
+                  child: UpcomingRecurringCard(
+                    recurringService: widget.recurringService,
+                    onViewAll: () {
+                      // Navigate to Recurring tab
+                      widget.onNavigateToRecurring?.call();
+                    },
+                    onTapItem: _navigateToEditRecurring,
+                  ),
+                ),
+              ),
+
+              // Spacing (only show if upcoming card is visible, handled by card itself)
+              const SliverToBoxAdapter(
+                child: SizedBox(height: LedgerifySpacing.xl),
+              ),
+
               // Category Breakdown Card
               if (monthExpenses.isNotEmpty)
                 SliverToBoxAdapter(
@@ -272,14 +309,14 @@ class _HomeScreenState extends State<HomeScreen> {
               size: 80,
               color: colors.textTertiary,
             ),
-            SizedBox(height: LedgerifySpacing.lg),
+            const SizedBox(height: LedgerifySpacing.lg),
             Text(
               'No expenses yet',
               style: LedgerifyTypography.headlineSmall.copyWith(
                 color: colors.textSecondary,
               ),
             ),
-            SizedBox(height: LedgerifySpacing.sm),
+            const SizedBox(height: LedgerifySpacing.sm),
             Text(
               'Add your first expense to start tracking',
               textAlign: TextAlign.center,
