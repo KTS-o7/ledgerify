@@ -58,19 +58,17 @@ class RecurringListScreen extends StatelessWidget {
       body: ValueListenableBuilder(
         valueListenable: recurringService.box.listenable(),
         builder: (context, Box<RecurringExpense> box, _) {
-          final allItems = recurringService.getAll();
+          // Single-pass categorization
+          final categorized = recurringService.getCategorized();
+          final activeItems = categorized.active;
+          final pausedItems = categorized.paused;
+          final endedItems = categorized.ended;
 
-          if (allItems.isEmpty) {
+          if (activeItems.isEmpty &&
+              pausedItems.isEmpty &&
+              endedItems.isEmpty) {
             return _buildEmptyState(context, colors);
           }
-
-          final activeItems = allItems
-              .where((item) => item.isActive && !item.hasEnded)
-              .toList();
-          final pausedItems = allItems
-              .where((item) => !item.isActive && !item.hasEnded)
-              .toList();
-          final endedItems = allItems.where((item) => item.hasEnded).toList();
 
           return ListView(
             padding: const EdgeInsets.only(bottom: 88), // Space for FAB

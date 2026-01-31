@@ -188,14 +188,14 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ValueListenableBuilder(
         valueListenable: widget.expenseService.box.listenable(),
         builder: (context, Box<Expense> box, _) {
-          final monthExpenses = widget.expenseService.getExpensesForMonth(
+          // Single-pass retrieval of all month data
+          final summary = widget.expenseService.getMonthSummary(
             _selectedMonth.year,
             _selectedMonth.month,
           );
-          final monthTotal =
-              widget.expenseService.calculateTotal(monthExpenses);
-          final categoryBreakdown =
-              widget.expenseService.getCategoryBreakdown(monthExpenses);
+          final monthExpenses = summary.expenses;
+          final monthTotal = summary.total;
+          final categoryBreakdown = summary.breakdown;
 
           return CustomScrollView(
             slivers: [

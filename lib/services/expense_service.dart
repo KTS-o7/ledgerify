@@ -2,6 +2,20 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../models/expense.dart';
 
+/// Holds pre-computed summary data for a month.
+/// Used for efficient single-pass data retrieval.
+class MonthSummary {
+  final List<Expense> expenses;
+  final double total;
+  final Map<ExpenseCategory, double> breakdown;
+
+  const MonthSummary({
+    required this.expenses,
+    required this.total,
+    required this.breakdown,
+  });
+}
+
 /// Service class for managing expense data with Hive local storage.
 ///
 /// This service provides CRUD operations for expenses and utility methods
@@ -86,10 +100,41 @@ class ExpenseService {
   }
 
   /// Retrieves expenses for a specific month and year.
+  /// Optimized: filters first, then sorts only the filtered subset.
   List<Expense> getExpensesForMonth(int year, int month) {
-    return getAllExpenses().where((expense) {
+    final monthExpenses = _expenseBox.values.where((expense) {
       return expense.date.year == year && expense.date.month == month;
     }).toList();
+    monthExpenses.sort((a, b) => b.date.compareTo(a.date));
+    return monthExpenses;
+  }
+
+  /// Returns a complete month summary in a single pass.
+  /// This is more efficient than calling getExpensesForMonth, calculateTotal,
+  /// and getCategoryBreakdown separately.
+  MonthSummary getMonthSummary(int year, int month) {
+    final expenses = <Expense>[];
+    double total = 0;
+    final breakdown = <ExpenseCategory, double>{};
+
+    // Single pass through the data
+    for (final expense in _expenseBox.values) {
+      if (expense.date.year == year && expense.date.month == month) {
+        expenses.add(expense);
+        total += expense.amount;
+        breakdown[expense.category] =
+            (breakdown[expense.category] ?? 0) + expense.amount;
+      }
+    }
+
+    // Sort expenses by date (newest first)
+    expenses.sort((a, b) => b.date.compareTo(a.date));
+
+    return MonthSummary(
+      expenses: expenses,
+      total: total,
+      breakdown: breakdown,
+    );
   }
 
   /// Calculates the total amount for a list of expenses.
@@ -100,8 +145,7 @@ class ExpenseService {
   /// Calculates the total for the current month.
   double getCurrentMonthTotal() {
     final now = DateTime.now();
-    final monthExpenses = getExpensesForMonth(now.year, now.month);
-    return calculateTotal(monthExpenses);
+    return getMonthSummary(now.year, now.month).total;
   }
 
   /// Returns a map of category -> total amount for a list of expenses.
@@ -119,8 +163,7 @@ class ExpenseService {
   /// Returns category breakdown for the current month.
   Map<ExpenseCategory, double> getCurrentMonthCategoryBreakdown() {
     final now = DateTime.now();
-    final monthExpenses = getExpensesForMonth(now.year, now.month);
-    return getCategoryBreakdown(monthExpenses);
+    return getMonthSummary(now.year, now.month).breakdown;
   }
 
   /// Returns the listenable box for reactive UI updates.

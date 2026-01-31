@@ -4,6 +4,19 @@ import '../models/expense.dart';
 import '../models/recurring_expense.dart';
 import 'expense_service.dart';
 
+/// Holds categorized recurring expenses for efficient single-pass retrieval.
+class CategorizedRecurring {
+  final List<RecurringExpense> active;
+  final List<RecurringExpense> paused;
+  final List<RecurringExpense> ended;
+
+  const CategorizedRecurring({
+    required this.active,
+    required this.paused,
+    required this.ended,
+  });
+}
+
 /// Service class for managing recurring expenses with Hive local storage.
 ///
 /// This service provides CRUD operations for recurring expense templates
@@ -110,17 +123,63 @@ class RecurringExpenseService {
 
   /// Retrieves all active recurring expenses.
   List<RecurringExpense> getActive() {
-    return getAll().where((item) => item.isActive && !item.hasEnded).toList();
+    final active = <RecurringExpense>[];
+    for (final item in _box.values) {
+      if (item.isActive && !item.hasEnded) {
+        active.add(item);
+      }
+    }
+    active.sort((a, b) => a.title.compareTo(b.title));
+    return active;
   }
 
   /// Retrieves all paused recurring expenses.
   List<RecurringExpense> getPaused() {
-    return getAll().where((item) => !item.isActive && !item.hasEnded).toList();
+    final paused = <RecurringExpense>[];
+    for (final item in _box.values) {
+      if (!item.isActive && !item.hasEnded) {
+        paused.add(item);
+      }
+    }
+    paused.sort((a, b) => a.title.compareTo(b.title));
+    return paused;
   }
 
   /// Retrieves all ended recurring expenses.
   List<RecurringExpense> getEnded() {
-    return getAll().where((item) => item.hasEnded).toList();
+    final ended = <RecurringExpense>[];
+    for (final item in _box.values) {
+      if (item.hasEnded) {
+        ended.add(item);
+      }
+    }
+    ended.sort((a, b) => a.title.compareTo(b.title));
+    return ended;
+  }
+
+  /// Returns all recurring expenses categorized in a single pass.
+  /// More efficient than calling getActive(), getPaused(), getEnded() separately.
+  CategorizedRecurring getCategorized() {
+    final active = <RecurringExpense>[];
+    final paused = <RecurringExpense>[];
+    final ended = <RecurringExpense>[];
+
+    for (final item in _box.values) {
+      if (item.hasEnded) {
+        ended.add(item);
+      } else if (item.isActive) {
+        active.add(item);
+      } else {
+        paused.add(item);
+      }
+    }
+
+    // Sort each list by title
+    active.sort((a, b) => a.title.compareTo(b.title));
+    paused.sort((a, b) => a.title.compareTo(b.title));
+    ended.sort((a, b) => a.title.compareTo(b.title));
+
+    return CategorizedRecurring(active: active, paused: paused, ended: ended);
   }
 
   /// Retrieves upcoming recurring expenses within the specified number of days.
@@ -130,17 +189,42 @@ class RecurringExpenseService {
     final today = DateTime(now.year, now.month, now.day);
     final endDate = today.add(Duration(days: days));
 
-    final upcoming = getActive().where((item) {
+    final upcoming = <RecurringExpense>[];
+    for (final item in _box.values) {
+      if (!item.isActive || item.hasEnded) continue;
       final dueDate = DateTime(
         item.nextDueDate.year,
         item.nextDueDate.month,
         item.nextDueDate.day,
       );
-      return !dueDate.isAfter(endDate);
-    }).toList();
+      if (!dueDate.isAfter(endDate)) {
+        upcoming.add(item);
+      }
+    }
 
     upcoming.sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
     return upcoming;
+  }
+
+  /// Returns count of upcoming items efficiently (no list allocation).
+  int getUpcomingCount({int days = 7}) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final endDate = today.add(Duration(days: days));
+
+    int count = 0;
+    for (final item in _box.values) {
+      if (!item.isActive || item.hasEnded) continue;
+      final dueDate = DateTime(
+        item.nextDueDate.year,
+        item.nextDueDate.month,
+        item.nextDueDate.day,
+      );
+      if (!dueDate.isAfter(endDate)) {
+        count++;
+      }
+    }
+    return count;
   }
 
   // ============================================

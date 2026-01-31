@@ -42,6 +42,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   late ExpenseCategory _selectedCategory;
   late DateTime _selectedDate;
   bool _isLoading = false;
+  bool _isFormValid = false;
 
   bool get _isEditing => widget.expenseToEdit != null;
 
@@ -65,10 +66,27 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       _selectedCategory = ExpenseCategory.food;
       _selectedDate = DateTime.now();
     }
+
+    // Listen to amount changes for form validity
+    _amountController.addListener(_checkFormValidity);
+
+    // Check initial validity (for edit mode)
+    _checkFormValidity();
+  }
+
+  void _checkFormValidity() {
+    final amount = double.tryParse(_amountController.text.trim());
+    final newValid = amount != null && amount > 0;
+    if (newValid != _isFormValid) {
+      setState(() {
+        _isFormValid = newValid;
+      });
+    }
   }
 
   @override
   void dispose() {
+    _amountController.removeListener(_checkFormValidity);
     _titleController.dispose();
     _amountController.dispose();
     _noteController.dispose();
@@ -89,11 +107,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         _selectedDate = picked;
       });
     }
-  }
-
-  bool get _isFormValid {
-    final amount = double.tryParse(_amountController.text.trim());
-    return amount != null && amount > 0;
   }
 
   Future<void> _saveExpense() async {
@@ -192,7 +205,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     padding: const EdgeInsets.all(LedgerifySpacing.lg),
                     child: Form(
                       key: _formKey,
-                      onChanged: () => setState(() {}),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [

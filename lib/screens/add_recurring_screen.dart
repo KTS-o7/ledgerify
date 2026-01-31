@@ -53,6 +53,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
   int? _dayOfMonth;
   bool _isLoading = false;
   bool _showAdvancedOptions = false;
+  bool _isFormValid = false;
 
   bool get _isEditing => widget.recurringToEdit != null;
   bool get _isPrefilling => widget.prefillFromExpense != null;
@@ -124,9 +125,15 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
       _dayOfMonth = null;
     }
 
+    // Listen to text changes for form validity
+    _titleController.addListener(_checkFormValidity);
+    _amountController.addListener(_checkFormValidity);
+    _customIntervalController.addListener(_checkFormValidity);
+
     // Auto-expand advanced options when editing with advanced options set
     // Use post-frame callback to access controllers after they're initialized
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkFormValidity(); // Initial check
       if (_isEditing && _hasAdvancedOptionsSet) {
         setState(() {
           _showAdvancedOptions = true;
@@ -137,6 +144,9 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
 
   @override
   void dispose() {
+    _titleController.removeListener(_checkFormValidity);
+    _amountController.removeListener(_checkFormValidity);
+    _customIntervalController.removeListener(_checkFormValidity);
     _titleController.dispose();
     _amountController.dispose();
     _noteController.dispose();
@@ -144,30 +154,36 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
     super.dispose();
   }
 
-  bool get _isFormValid {
+  void _checkFormValidity() {
     final title = _titleController.text.trim();
     final amount = double.tryParse(_amountController.text.trim());
 
+    bool newValid = true;
+
     if (title.isEmpty || amount == null || amount <= 0) {
-      return false;
+      newValid = false;
     }
 
     // For weekly with specific days, at least one day must be selected
     if (_selectedFrequency == RecurrenceFrequency.weekly &&
         _selectedWeekdays.isNotEmpty &&
         _selectedWeekdays.isEmpty) {
-      return false;
+      newValid = false;
     }
 
     // For custom interval, must be at least 1
     if (_selectedFrequency == RecurrenceFrequency.custom) {
       final interval = int.tryParse(_customIntervalController.text.trim());
       if (interval == null || interval < 1) {
-        return false;
+        newValid = false;
       }
     }
 
-    return true;
+    if (newValid != _isFormValid) {
+      setState(() {
+        _isFormValid = newValid;
+      });
+    }
   }
 
   Future<void> _selectStartDate() async {
@@ -334,7 +350,6 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
                     padding: const EdgeInsets.all(LedgerifySpacing.lg),
                     child: Form(
                       key: _formKey,
-                      onChanged: () => setState(() {}),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -356,6 +371,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
                                   _showAdvancedOptions = true;
                                 }
                               });
+                              _checkFormValidity();
                             },
                           ),
                           const SizedBox(height: LedgerifySpacing.xl),

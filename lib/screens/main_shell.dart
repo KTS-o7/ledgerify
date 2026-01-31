@@ -198,8 +198,8 @@ class _NavItemWithBadge extends StatelessWidget {
     return ValueListenableBuilder(
       valueListenable: recurringService.box.listenable(),
       builder: (context, Box<RecurringExpense> box, _) {
-        // Count items due within 7 days
-        final dueCount = recurringService.getUpcoming(days: 7).length;
+        // Count items due within 7 days (efficient - no list allocation)
+        final dueCount = recurringService.getUpcomingCount(days: 7);
 
         return GestureDetector(
           onTap: onTap,
