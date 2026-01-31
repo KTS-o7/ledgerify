@@ -1,0 +1,203 @@
+import 'package:hive/hive.dart';
+
+part 'expense.g.dart';
+
+/// Enum representing the source of an expense entry.
+/// - manual: User entered the expense manually
+/// - sms: Expense was parsed from an SMS (future feature)
+@HiveType(typeId: 1)
+enum ExpenseSource {
+  @HiveField(0)
+  manual,
+
+  @HiveField(1)
+  sms,
+}
+
+/// Enum representing expense categories.
+/// Kept simple for V1 - can be extended later.
+@HiveType(typeId: 2)
+enum ExpenseCategory {
+  @HiveField(0)
+  food,
+
+  @HiveField(1)
+  transport,
+
+  @HiveField(2)
+  shopping,
+
+  @HiveField(3)
+  entertainment,
+
+  @HiveField(4)
+  bills,
+
+  @HiveField(5)
+  health,
+
+  @HiveField(6)
+  education,
+
+  @HiveField(7)
+  other,
+}
+
+/// Extension to provide display names for categories.
+extension ExpenseCategoryExtension on ExpenseCategory {
+  String get displayName {
+    switch (this) {
+      case ExpenseCategory.food:
+        return 'Food & Dining';
+      case ExpenseCategory.transport:
+        return 'Transport';
+      case ExpenseCategory.shopping:
+        return 'Shopping';
+      case ExpenseCategory.entertainment:
+        return 'Entertainment';
+      case ExpenseCategory.bills:
+        return 'Bills & Utilities';
+      case ExpenseCategory.health:
+        return 'Health';
+      case ExpenseCategory.education:
+        return 'Education';
+      case ExpenseCategory.other:
+        return 'Other';
+    }
+  }
+
+  /// Returns an emoji icon for the category (used in UI).
+  String get icon {
+    switch (this) {
+      case ExpenseCategory.food:
+        return '🍔';
+      case ExpenseCategory.transport:
+        return '🚗';
+      case ExpenseCategory.shopping:
+        return '🛒';
+      case ExpenseCategory.entertainment:
+        return '🎬';
+      case ExpenseCategory.bills:
+        return '📄';
+      case ExpenseCategory.health:
+        return '💊';
+      case ExpenseCategory.education:
+        return '📚';
+      case ExpenseCategory.other:
+        return '📦';
+    }
+  }
+}
+
+/// The main Expense model representing a single expense entry.
+///
+/// Fields:
+/// - [id]: Unique identifier (UUID)
+/// - [amount]: The expense amount (must be > 0)
+/// - [category]: Category of the expense
+/// - [date]: When the expense occurred
+/// - [note]: Optional user note
+/// - [source]: How the expense was added (manual or sms)
+/// - [merchant]: Optional merchant name (useful for SMS parsing later)
+@HiveType(typeId: 0)
+class Expense extends HiveObject {
+  @HiveField(0)
+  final String id;
+
+  @HiveField(1)
+  final double amount;
+
+  @HiveField(2)
+  final ExpenseCategory category;
+
+  @HiveField(3)
+  final DateTime date;
+
+  @HiveField(4)
+  final String? note;
+
+  @HiveField(5)
+  final ExpenseSource source;
+
+  @HiveField(6)
+  final String? merchant;
+
+  @HiveField(7)
+  final DateTime createdAt;
+
+  Expense({
+    required this.id,
+    required this.amount,
+    required this.category,
+    required this.date,
+    this.note,
+    this.source = ExpenseSource.manual,
+    this.merchant,
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
+
+  /// Creates a copy of this expense with optional field overrides.
+  Expense copyWith({
+    String? id,
+    double? amount,
+    ExpenseCategory? category,
+    DateTime? date,
+    String? note,
+    ExpenseSource? source,
+    String? merchant,
+    DateTime? createdAt,
+  }) {
+    return Expense(
+      id: id ?? this.id,
+      amount: amount ?? this.amount,
+      category: category ?? this.category,
+      date: date ?? this.date,
+      note: note ?? this.note,
+      source: source ?? this.source,
+      merchant: merchant ?? this.merchant,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  /// Converts the expense to a JSON map.
+  /// Useful for debugging or future export features.
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'amount': amount,
+      'category': category.name,
+      'date': date.toIso8601String(),
+      'note': note,
+      'source': source.name,
+      'merchant': merchant,
+      'createdAt': createdAt.toIso8601String(),
+    };
+  }
+
+  /// Creates an Expense from a JSON map.
+  factory Expense.fromJson(Map<String, dynamic> json) {
+    return Expense(
+      id: json['id'] as String,
+      amount: (json['amount'] as num).toDouble(),
+      category: ExpenseCategory.values.firstWhere(
+        (e) => e.name == json['category'],
+        orElse: () => ExpenseCategory.other,
+      ),
+      date: DateTime.parse(json['date'] as String),
+      note: json['note'] as String?,
+      source: ExpenseSource.values.firstWhere(
+        (e) => e.name == json['source'],
+        orElse: () => ExpenseSource.manual,
+      ),
+      merchant: json['merchant'] as String?,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : null,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Expense(id: $id, amount: $amount, category: ${category.displayName}, date: $date)';
+  }
+}
