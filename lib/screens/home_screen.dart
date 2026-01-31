@@ -3,14 +3,12 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/expense.dart';
 import '../services/expense_service.dart';
 import '../services/recurring_expense_service.dart';
-import '../services/theme_service.dart';
 import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
 import '../widgets/expense_list_tile.dart';
 import '../widgets/monthly_summary_card.dart';
 import '../widgets/category_breakdown_card.dart';
 import 'add_expense_screen.dart';
-import 'settings_screen.dart';
 
 /// Home Screen - Ledgerify Design Language
 ///
@@ -19,17 +17,16 @@ import 'settings_screen.dart';
 /// - Category breakdown (collapsible)
 /// - Expense list grouped by date
 /// - FAB to add new expense
-/// - Settings icon in app bar
 class HomeScreen extends StatefulWidget {
   final ExpenseService expenseService;
-  final ThemeService themeService;
   final RecurringExpenseService recurringService;
+  final VoidCallback? onNavigateToRecurring;
 
   const HomeScreen({
     super.key,
     required this.expenseService,
-    required this.themeService,
     required this.recurringService,
+    this.onNavigateToRecurring,
   });
 
   @override
@@ -60,18 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
             DateTime(_selectedMonth.year, _selectedMonth.month + 1);
       });
     }
-  }
-
-  void _navigateToSettings() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SettingsScreen(
-          themeService: widget.themeService,
-          recurringService: widget.recurringService,
-        ),
-      ),
-    );
   }
 
   Future<void> _navigateToAddExpense([Expense? expenseToEdit]) async {
@@ -183,15 +168,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         centerTitle: false,
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.settings_rounded,
-              color: colors.textSecondary,
-            ),
-            onPressed: _navigateToSettings,
-          ),
-        ],
       ),
       body: ValueListenableBuilder(
         valueListenable: widget.expenseService.box.listenable(),

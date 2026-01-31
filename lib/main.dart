@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'services/expense_service.dart';
 import 'services/recurring_expense_service.dart';
 import 'services/theme_service.dart';
-import 'screens/home_screen.dart';
+import 'screens/main_shell.dart';
 import 'theme/ledgerify_theme.dart';
 
 /// Main entry point for the Ledgerify app.
@@ -74,8 +74,8 @@ class LedgerifyApp extends StatelessWidget {
           darkTheme: LedgerifyTheme.darkTheme,
           themeMode: appThemeMode.themeMode,
 
-          // Home screen with services
-          home: HomeScreen(
+          // Main shell with bottom navigation
+          home: MainShell(
             expenseService: expenseService,
             themeService: themeService,
             recurringService: recurringService,

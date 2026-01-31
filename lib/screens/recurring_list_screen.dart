@@ -16,9 +16,13 @@ import 'add_recurring_screen.dart';
 class RecurringListScreen extends StatelessWidget {
   final RecurringExpenseService recurringService;
 
+  /// When true, removes back button (used when embedded in bottom nav)
+  final bool isEmbedded;
+
   const RecurringListScreen({
     super.key,
     required this.recurringService,
+    this.isEmbedded = false,
   });
 
   @override
@@ -31,13 +35,16 @@ class RecurringListScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.pop(context),
-          color: colors.textPrimary,
-        ),
+        automaticallyImplyLeading: !isEmbedded,
+        leading: isEmbedded
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () => Navigator.pop(context),
+                color: colors.textPrimary,
+              ),
         title: Text(
-          'Recurring Expenses',
+          'Recurring',
           style: LedgerifyTypography.headlineMedium.copyWith(
             color: colors.textPrimary,
           ),
