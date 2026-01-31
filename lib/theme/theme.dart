@@ -7,52 +7,62 @@ import 'typography.dart';
 /// Ledgerify Theme
 ///
 /// Complete Material 3 theme configuration implementing
-/// the Ledgerify Design Language.
+/// the Ledgerify Design Language for both dark and light modes.
 ///
 /// Philosophy: Quiet Finance — calm, premium, trustworthy
 class LedgerifyTheme {
   LedgerifyTheme._();
 
-  /// The main dark theme for Ledgerify
-  /// This is the primary (and only) theme - no light mode
-  static ThemeData get darkTheme {
+  /// Dark theme for Ledgerify
+  static ThemeData get darkTheme => _buildTheme(LedgerifyColors.dark);
+
+  /// Light theme for Ledgerify
+  static ThemeData get lightTheme => _buildTheme(LedgerifyColors.light);
+
+  /// Build theme from color scheme
+  static ThemeData _buildTheme(LedgerifyColorScheme colors) {
+    final isDark = colors.brightness == Brightness.dark;
+
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: colors.brightness,
 
       // ========================================
       // COLOR SCHEME
       // ========================================
-      colorScheme: const ColorScheme.dark(
-        primary: LedgerifyColors.accent,
-        onPrimary: LedgerifyColors.background,
-        secondary: LedgerifyColors.accent,
-        onSecondary: LedgerifyColors.background,
-        surface: LedgerifyColors.surface,
-        onSurface: LedgerifyColors.textPrimary,
-        error: LedgerifyColors.negative,
-        onError: LedgerifyColors.textPrimary,
+      colorScheme: ColorScheme(
+        brightness: colors.brightness,
+        primary: colors.accent,
+        onPrimary: isDark ? colors.background : Colors.white,
+        secondary: colors.accent,
+        onSecondary: isDark ? colors.background : Colors.white,
+        surface: colors.surface,
+        onSurface: colors.textPrimary,
+        error: colors.negative,
+        onError: Colors.white,
       ),
 
       // ========================================
       // SCAFFOLD
       // ========================================
-      scaffoldBackgroundColor: LedgerifyColors.background,
+      scaffoldBackgroundColor: colors.background,
 
       // ========================================
       // APP BAR
       // ========================================
-      appBarTheme: const AppBarTheme(
-        backgroundColor: LedgerifyColors.background,
-        foregroundColor: LedgerifyColors.textPrimary,
+      appBarTheme: AppBarTheme(
+        backgroundColor: colors.background,
+        foregroundColor: colors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: LedgerifyTypography.headlineMedium,
+        titleTextStyle: LedgerifyTypography.headlineMedium.copyWith(
+          color: colors.textPrimary,
+        ),
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-          statusBarBrightness: Brightness.dark,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
         ),
       ),
 
@@ -60,9 +70,9 @@ class LedgerifyTheme {
       // CARD
       // ========================================
       cardTheme: CardThemeData(
-        color: LedgerifyColors.surface,
+        color: colors.surface,
         elevation: LedgerifyElevation.none,
-        shadowColor: LedgerifyColors.shadow,
+        shadowColor: colors.shadow,
         shape: RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusLg,
         ),
@@ -74,10 +84,10 @@ class LedgerifyTheme {
       // ========================================
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: LedgerifyColors.accent,
-          foregroundColor: LedgerifyColors.background,
-          disabledBackgroundColor: LedgerifyColors.surfaceHighlight,
-          disabledForegroundColor: LedgerifyColors.textDisabled,
+          backgroundColor: colors.accent,
+          foregroundColor: isDark ? colors.background : Colors.white,
+          disabledBackgroundColor: colors.surfaceHighlight,
+          disabledForegroundColor: colors.textDisabled,
           elevation: 0,
           shadowColor: Colors.transparent,
           minimumSize: const Size.fromHeight(56),
@@ -96,10 +106,10 @@ class LedgerifyTheme {
       // ========================================
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: LedgerifyColors.accent,
-          foregroundColor: LedgerifyColors.background,
-          disabledBackgroundColor: LedgerifyColors.surfaceHighlight,
-          disabledForegroundColor: LedgerifyColors.textDisabled,
+          backgroundColor: colors.accent,
+          foregroundColor: isDark ? colors.background : Colors.white,
+          disabledBackgroundColor: colors.surfaceHighlight,
+          disabledForegroundColor: colors.textDisabled,
           minimumSize: const Size.fromHeight(56),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
@@ -116,15 +126,15 @@ class LedgerifyTheme {
       // ========================================
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: LedgerifyColors.accent,
-          disabledForegroundColor: LedgerifyColors.textDisabled,
+          foregroundColor: colors.accent,
+          disabledForegroundColor: colors.textDisabled,
           minimumSize: const Size.fromHeight(48),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: LedgerifyRadius.borderRadiusMd,
           ),
           side: BorderSide(
-            color: LedgerifyColors.accent.withOpacity(0.5),
+            color: colors.accent.withValues(alpha: 0.5),
             width: 1,
           ),
           textStyle: LedgerifyTypography.labelLarge,
@@ -136,8 +146,8 @@ class LedgerifyTheme {
       // ========================================
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: LedgerifyColors.accent,
-          disabledForegroundColor: LedgerifyColors.textDisabled,
+          foregroundColor: colors.accent,
+          disabledForegroundColor: colors.textDisabled,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           shape: RoundedRectangleBorder(
             borderRadius: LedgerifyRadius.borderRadiusSm,
@@ -151,8 +161,8 @@ class LedgerifyTheme {
       // ========================================
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
-          foregroundColor: LedgerifyColors.textSecondary,
-          disabledForegroundColor: LedgerifyColors.textDisabled,
+          foregroundColor: colors.textSecondary,
+          disabledForegroundColor: colors.textDisabled,
           minimumSize: const Size(48, 48),
         ),
       ),
@@ -161,8 +171,8 @@ class LedgerifyTheme {
       // FLOATING ACTION BUTTON
       // ========================================
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: LedgerifyColors.accent,
-        foregroundColor: LedgerifyColors.background,
+        backgroundColor: colors.accent,
+        foregroundColor: isDark ? colors.background : Colors.white,
         elevation: LedgerifyElevation.medium,
         focusElevation: LedgerifyElevation.medium,
         hoverElevation: LedgerifyElevation.high,
@@ -180,7 +190,7 @@ class LedgerifyTheme {
       // ========================================
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: LedgerifyColors.surfaceHighlight,
+        fillColor: colors.surfaceHighlight,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
@@ -193,33 +203,33 @@ class LedgerifyTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: LedgerifyRadius.borderRadiusMd,
-          borderSide: const BorderSide(
-            color: LedgerifyColors.accent,
+          borderSide: BorderSide(
+            color: colors.accent,
             width: 1,
           ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: LedgerifyRadius.borderRadiusMd,
-          borderSide: const BorderSide(
-            color: LedgerifyColors.negative,
+          borderSide: BorderSide(
+            color: colors.negative,
             width: 1,
           ),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: LedgerifyRadius.borderRadiusMd,
-          borderSide: const BorderSide(
-            color: LedgerifyColors.negative,
+          borderSide: BorderSide(
+            color: colors.negative,
             width: 1,
           ),
         ),
         hintStyle: LedgerifyTypography.bodyLarge.copyWith(
-          color: LedgerifyColors.textTertiary,
+          color: colors.textTertiary,
         ),
         labelStyle: LedgerifyTypography.bodySmall.copyWith(
-          color: LedgerifyColors.textSecondary,
+          color: colors.textSecondary,
         ),
         errorStyle: LedgerifyTypography.bodySmall.copyWith(
-          color: LedgerifyColors.negative,
+          color: colors.negative,
         ),
       ),
 
@@ -229,15 +239,14 @@ class LedgerifyTheme {
       dropdownMenuTheme: DropdownMenuThemeData(
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: LedgerifyColors.surfaceHighlight,
+          fillColor: colors.surfaceHighlight,
           border: OutlineInputBorder(
             borderRadius: LedgerifyRadius.borderRadiusMd,
             borderSide: BorderSide.none,
           ),
         ),
         menuStyle: MenuStyle(
-          backgroundColor:
-              WidgetStateProperty.all(LedgerifyColors.surfaceElevated),
+          backgroundColor: WidgetStateProperty.all(colors.surfaceElevated),
           shape: WidgetStateProperty.all(
             RoundedRectangleBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
@@ -257,16 +266,22 @@ class LedgerifyTheme {
         shape: RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusMd,
         ),
-        titleTextStyle: LedgerifyTypography.bodyLarge,
-        subtitleTextStyle: LedgerifyTypography.bodySmall,
-        leadingAndTrailingTextStyle: LedgerifyTypography.amountMedium,
+        titleTextStyle: LedgerifyTypography.bodyLarge.copyWith(
+          color: colors.textPrimary,
+        ),
+        subtitleTextStyle: LedgerifyTypography.bodySmall.copyWith(
+          color: colors.textTertiary,
+        ),
+        leadingAndTrailingTextStyle: LedgerifyTypography.amountMedium.copyWith(
+          color: colors.textPrimary,
+        ),
       ),
 
       // ========================================
       // DIVIDER
       // ========================================
-      dividerTheme: const DividerThemeData(
-        color: LedgerifyColors.divider,
+      dividerTheme: DividerThemeData(
+        color: colors.divider,
         thickness: 1,
         space: 0,
       ),
@@ -274,10 +289,10 @@ class LedgerifyTheme {
       // ========================================
       // BOTTOM NAVIGATION BAR
       // ========================================
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: LedgerifyColors.surface,
-        selectedItemColor: LedgerifyColors.accent,
-        unselectedItemColor: LedgerifyColors.textTertiary,
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: colors.surface,
+        selectedItemColor: colors.accent,
+        unselectedItemColor: colors.textTertiary,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
         showSelectedLabels: false,
@@ -288,20 +303,20 @@ class LedgerifyTheme {
       // NAVIGATION BAR (Material 3)
       // ========================================
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: LedgerifyColors.surface,
-        indicatorColor: LedgerifyColors.accentMuted,
+        backgroundColor: colors.surface,
+        indicatorColor: colors.accentMuted,
         elevation: 0,
         height: 64,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(
-              color: LedgerifyColors.accent,
+            return IconThemeData(
+              color: colors.accent,
               size: 24,
             );
           }
-          return const IconThemeData(
-            color: LedgerifyColors.textTertiary,
+          return IconThemeData(
+            color: colors.textTertiary,
             size: 24,
           );
         }),
@@ -310,38 +325,42 @@ class LedgerifyTheme {
       // ========================================
       // BOTTOM SHEET
       // ========================================
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: LedgerifyColors.surfaceElevated,
-        modalBackgroundColor: LedgerifyColors.surfaceElevated,
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: colors.surfaceElevated,
+        modalBackgroundColor: colors.surfaceElevated,
         elevation: LedgerifyElevation.high,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusTopXl,
         ),
         showDragHandle: true,
-        dragHandleColor: LedgerifyColors.textTertiary,
-        dragHandleSize: Size(32, 4),
+        dragHandleColor: colors.textTertiary,
+        dragHandleSize: const Size(32, 4),
       ),
 
       // ========================================
       // DIALOG
       // ========================================
       dialogTheme: DialogThemeData(
-        backgroundColor: LedgerifyColors.surfaceElevated,
+        backgroundColor: colors.surfaceElevated,
         elevation: LedgerifyElevation.high,
         shape: RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusXl,
         ),
-        titleTextStyle: LedgerifyTypography.headlineMedium,
-        contentTextStyle: LedgerifyTypography.bodyMedium,
+        titleTextStyle: LedgerifyTypography.headlineMedium.copyWith(
+          color: colors.textPrimary,
+        ),
+        contentTextStyle: LedgerifyTypography.bodyMedium.copyWith(
+          color: colors.textSecondary,
+        ),
       ),
 
       // ========================================
       // SNACKBAR
       // ========================================
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: LedgerifyColors.surfaceElevated,
+        backgroundColor: colors.surfaceElevated,
         contentTextStyle: LedgerifyTypography.bodyMedium.copyWith(
-          color: LedgerifyColors.textPrimary,
+          color: colors.textPrimary,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusMd,
@@ -354,13 +373,17 @@ class LedgerifyTheme {
       // CHIP
       // ========================================
       chipTheme: ChipThemeData(
-        backgroundColor: LedgerifyColors.surfaceHighlight,
-        selectedColor: LedgerifyColors.accentMuted,
-        disabledColor: LedgerifyColors.surface,
-        labelStyle: LedgerifyTypography.labelMedium,
-        secondaryLabelStyle: LedgerifyTypography.labelSmall,
+        backgroundColor: colors.surfaceHighlight,
+        selectedColor: colors.accentMuted,
+        disabledColor: colors.surface,
+        labelStyle: LedgerifyTypography.labelMedium.copyWith(
+          color: colors.textPrimary,
+        ),
+        secondaryLabelStyle: LedgerifyTypography.labelSmall.copyWith(
+          color: colors.textSecondary,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusFull,
         ),
         side: BorderSide.none,
@@ -369,20 +392,20 @@ class LedgerifyTheme {
       // ========================================
       // PROGRESS INDICATOR
       // ========================================
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: LedgerifyColors.accent,
-        linearTrackColor: LedgerifyColors.surfaceHighlight,
-        circularTrackColor: LedgerifyColors.surfaceHighlight,
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: colors.accent,
+        linearTrackColor: colors.surfaceHighlight,
+        circularTrackColor: colors.surfaceHighlight,
       ),
 
       // ========================================
       // SLIDER
       // ========================================
       sliderTheme: SliderThemeData(
-        activeTrackColor: LedgerifyColors.accent,
-        inactiveTrackColor: LedgerifyColors.surfaceHighlight,
-        thumbColor: LedgerifyColors.accent,
-        overlayColor: LedgerifyColors.accentMuted,
+        activeTrackColor: colors.accent,
+        inactiveTrackColor: colors.surfaceHighlight,
+        thumbColor: colors.accent,
+        overlayColor: colors.accentMuted,
         trackHeight: 4,
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
         overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
@@ -394,41 +417,53 @@ class LedgerifyTheme {
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return LedgerifyColors.accent;
+            return colors.accent;
           }
-          return LedgerifyColors.textTertiary;
+          return colors.textTertiary;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return LedgerifyColors.accentMuted;
+            return colors.accentMuted;
           }
-          return LedgerifyColors.surfaceHighlight;
+          return colors.surfaceHighlight;
         }),
         trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+      ),
+
+      // ========================================
+      // RADIO
+      // ========================================
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return colors.accent;
+          }
+          return colors.textTertiary;
+        }),
       ),
 
       // ========================================
       // DATE PICKER
       // ========================================
       datePickerTheme: DatePickerThemeData(
-        backgroundColor: LedgerifyColors.surfaceElevated,
-        headerBackgroundColor: LedgerifyColors.surface,
-        headerForegroundColor: LedgerifyColors.textPrimary,
+        backgroundColor: colors.surfaceElevated,
+        headerBackgroundColor: colors.surface,
+        headerForegroundColor: colors.textPrimary,
         dayForegroundColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return LedgerifyColors.background;
+            return isDark ? colors.background : Colors.white;
           }
-          return LedgerifyColors.textPrimary;
+          return colors.textPrimary;
         }),
         dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return LedgerifyColors.accent;
+            return colors.accent;
           }
           return Colors.transparent;
         }),
-        todayForegroundColor: WidgetStateProperty.all(LedgerifyColors.accent),
+        todayForegroundColor: WidgetStateProperty.all(colors.accent),
         todayBackgroundColor: WidgetStateProperty.all(Colors.transparent),
-        todayBorder: const BorderSide(color: LedgerifyColors.accent, width: 1),
+        todayBorder: BorderSide(color: colors.accent, width: 1),
         shape: RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusXl,
         ),
@@ -438,27 +473,39 @@ class LedgerifyTheme {
       // TEXT SELECTION
       // ========================================
       textSelectionTheme: TextSelectionThemeData(
-        cursorColor: LedgerifyColors.accent,
-        selectionColor: LedgerifyColors.accentMuted,
-        selectionHandleColor: LedgerifyColors.accent,
+        cursorColor: colors.accent,
+        selectionColor: colors.accentMuted,
+        selectionHandleColor: colors.accent,
       ),
 
       // ========================================
       // TYPOGRAPHY
       // ========================================
-      textTheme: const TextTheme(
-        displayLarge: LedgerifyTypography.displayLarge,
-        displayMedium: LedgerifyTypography.displayMedium,
-        displaySmall: LedgerifyTypography.displaySmall,
-        headlineLarge: LedgerifyTypography.headlineLarge,
-        headlineMedium: LedgerifyTypography.headlineMedium,
-        headlineSmall: LedgerifyTypography.headlineSmall,
-        bodyLarge: LedgerifyTypography.bodyLarge,
-        bodyMedium: LedgerifyTypography.bodyMedium,
-        bodySmall: LedgerifyTypography.bodySmall,
-        labelLarge: LedgerifyTypography.labelLarge,
-        labelMedium: LedgerifyTypography.labelMedium,
-        labelSmall: LedgerifyTypography.labelSmall,
+      textTheme: TextTheme(
+        displayLarge: LedgerifyTypography.displayLarge
+            .copyWith(color: colors.textPrimary),
+        displayMedium: LedgerifyTypography.displayMedium
+            .copyWith(color: colors.textPrimary),
+        displaySmall: LedgerifyTypography.displaySmall
+            .copyWith(color: colors.textPrimary),
+        headlineLarge: LedgerifyTypography.headlineLarge
+            .copyWith(color: colors.textPrimary),
+        headlineMedium: LedgerifyTypography.headlineMedium
+            .copyWith(color: colors.textPrimary),
+        headlineSmall: LedgerifyTypography.headlineSmall
+            .copyWith(color: colors.textPrimary),
+        bodyLarge:
+            LedgerifyTypography.bodyLarge.copyWith(color: colors.textPrimary),
+        bodyMedium: LedgerifyTypography.bodyMedium
+            .copyWith(color: colors.textSecondary),
+        bodySmall:
+            LedgerifyTypography.bodySmall.copyWith(color: colors.textTertiary),
+        labelLarge:
+            LedgerifyTypography.labelLarge.copyWith(color: colors.textPrimary),
+        labelMedium: LedgerifyTypography.labelMedium
+            .copyWith(color: colors.textSecondary),
+        labelSmall:
+            LedgerifyTypography.labelSmall.copyWith(color: colors.textTertiary),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'services/expense_service.dart';
+import 'services/theme_service.dart';
 import 'screens/home_screen.dart';
 import 'theme/ledgerify_theme.dart';
 
@@ -17,47 +18,81 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Set system UI overlay style for dark theme
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      statusBarBrightness: Brightness.dark,
-      systemNavigationBarColor: LedgerifyColors.background,
-      systemNavigationBarIconBrightness: Brightness.light,
-    ),
-  );
-
-  // Initialize the expense service (sets up Hive)
+  // Initialize services
   final expenseService = ExpenseService();
   await expenseService.init();
 
+  final themeService = ThemeService();
+  await themeService.init();
+
   // Run the app
-  runApp(LedgerifyApp(expenseService: expenseService));
+  runApp(LedgerifyApp(
+    expenseService: expenseService,
+    themeService: themeService,
+  ));
 }
 
 /// The root widget of the Ledgerify application.
 ///
-/// Uses the Ledgerify Design Language - dark theme only.
+/// Supports light and dark themes with system preference option.
 /// Philosophy: Quiet Finance — calm, premium, trustworthy.
 class LedgerifyApp extends StatelessWidget {
   final ExpenseService expenseService;
+  final ThemeService themeService;
 
-  const LedgerifyApp({super.key, required this.expenseService});
+  const LedgerifyApp({
+    super.key,
+    required this.expenseService,
+    required this.themeService,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Ledgerify',
-      debugShowCheckedModeBanner: false,
+    // Listen to theme changes
+    return ValueListenableBuilder<AppThemeMode>(
+      valueListenable: themeService.themeMode,
+      builder: (context, appThemeMode, _) {
+        // Update system UI overlay based on theme
+        _updateSystemUI(appThemeMode, context);
 
-      // Apply Ledgerify dark theme - the only theme
-      theme: LedgerifyTheme.darkTheme,
-      darkTheme: LedgerifyTheme.darkTheme,
-      themeMode: ThemeMode.dark,
+        return MaterialApp(
+          title: 'Ledgerify',
+          debugShowCheckedModeBanner: false,
 
-      // Home screen is the initial route
-      home: HomeScreen(expenseService: expenseService),
+          // Apply Ledgerify themes
+          theme: LedgerifyTheme.lightTheme,
+          darkTheme: LedgerifyTheme.darkTheme,
+          themeMode: appThemeMode.themeMode,
+
+          // Home screen with services
+          home: HomeScreen(
+            expenseService: expenseService,
+            themeService: themeService,
+          ),
+        );
+      },
+    );
+  }
+
+  /// Update system UI overlay style based on current theme
+  void _updateSystemUI(AppThemeMode appThemeMode, BuildContext context) {
+    // Determine if we're in dark mode
+    final isDark = appThemeMode == AppThemeMode.dark ||
+        (appThemeMode == AppThemeMode.system &&
+            WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+                Brightness.dark);
+
+    final colors = isDark ? LedgerifyColors.dark : LedgerifyColors.light;
+
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        systemNavigationBarColor: colors.background,
+        systemNavigationBarIconBrightness:
+            isDark ? Brightness.light : Brightness.dark,
+      ),
     );
   }
 }

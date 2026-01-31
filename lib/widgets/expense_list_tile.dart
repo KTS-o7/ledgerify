@@ -24,13 +24,15 @@ class ExpenseListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = LedgerifyColors.of(context);
+
     return Dismissible(
       key: Key(expense.id),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: LedgerifySpacing.xl),
-        color: LedgerifyColors.negative,
+        color: colors.negative,
         child: const Icon(
           Icons.delete_rounded,
           color: Colors.white,
@@ -54,13 +56,13 @@ class ExpenseListTile extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: LedgerifyColors.surfaceHighlight,
+                  color: colors.surfaceHighlight,
                   borderRadius: LedgerifyRadius.borderRadiusMd,
                 ),
                 child: Icon(
                   expense.category.icon,
                   size: 24,
-                  color: LedgerifyColors.textSecondary,
+                  color: colors.textSecondary,
                 ),
               ),
 
@@ -73,7 +75,9 @@ class ExpenseListTile extends StatelessWidget {
                   children: [
                     Text(
                       expense.category.displayName,
-                      style: LedgerifyTypography.bodyLarge,
+                      style: LedgerifyTypography.bodyLarge.copyWith(
+                        color: colors.textPrimary,
+                      ),
                     ),
                     if (expense.note != null && expense.note!.isNotEmpty)
                       Text(
@@ -81,7 +85,7 @@ class ExpenseListTile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: LedgerifyTypography.bodySmall.copyWith(
-                          color: LedgerifyColors.textTertiary,
+                          color: colors.textTertiary,
                         ),
                       ),
                   ],
@@ -96,13 +100,15 @@ class ExpenseListTile extends StatelessWidget {
                 children: [
                   Text(
                     CurrencyFormatter.format(expense.amount),
-                    style: LedgerifyTypography.amountMedium,
+                    style: LedgerifyTypography.amountMedium.copyWith(
+                      color: colors.textPrimary,
+                    ),
                   ),
                   SizedBox(height: LedgerifySpacing.xs),
                   Text(
                     DateFormatter.formatRelative(expense.date),
                     style: LedgerifyTypography.bodySmall.copyWith(
-                      color: LedgerifyColors.textTertiary,
+                      color: colors.textTertiary,
                     ),
                   ),
                 ],

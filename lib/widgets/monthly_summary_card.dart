@@ -5,7 +5,8 @@ import '../utils/currency_formatter.dart';
 /// Monthly Summary Card - Ledgerify Design Language
 ///
 /// Displays the monthly total with navigation arrows.
-/// Flat surface, no gradient, pistachio accent for emphasis.
+/// Flat surface, no gradient, accent for emphasis.
+/// Supports both light and dark themes.
 class MonthlySummaryCard extends StatelessWidget {
   final DateTime selectedMonth;
   final double total;
@@ -22,7 +23,6 @@ class MonthlySummaryCard extends StatelessWidget {
     required this.onNextMonth,
   });
 
-  /// Check if navigation to next month is allowed (can't go to future)
   bool get _canGoNext {
     final now = DateTime.now();
     return selectedMonth.year < now.year ||
@@ -31,10 +31,12 @@ class MonthlySummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = LedgerifyColors.of(context);
+
     return Container(
       padding: const EdgeInsets.all(LedgerifySpacing.xl),
       decoration: BoxDecoration(
-        color: LedgerifyColors.surface,
+        color: colors.surface,
         borderRadius: LedgerifyRadius.borderRadiusLg,
       ),
       child: Column(
@@ -43,11 +45,10 @@ class MonthlySummaryCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Previous month button
               IconButton(
                 onPressed: onPreviousMonth,
                 icon: const Icon(Icons.chevron_left_rounded),
-                color: LedgerifyColors.textTertiary,
+                color: colors.textTertiary,
                 iconSize: 28,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(
@@ -55,20 +56,16 @@ class MonthlySummaryCard extends StatelessWidget {
                   minHeight: 40,
                 ),
               ),
-              // Month/Year display
               Text(
                 DateFormatter.formatMonthYear(selectedMonth),
                 style: LedgerifyTypography.bodyMedium.copyWith(
-                  color: LedgerifyColors.textTertiary,
+                  color: colors.textTertiary,
                 ),
               ),
-              // Next month button
               IconButton(
                 onPressed: _canGoNext ? onNextMonth : null,
                 icon: const Icon(Icons.chevron_right_rounded),
-                color: _canGoNext
-                    ? LedgerifyColors.textTertiary
-                    : LedgerifyColors.textDisabled,
+                color: _canGoNext ? colors.textTertiary : colors.textDisabled,
                 iconSize: 28,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(
@@ -84,7 +81,9 @@ class MonthlySummaryCard extends StatelessWidget {
           // Total amount - hero display
           Text(
             CurrencyFormatter.format(total),
-            style: LedgerifyTypography.amountHero,
+            style: LedgerifyTypography.amountHero.copyWith(
+              color: colors.textPrimary,
+            ),
           ),
 
           SizedBox(height: LedgerifySpacing.sm),
@@ -93,7 +92,7 @@ class MonthlySummaryCard extends StatelessWidget {
           Text(
             _getExpenseCountText(),
             style: LedgerifyTypography.bodySmall.copyWith(
-              color: LedgerifyColors.textTertiary,
+              color: colors.textTertiary,
             ),
           ),
         ],

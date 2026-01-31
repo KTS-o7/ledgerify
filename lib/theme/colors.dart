@@ -2,112 +2,156 @@ import 'package:flutter/material.dart';
 
 /// Ledgerify Color System
 ///
-/// A calm, premium color palette based on deep charcoal tones
-/// with pistachio accent for positive actions and semantic meaning.
-///
+/// A calm, premium color palette for both dark and light modes.
 /// Philosophy: "Quiet Finance" — trustworthy, weighty, calming
+///
+/// Usage:
+/// - Use `LedgerifyColors.dark` for dark theme colors
+/// - Use `LedgerifyColors.light` for light theme colors
+/// - Use `LedgerifyColors.of(context)` to get current theme colors
 class LedgerifyColors {
   LedgerifyColors._();
 
   // ============================================
-  // BASE PALETTE
+  // DARK THEME COLORS
+  // ============================================
+  static const LedgerifyColorScheme dark = LedgerifyColorScheme(
+    brightness: Brightness.dark,
+    // Base palette
+    background: Color(0xFF121212),
+    surface: Color(0xFF1E1E1E),
+    surfaceElevated: Color(0xFF252525),
+    surfaceHighlight: Color(0xFF2C2C2C),
+    // Text colors
+    textPrimary: Color(0xFFFFFFFF),
+    textSecondary: Color(0xB3FFFFFF), // 70%
+    textTertiary: Color(0x80FFFFFF), // 50%
+    textDisabled: Color(0x4DFFFFFF), // 30%
+    // Semantic colors
+    accent: Color(0xFFA8E6CF),
+    accentMuted: Color(0x26A8E6CF), // 15%
+    accentPressed: Color(0xFF8BD4B8),
+    negative: Color(0xFFFF6B6B),
+    negativeMuted: Color(0x26FF6B6B),
+    warning: Color(0xFFFFB347),
+    warningMuted: Color(0x26FFB347),
+    // Utility
+    divider: Color(0x1AFFFFFF), // 10%
+    shadow: Color(0x4D000000), // 30%
+    overlay: Color(0x80000000), // 50%
+  );
+
+  // ============================================
+  // LIGHT THEME COLORS
+  // ============================================
+  static const LedgerifyColorScheme light = LedgerifyColorScheme(
+    brightness: Brightness.light,
+    // Base palette - warm off-whites, no pure white backgrounds
+    background: Color(0xFFF5F5F3), // Warm off-white
+    surface: Color(0xFFFFFFFF), // White cards
+    surfaceElevated: Color(0xFFFFFFFF),
+    surfaceHighlight: Color(0xFFEBEBEA), // Warm gray
+    // Text colors - near black, not pure black
+    textPrimary: Color(0xFF1A1A1A),
+    textSecondary: Color(0xB31A1A1A), // 70%
+    textTertiary: Color(0x731A1A1A), // 45%
+    textDisabled: Color(0x4D1A1A1A), // 30%
+    // Semantic colors - darker for contrast on light backgrounds
+    accent: Color(0xFF2E9E6B), // Darker pistachio
+    accentMuted: Color(0x1F2E9E6B), // 12%
+    accentPressed: Color(0xFF258556),
+    negative: Color(0xFFDC4444), // Darker red
+    negativeMuted: Color(0x1FDC4444),
+    warning: Color(0xFFD4940D),
+    warningMuted: Color(0x1FD4940D),
+    // Utility
+    divider: Color(0x141A1A1A), // 8%
+    shadow: Color(0x1A000000), // 10%
+    overlay: Color(0x80000000), // 50%
+  );
+
+  /// Get the color scheme for the current theme
+  static LedgerifyColorScheme of(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? dark : light;
+  }
+
+  // ============================================
+  // LEGACY STATIC COLORS (for backwards compatibility)
+  // These reference the dark theme colors
   // ============================================
 
-  /// Primary app background - deep charcoal (never pure black)
   static const Color background = Color(0xFF121212);
-
-  /// Cards and containers
   static const Color surface = Color(0xFF1E1E1E);
-
-  /// Elevated cards, modals, dialogs
   static const Color surfaceElevated = Color(0xFF252525);
-
-  /// Hover states, selections, input fields
   static const Color surfaceHighlight = Color(0xFF2C2C2C);
-
-  // ============================================
-  // TEXT COLORS
-  // ============================================
-
-  /// Headlines, amounts, key data - full white
   static const Color textPrimary = Color(0xFFFFFFFF);
-
-  /// Labels, descriptions - 70% white
   static const Color textSecondary = Color(0xB3FFFFFF);
-
-  /// Metadata, timestamps, hints - 50% white
   static const Color textTertiary = Color(0x80FFFFFF);
-
-  /// Disabled states - 30% white
   static const Color textDisabled = Color(0x4DFFFFFF);
-
-  // ============================================
-  // SEMANTIC COLORS
-  // ============================================
-
-  /// Primary accent - soft pistachio green
-  /// Used for: primary actions, positive values, progress
   static const Color accent = Color(0xFFA8E6CF);
-
-  /// Muted accent for backgrounds - 15% opacity
   static const Color accentMuted = Color(0x26A8E6CF);
-
-  /// Accent with darker tone for pressed states
   static const Color accentPressed = Color(0xFF8BD4B8);
-
-  /// Negative values only - soft coral
   static const Color negative = Color(0xFFFF6B6B);
-
-  /// Muted negative for backgrounds - 15% opacity
   static const Color negativeMuted = Color(0x26FF6B6B);
-
-  /// Warning color (use sparingly)
   static const Color warning = Color(0xFFFFB347);
-
-  /// Warning muted for backgrounds - 15% opacity
   static const Color warningMuted = Color(0x26FFB347);
+  static const Color divider = Color(0x1AFFFFFF);
+  static const Color shadow = Color(0x4D000000);
+  static const Color overlay = Color(0x80000000);
+}
 
-  // ============================================
-  // UTILITY COLORS
-  // ============================================
+/// Color scheme data class for Ledgerify themes
+class LedgerifyColorScheme {
+  final Brightness brightness;
+  // Base
+  final Color background;
+  final Color surface;
+  final Color surfaceElevated;
+  final Color surfaceHighlight;
+  // Text
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color textTertiary;
+  final Color textDisabled;
+  // Semantic
+  final Color accent;
+  final Color accentMuted;
+  final Color accentPressed;
+  final Color negative;
+  final Color negativeMuted;
+  final Color warning;
+  final Color warningMuted;
+  // Utility
+  final Color divider;
+  final Color shadow;
+  final Color overlay;
 
-  /// Divider color - very subtle
-  static const Color divider = Color(0x1AFFFFFF); // 10% white
-
-  /// Shadow color for elevation
-  static const Color shadow = Color(0x4D000000); // 30% black
-
-  /// Overlay for modals/dialogs
-  static const Color overlay = Color(0x80000000); // 50% black
-
-  // ============================================
-  // CATEGORY COLORS (for expense categories)
-  // ============================================
-
-  /// Subtle, muted category colors that don't compete with accent
-  static const Color categoryFood = Color(0xFF6B8E7B);
-  static const Color categoryTransport = Color(0xFF7B8E9E);
-  static const Color categoryShopping = Color(0xFF9E8E7B);
-  static const Color categoryEntertainment = Color(0xFF8E7B9E);
-  static const Color categoryBills = Color(0xFF7B9E8E);
-  static const Color categoryHealth = Color(0xFF9E7B7B);
-  static const Color categoryEducation = Color(0xFF7B7B9E);
-  static const Color categoryOther = Color(0xFF8E8E8E);
-
-  // ============================================
-  // HELPER METHODS
-  // ============================================
+  const LedgerifyColorScheme({
+    required this.brightness,
+    required this.background,
+    required this.surface,
+    required this.surfaceElevated,
+    required this.surfaceHighlight,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textTertiary,
+    required this.textDisabled,
+    required this.accent,
+    required this.accentMuted,
+    required this.accentPressed,
+    required this.negative,
+    required this.negativeMuted,
+    required this.warning,
+    required this.warningMuted,
+    required this.divider,
+    required this.shadow,
+    required this.overlay,
+  });
 
   /// Returns the appropriate text color for an amount
-  /// Positive: accent, Negative: negative, Zero: textSecondary
-  static Color amountColor(double amount) {
+  Color amountColor(double amount) {
     if (amount > 0) return accent;
     if (amount < 0) return negative;
     return textSecondary;
-  }
-
-  /// Returns color with custom opacity
-  static Color withOpacity(Color color, double opacity) {
-    return color.withOpacity(opacity);
   }
 }

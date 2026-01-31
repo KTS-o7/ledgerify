@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/expense.dart';
 import '../services/expense_service.dart';
+import '../services/theme_service.dart';
 import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
 import '../widgets/expense_list_tile.dart';
 import '../widgets/monthly_summary_card.dart';
 import '../widgets/category_breakdown_card.dart';
 import 'add_expense_screen.dart';
+import 'settings_screen.dart';
 
 /// Home Screen - Ledgerify Design Language
 ///
@@ -16,10 +18,16 @@ import 'add_expense_screen.dart';
 /// - Category breakdown (collapsible)
 /// - Expense list grouped by date
 /// - FAB to add new expense
+/// - Settings icon in app bar
 class HomeScreen extends StatefulWidget {
   final ExpenseService expenseService;
+  final ThemeService themeService;
 
-  const HomeScreen({super.key, required this.expenseService});
+  const HomeScreen({
+    super.key,
+    required this.expenseService,
+    required this.themeService,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -51,7 +59,20 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _navigateToSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SettingsScreen(
+          themeService: widget.themeService,
+        ),
+      ),
+    );
+  }
+
   Future<void> _navigateToAddExpense([Expense? expenseToEdit]) async {
+    final colors = LedgerifyColors.of(context);
+
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
@@ -68,30 +89,36 @@ class _HomeScreenState extends State<HomeScreen> {
           content: Text(
             expenseToEdit != null ? 'Expense updated' : 'Expense added',
             style: LedgerifyTypography.bodyMedium.copyWith(
-              color: LedgerifyColors.textPrimary,
+              color: colors.textPrimary,
             ),
           ),
-          backgroundColor: LedgerifyColors.surfaceElevated,
+          backgroundColor: colors.surfaceElevated,
         ),
       );
     }
   }
 
   Future<void> _confirmDelete(Expense expense) async {
+    final colors = LedgerifyColors.of(context);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: LedgerifyColors.surfaceElevated,
+        backgroundColor: colors.surfaceElevated,
         shape: RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusXl,
         ),
         title: Text(
           'Delete Expense?',
-          style: LedgerifyTypography.headlineMedium,
+          style: LedgerifyTypography.headlineMedium.copyWith(
+            color: colors.textPrimary,
+          ),
         ),
         content: Text(
           'Are you sure you want to delete this ${CurrencyFormatter.format(expense.amount)} expense?',
-          style: LedgerifyTypography.bodyMedium,
+          style: LedgerifyTypography.bodyMedium.copyWith(
+            color: colors.textSecondary,
+          ),
         ),
         actions: [
           TextButton(
@@ -99,7 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Text(
               'Cancel',
               style: LedgerifyTypography.labelLarge.copyWith(
-                color: LedgerifyColors.textSecondary,
+                color: colors.textSecondary,
               ),
             ),
           ),
@@ -108,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Text(
               'Delete',
               style: LedgerifyTypography.labelLarge.copyWith(
-                color: LedgerifyColors.negative,
+                color: colors.negative,
               ),
             ),
           ),
@@ -118,33 +145,49 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (confirmed == true && mounted) {
       await widget.expenseService.deleteExpense(expense.id);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Expense deleted',
-            style: LedgerifyTypography.bodyMedium.copyWith(
-              color: LedgerifyColors.textPrimary,
+      if (mounted) {
+        final snackColors = LedgerifyColors.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Expense deleted',
+              style: LedgerifyTypography.bodyMedium.copyWith(
+                color: snackColors.textPrimary,
+              ),
             ),
+            backgroundColor: snackColors.surfaceElevated,
           ),
-          backgroundColor: LedgerifyColors.surfaceElevated,
-        ),
-      );
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = LedgerifyColors.of(context);
+
     return Scaffold(
-      backgroundColor: LedgerifyColors.background,
+      backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         title: Text(
           'Ledgerify',
-          style: LedgerifyTypography.headlineMedium,
+          style: LedgerifyTypography.headlineMedium.copyWith(
+            color: colors.textPrimary,
+          ),
         ),
         centerTitle: false,
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.settings_rounded,
+              color: colors.textSecondary,
+            ),
+            onPressed: _navigateToSettings,
+          ),
+        ],
       ),
       body: ValueListenableBuilder(
         valueListenable: widget.expenseService.box.listenable(),
@@ -205,10 +248,10 @@ class _HomeScreenState extends State<HomeScreen> {
               if (monthExpenses.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
-                  child: _buildEmptyState(),
+                  child: _buildEmptyState(colors),
                 )
               else
-                _buildExpenseList(monthExpenses),
+                _buildExpenseList(monthExpenses, colors),
 
               // Bottom padding for FAB
               const SliverToBoxAdapter(
@@ -224,16 +267,20 @@ class _HomeScreenState extends State<HomeScreen> {
         label: Text(
           'Add Expense',
           style: LedgerifyTypography.labelLarge.copyWith(
-            color: LedgerifyColors.background,
+            color: colors.brightness == Brightness.dark
+                ? colors.background
+                : Colors.white,
           ),
         ),
-        backgroundColor: LedgerifyColors.accent,
-        foregroundColor: LedgerifyColors.background,
+        backgroundColor: colors.accent,
+        foregroundColor: colors.brightness == Brightness.dark
+            ? colors.background
+            : Colors.white,
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(LedgerifyColorScheme colors) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(LedgerifySpacing.xxl),
@@ -243,13 +290,13 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(
               Icons.receipt_long_outlined,
               size: 80,
-              color: LedgerifyColors.textTertiary,
+              color: colors.textTertiary,
             ),
             SizedBox(height: LedgerifySpacing.lg),
             Text(
               'No expenses yet',
               style: LedgerifyTypography.headlineSmall.copyWith(
-                color: LedgerifyColors.textSecondary,
+                color: colors.textSecondary,
               ),
             ),
             SizedBox(height: LedgerifySpacing.sm),
@@ -257,7 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
               'Add your first expense to start tracking',
               textAlign: TextAlign.center,
               style: LedgerifyTypography.bodyMedium.copyWith(
-                color: LedgerifyColors.textTertiary,
+                color: colors.textTertiary,
               ),
             ),
           ],
@@ -266,7 +313,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildExpenseList(List<Expense> expenses) {
+  Widget _buildExpenseList(
+      List<Expense> expenses, LedgerifyColorScheme colors) {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
@@ -289,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Text(
                     DateFormatter.formatRelative(expense.date),
                     style: LedgerifyTypography.labelMedium.copyWith(
-                      color: LedgerifyColors.textTertiary,
+                      color: colors.textTertiary,
                     ),
                   ),
                 ),

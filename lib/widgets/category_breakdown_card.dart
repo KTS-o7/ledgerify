@@ -7,6 +7,7 @@ import '../utils/currency_formatter.dart';
 ///
 /// A collapsible card showing category-wise expense breakdown.
 /// Default collapsed, expands with smooth animation.
+/// Supports both light and dark themes.
 class CategoryBreakdownCard extends StatefulWidget {
   final Map<ExpenseCategory, double> breakdown;
   final double total;
@@ -30,13 +31,15 @@ class _CategoryBreakdownCardState extends State<CategoryBreakdownCard> {
       return const SizedBox.shrink();
     }
 
+    final colors = LedgerifyColors.of(context);
+
     // Sort categories by amount (descending)
     final sortedEntries = widget.breakdown.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Container(
       decoration: BoxDecoration(
-        color: LedgerifyColors.surface,
+        color: colors.surface,
         borderRadius: LedgerifyRadius.borderRadiusLg,
       ),
       child: Column(
@@ -52,19 +55,21 @@ class _CategoryBreakdownCardState extends State<CategoryBreakdownCard> {
                   Icon(
                     Icons.pie_chart_rounded,
                     size: 20,
-                    color: LedgerifyColors.textSecondary,
+                    color: colors.textSecondary,
                   ),
                   SizedBox(width: LedgerifySpacing.md),
                   Text(
                     'Category Breakdown',
-                    style: LedgerifyTypography.headlineSmall,
+                    style: LedgerifyTypography.headlineSmall.copyWith(
+                      color: colors.textPrimary,
+                    ),
                   ),
                   const Spacer(),
                   Icon(
                     _isExpanded
                         ? Icons.keyboard_arrow_up_rounded
                         : Icons.keyboard_arrow_down_rounded,
-                    color: LedgerifyColors.textTertiary,
+                    color: colors.textTertiary,
                   ),
                 ],
               ),
@@ -74,7 +79,7 @@ class _CategoryBreakdownCardState extends State<CategoryBreakdownCard> {
           // Expandable content
           AnimatedCrossFade(
             firstChild: const SizedBox.shrink(),
-            secondChild: _buildBreakdownList(sortedEntries),
+            secondChild: _buildBreakdownList(sortedEntries, colors),
             crossFadeState: _isExpanded
                 ? CrossFadeState.showSecond
                 : CrossFadeState.showFirst,
@@ -87,7 +92,10 @@ class _CategoryBreakdownCardState extends State<CategoryBreakdownCard> {
     );
   }
 
-  Widget _buildBreakdownList(List<MapEntry<ExpenseCategory, double>> entries) {
+  Widget _buildBreakdownList(
+    List<MapEntry<ExpenseCategory, double>> entries,
+    LedgerifyColorScheme colors,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(
         left: LedgerifySpacing.lg,
@@ -104,6 +112,7 @@ class _CategoryBreakdownCardState extends State<CategoryBreakdownCard> {
             amount: entry.value,
             percentage: percentage,
             total: widget.total,
+            colors: colors,
           );
         }).toList(),
       ),
@@ -117,12 +126,14 @@ class _CategoryRow extends StatelessWidget {
   final double amount;
   final double percentage;
   final double total;
+  final LedgerifyColorScheme colors;
 
   const _CategoryRow({
     required this.category,
     required this.amount,
     required this.percentage,
     required this.total,
+    required this.colors,
   });
 
   @override
@@ -139,13 +150,13 @@ class _CategoryRow extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: LedgerifyColors.surfaceHighlight,
+                  color: colors.surfaceHighlight,
                   borderRadius: LedgerifyRadius.borderRadiusMd,
                 ),
                 child: Icon(
                   category.icon,
                   size: 20,
-                  color: LedgerifyColors.textSecondary,
+                  color: colors.textSecondary,
                 ),
               ),
               SizedBox(width: LedgerifySpacing.md),
@@ -154,7 +165,9 @@ class _CategoryRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   category.displayName,
-                  style: LedgerifyTypography.bodyLarge,
+                  style: LedgerifyTypography.bodyLarge.copyWith(
+                    color: colors.textPrimary,
+                  ),
                 ),
               ),
 
@@ -164,12 +177,14 @@ class _CategoryRow extends StatelessWidget {
                 children: [
                   Text(
                     CurrencyFormatter.format(amount),
-                    style: LedgerifyTypography.amountSmall,
+                    style: LedgerifyTypography.amountSmall.copyWith(
+                      color: colors.textPrimary,
+                    ),
                   ),
                   Text(
                     '${percentage.toStringAsFixed(1)}%',
                     style: LedgerifyTypography.bodySmall.copyWith(
-                      color: LedgerifyColors.textTertiary,
+                      color: colors.textTertiary,
                     ),
                   ),
                 ],
@@ -184,10 +199,8 @@ class _CategoryRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
               value: total > 0 ? amount / total : 0,
-              backgroundColor: LedgerifyColors.surfaceHighlight,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                LedgerifyColors.accent,
-              ),
+              backgroundColor: colors.surfaceHighlight,
+              valueColor: AlwaysStoppedAnimation<Color>(colors.accent),
               minHeight: 4,
             ),
           ),

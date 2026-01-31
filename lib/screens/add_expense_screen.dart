@@ -123,15 +123,16 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final colors = LedgerifyColors.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               'Error saving expense: $e',
               style: LedgerifyTypography.bodyMedium.copyWith(
-                color: LedgerifyColors.textPrimary,
+                color: Colors.white,
               ),
             ),
-            backgroundColor: LedgerifyColors.negative,
+            backgroundColor: colors.negative,
           ),
         );
       }
@@ -146,8 +147,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = LedgerifyColors.of(context);
+
     return Scaffold(
-      backgroundColor: LedgerifyColors.background,
+      backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -155,18 +158,20 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.pop(context),
-          color: LedgerifyColors.textPrimary,
+          color: colors.textPrimary,
         ),
         title: Text(
           _isEditing ? 'Edit Expense' : 'Add Expense',
-          style: LedgerifyTypography.headlineMedium,
+          style: LedgerifyTypography.headlineMedium.copyWith(
+            color: colors.textPrimary,
+          ),
         ),
         centerTitle: false,
       ),
       body: _isLoading
           ? Center(
               child: CircularProgressIndicator(
-                color: LedgerifyColors.accent,
+                color: colors.accent,
               ),
             )
           : Column(
@@ -180,33 +185,33 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _buildAmountField(),
+                          _buildAmountField(colors),
                           SizedBox(height: LedgerifySpacing.xl),
-                          _buildCategoryDropdown(),
+                          _buildCategoryDropdown(colors),
                           SizedBox(height: LedgerifySpacing.xl),
-                          _buildDatePicker(),
+                          _buildDatePicker(colors),
                           SizedBox(height: LedgerifySpacing.xl),
-                          _buildNoteField(),
+                          _buildNoteField(colors),
                         ],
                       ),
                     ),
                   ),
                 ),
                 // Bottom action button
-                _buildBottomButton(),
+                _buildBottomButton(colors),
               ],
             ),
     );
   }
 
-  Widget _buildAmountField() {
+  Widget _buildAmountField(LedgerifyColorScheme colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Amount',
           style: LedgerifyTypography.labelMedium.copyWith(
-            color: LedgerifyColors.textSecondary,
+            color: colors.textSecondary,
           ),
         ),
         SizedBox(height: LedgerifySpacing.sm),
@@ -216,18 +221,20 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
           ],
-          style: LedgerifyTypography.amountLarge,
+          style: LedgerifyTypography.amountLarge.copyWith(
+            color: colors.textPrimary,
+          ),
           decoration: InputDecoration(
             prefixText: '₹ ',
             prefixStyle: LedgerifyTypography.amountLarge.copyWith(
-              color: LedgerifyColors.textSecondary,
+              color: colors.textSecondary,
             ),
             hintText: '0.00',
             hintStyle: LedgerifyTypography.amountLarge.copyWith(
-              color: LedgerifyColors.textTertiary,
+              color: colors.textTertiary,
             ),
             filled: true,
-            fillColor: LedgerifyColors.surfaceHighlight,
+            fillColor: colors.surfaceHighlight,
             border: OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
@@ -238,20 +245,20 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
-              borderSide: const BorderSide(
-                color: LedgerifyColors.accent,
+              borderSide: BorderSide(
+                color: colors.accent,
                 width: 1,
               ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
-              borderSide: const BorderSide(
-                color: LedgerifyColors.negative,
+              borderSide: BorderSide(
+                color: colors.negative,
                 width: 1,
               ),
             ),
             errorStyle: LedgerifyTypography.bodySmall.copyWith(
-              color: LedgerifyColors.negative,
+              color: colors.negative,
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: LedgerifySpacing.lg,
@@ -277,28 +284,30 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
-  Widget _buildCategoryDropdown() {
+  Widget _buildCategoryDropdown(LedgerifyColorScheme colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Category',
           style: LedgerifyTypography.labelMedium.copyWith(
-            color: LedgerifyColors.textSecondary,
+            color: colors.textSecondary,
           ),
         ),
         SizedBox(height: LedgerifySpacing.sm),
         DropdownButtonFormField<ExpenseCategory>(
           value: _selectedCategory,
-          dropdownColor: LedgerifyColors.surfaceElevated,
-          style: LedgerifyTypography.bodyLarge,
+          dropdownColor: colors.surfaceElevated,
+          style: LedgerifyTypography.bodyLarge.copyWith(
+            color: colors.textPrimary,
+          ),
           icon: Icon(
             Icons.keyboard_arrow_down_rounded,
-            color: LedgerifyColors.textTertiary,
+            color: colors.textTertiary,
           ),
           decoration: InputDecoration(
             filled: true,
-            fillColor: LedgerifyColors.surfaceHighlight,
+            fillColor: colors.surfaceHighlight,
             border: OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
@@ -309,8 +318,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
-              borderSide: const BorderSide(
-                color: LedgerifyColors.accent,
+              borderSide: BorderSide(
+                color: colors.accent,
                 width: 1,
               ),
             ),
@@ -327,12 +336,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   Icon(
                     category.icon,
                     size: 24,
-                    color: LedgerifyColors.textSecondary,
+                    color: colors.textSecondary,
                   ),
                   SizedBox(width: LedgerifySpacing.md),
                   Text(
                     category.displayName,
-                    style: LedgerifyTypography.bodyLarge,
+                    style: LedgerifyTypography.bodyLarge.copyWith(
+                      color: colors.textPrimary,
+                    ),
                   ),
                 ],
               ),
@@ -350,14 +361,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
-  Widget _buildDatePicker() {
+  Widget _buildDatePicker(LedgerifyColorScheme colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Date',
           style: LedgerifyTypography.labelMedium.copyWith(
-            color: LedgerifyColors.textSecondary,
+            color: colors.textSecondary,
           ),
         ),
         SizedBox(height: LedgerifySpacing.sm),
@@ -370,7 +381,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               vertical: LedgerifySpacing.lg,
             ),
             decoration: BoxDecoration(
-              color: LedgerifyColors.surfaceHighlight,
+              color: colors.surfaceHighlight,
               borderRadius: LedgerifyRadius.borderRadiusMd,
             ),
             child: Row(
@@ -378,12 +389,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               children: [
                 Text(
                   DateFormatter.format(_selectedDate),
-                  style: LedgerifyTypography.bodyLarge,
+                  style: LedgerifyTypography.bodyLarge.copyWith(
+                    color: colors.textPrimary,
+                  ),
                 ),
                 Icon(
                   Icons.calendar_today_rounded,
                   size: 20,
-                  color: LedgerifyColors.textTertiary,
+                  color: colors.textTertiary,
                 ),
               ],
             ),
@@ -393,7 +406,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
-  Widget _buildNoteField() {
+  Widget _buildNoteField(LedgerifyColorScheme colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -402,14 +415,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             Text(
               'Note',
               style: LedgerifyTypography.labelMedium.copyWith(
-                color: LedgerifyColors.textSecondary,
+                color: colors.textSecondary,
               ),
             ),
             SizedBox(width: LedgerifySpacing.sm),
             Text(
               '(optional)',
               style: LedgerifyTypography.bodySmall.copyWith(
-                color: LedgerifyColors.textTertiary,
+                color: colors.textTertiary,
               ),
             ),
           ],
@@ -419,14 +432,16 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           controller: _noteController,
           maxLines: 3,
           maxLength: 200,
-          style: LedgerifyTypography.bodyLarge,
+          style: LedgerifyTypography.bodyLarge.copyWith(
+            color: colors.textPrimary,
+          ),
           decoration: InputDecoration(
             hintText: 'Add a note...',
             hintStyle: LedgerifyTypography.bodyLarge.copyWith(
-              color: LedgerifyColors.textTertiary,
+              color: colors.textTertiary,
             ),
             filled: true,
-            fillColor: LedgerifyColors.surfaceHighlight,
+            fillColor: colors.surfaceHighlight,
             border: OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
@@ -437,13 +452,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
-              borderSide: const BorderSide(
-                color: LedgerifyColors.accent,
+              borderSide: BorderSide(
+                color: colors.accent,
                 width: 1,
               ),
             ),
             counterStyle: LedgerifyTypography.bodySmall.copyWith(
-              color: LedgerifyColors.textTertiary,
+              color: colors.textTertiary,
             ),
             contentPadding: const EdgeInsets.all(LedgerifySpacing.lg),
           ),
@@ -452,7 +467,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
-  Widget _buildBottomButton() {
+  Widget _buildBottomButton(LedgerifyColorScheme colors) {
     return Container(
       padding: EdgeInsets.only(
         left: LedgerifySpacing.lg,
@@ -461,10 +476,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         top: LedgerifySpacing.lg,
       ),
       decoration: BoxDecoration(
-        color: LedgerifyColors.background,
+        color: colors.background,
         border: Border(
           top: BorderSide(
-            color: LedgerifyColors.surface,
+            color: colors.surface,
             width: 1,
           ),
         ),
@@ -475,10 +490,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         child: ElevatedButton(
           onPressed: _isFormValid ? _saveExpense : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: LedgerifyColors.accent,
-            foregroundColor: LedgerifyColors.background,
-            disabledBackgroundColor: LedgerifyColors.surfaceHighlight,
-            disabledForegroundColor: LedgerifyColors.textDisabled,
+            backgroundColor: colors.accent,
+            foregroundColor: colors.background,
+            disabledBackgroundColor: colors.surfaceHighlight,
+            disabledForegroundColor: colors.textDisabled,
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
@@ -488,9 +503,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             _isEditing ? 'Update Expense' : 'Add Expense',
             style: LedgerifyTypography.labelLarge.copyWith(
               fontWeight: FontWeight.w600,
-              color: _isFormValid
-                  ? LedgerifyColors.background
-                  : LedgerifyColors.textDisabled,
+              color: _isFormValid ? colors.background : colors.textDisabled,
             ),
           ),
         ),
