@@ -28,6 +28,114 @@ class RecurringExpenseListTile extends StatelessWidget {
     this.onPayNow,
   });
 
+  void _showContextMenu(BuildContext context, LedgerifyColorScheme colors) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(LedgerifyRadius.lg),
+        ),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: LedgerifySpacing.sm),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 32,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: LedgerifySpacing.md),
+                decoration: BoxDecoration(
+                  color: colors.textTertiary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Title
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: LedgerifySpacing.lg,
+                  vertical: LedgerifySpacing.sm,
+                ),
+                child: Text(
+                  recurring.title,
+                  style: LedgerifyTypography.headlineSmall.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              // Edit option
+              ListTile(
+                leading: Icon(Icons.edit_rounded, color: colors.textSecondary),
+                title: Text(
+                  'Edit',
+                  style: LedgerifyTypography.bodyLarge.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  onTap();
+                },
+              ),
+              // Pay Now option (only for active)
+              if (recurring.isActive && onPayNow != null)
+                ListTile(
+                  leading: Icon(Icons.payment_rounded, color: colors.accent),
+                  title: Text(
+                    'Pay Now',
+                    style: LedgerifyTypography.bodyLarge.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    onPayNow!();
+                  },
+                ),
+              // Pause/Resume option
+              ListTile(
+                leading: Icon(
+                  recurring.isActive
+                      ? Icons.pause_circle_outline_rounded
+                      : Icons.play_circle_outline_rounded,
+                  color: colors.textSecondary,
+                ),
+                title: Text(
+                  recurring.isActive ? 'Pause' : 'Resume',
+                  style: LedgerifyTypography.bodyLarge.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  onTogglePause();
+                },
+              ),
+              // Delete option
+              ListTile(
+                leading: Icon(Icons.delete_rounded, color: colors.negative),
+                title: Text(
+                  'Delete',
+                  style: LedgerifyTypography.bodyLarge.copyWith(
+                    color: colors.negative,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  onDelete();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = LedgerifyColors.of(context);
@@ -52,6 +160,7 @@ class RecurringExpenseListTile extends StatelessWidget {
         opacity: recurring.isActive ? 1.0 : 0.5,
         child: InkWell(
           onTap: onTap,
+          onLongPress: () => _showContextMenu(context, colors),
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: LedgerifySpacing.lg,
