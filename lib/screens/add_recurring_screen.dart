@@ -23,10 +23,14 @@ class AddRecurringScreen extends StatefulWidget {
   final RecurringExpenseService recurringService;
   final RecurringExpense? recurringToEdit;
 
+  /// Pre-fill form from an existing expense (for "Make this recurring" feature)
+  final Expense? prefillFromExpense;
+
   const AddRecurringScreen({
     super.key,
     required this.recurringService,
     this.recurringToEdit,
+    this.prefillFromExpense,
   });
 
   @override
@@ -50,12 +54,14 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
   bool _isLoading = false;
 
   bool get _isEditing => widget.recurringToEdit != null;
+  bool get _isPrefilling => widget.prefillFromExpense != null;
 
   @override
   void initState() {
     super.initState();
 
     if (_isEditing) {
+      // Editing an existing recurring expense
       final recurring = widget.recurringToEdit!;
       _titleController = TextEditingController(text: recurring.title);
       _amountController = TextEditingController(
@@ -71,7 +77,25 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
       _endDate = recurring.endDate;
       _selectedWeekdays = recurring.weekdays ?? [];
       _dayOfMonth = recurring.dayOfMonth;
+    } else if (_isPrefilling) {
+      // Pre-filling from an existing expense ("Make this recurring")
+      final expense = widget.prefillFromExpense!;
+      // Use merchant name as title, or category name as fallback
+      final title = expense.merchant ?? expense.category.displayName;
+      _titleController = TextEditingController(text: title);
+      _amountController = TextEditingController(
+        text: expense.amount.toStringAsFixed(2),
+      );
+      _noteController = TextEditingController(text: expense.note ?? '');
+      _customIntervalController = TextEditingController(text: '7');
+      _selectedCategory = expense.category;
+      _selectedFrequency = RecurrenceFrequency.monthly; // Smart default
+      _startDate = expense.date;
+      _endDate = null;
+      _selectedWeekdays = [];
+      _dayOfMonth = expense.date.day; // Use expense date's day of month
     } else {
+      // Creating a new recurring expense
       _titleController = TextEditingController();
       _amountController = TextEditingController();
       _noteController = TextEditingController();

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/expense.dart';
 import '../services/expense_service.dart';
+import '../services/recurring_expense_service.dart';
 import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
+import 'add_recurring_screen.dart';
 
 /// Add/Edit Expense Screen - Ledgerify Design Language
 ///
@@ -16,11 +18,13 @@ import '../utils/currency_formatter.dart';
 /// - Full-width primary action button
 class AddExpenseScreen extends StatefulWidget {
   final ExpenseService expenseService;
+  final RecurringExpenseService? recurringService;
   final Expense? expenseToEdit;
 
   const AddExpenseScreen({
     super.key,
     required this.expenseService,
+    this.recurringService,
     this.expenseToEdit,
   });
 
@@ -186,12 +190,18 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _buildAmountField(colors),
-                          SizedBox(height: LedgerifySpacing.xl),
+                          const SizedBox(height: LedgerifySpacing.xl),
                           _buildCategoryDropdown(colors),
-                          SizedBox(height: LedgerifySpacing.xl),
+                          const SizedBox(height: LedgerifySpacing.xl),
                           _buildDatePicker(colors),
-                          SizedBox(height: LedgerifySpacing.xl),
+                          const SizedBox(height: LedgerifySpacing.xl),
                           _buildNoteField(colors),
+                          // "Make this recurring" button (edit mode only)
+                          if (_isEditing &&
+                              widget.recurringService != null) ...[
+                            const SizedBox(height: LedgerifySpacing.xxl),
+                            _buildMakeRecurringButton(colors),
+                          ],
                         ],
                       ),
                     ),
@@ -464,6 +474,54 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildMakeRecurringButton(LedgerifyColorScheme colors) {
+    return OutlinedButton.icon(
+      onPressed: _navigateToMakeRecurring,
+      icon: Icon(
+        Icons.repeat_rounded,
+        size: 20,
+        color: colors.accent,
+      ),
+      label: Text(
+        'Make this recurring',
+        style: LedgerifyTypography.labelLarge.copyWith(
+          color: colors.accent,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: colors.accent,
+        side: BorderSide(
+          color: colors.accent.withValues(alpha: 0.5),
+          width: 1,
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: LedgerifySpacing.lg,
+          vertical: LedgerifySpacing.md,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: LedgerifyRadius.borderRadiusMd,
+        ),
+      ),
+    );
+  }
+
+  void _navigateToMakeRecurring() {
+    if (widget.recurringService == null) return;
+
+    final expense = widget.expenseToEdit;
+    if (expense == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddRecurringScreen(
+          recurringService: widget.recurringService!,
+          prefillFromExpense: expense,
+        ),
+      ),
     );
   }
 

@@ -366,19 +366,19 @@ Note (optional)
 | B.4 | Implement "View all" navigation to tab | 15m | Done |
 | B.5 | Test with various scenarios | 20m | Done |
 
-**Phase B Total: ~2 hours** - Committed: (pending)
+**Phase B Total: ~2 hours** - Committed: `e072523`
 
-### Phase C: Make Recurring from Expense (Medium Priority)
+### Phase C: Make Recurring from Expense (Medium Priority) - COMPLETED
 
-| # | Task | Est. |
-|---|------|------|
-| C.1 | Add recurringService to AddExpenseScreen | 15m |
-| C.2 | Add "Make this recurring" button (edit mode) | 20m |
-| C.3 | Add prefillFromExpense to AddRecurringScreen | 30m |
-| C.4 | Implement prefill logic | 20m |
-| C.5 | Test conversion flow | 15m |
+| # | Task | Est. | Status |
+|---|------|------|--------|
+| C.1 | Add recurringService to AddExpenseScreen | 15m | Done |
+| C.2 | Add "Make this recurring" button (edit mode) | 20m | Done |
+| C.3 | Add prefillFromExpense to AddRecurringScreen | 30m | Done |
+| C.4 | Implement prefill logic | 20m | Done |
+| C.5 | Test conversion flow | 15m | Done |
 
-**Phase C Total: ~1.5 hours**
+**Phase C Total: ~1.5 hours** - Committed: (pending)
 
 ### Phase D: Smart Defaults (Lower Priority)
 
@@ -498,7 +498,7 @@ Light Theme:
 
 ### Should Have
 - [x] Upcoming Recurring Card on home screen
-- [ ] "Make this recurring" button in expense edit mode
+- [x] "Make this recurring" button in expense edit mode
 - [x] Badge on Recurring tab showing due count
 
 ### Nice to Have

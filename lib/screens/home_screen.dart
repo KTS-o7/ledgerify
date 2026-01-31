@@ -70,6 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(
         builder: (context) => AddExpenseScreen(
           expenseService: widget.expenseService,
+          recurringService: widget.recurringService,
           expenseToEdit: expenseToEdit,
         ),
       ),
