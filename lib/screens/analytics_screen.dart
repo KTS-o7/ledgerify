@@ -107,7 +107,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           final total = breakdown.values.fold(0.0, (sum, value) => sum + value);
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: LedgerifySpacing.xxl),
+            padding: const EdgeInsets.only(
+              top: LedgerifySpacing.lg,
+              bottom: LedgerifySpacing.xxl,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -178,48 +181,70 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  /// Builds the filter dropdown button
+  /// Builds the filter dropdown button using PopupMenuButton for better positioning
   Widget _buildFilterDropdown(LedgerifyColorScheme colors) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: LedgerifySpacing.md,
-        vertical: LedgerifySpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: colors.surfaceHighlight,
+    return PopupMenuButton<AnalyticsFilter>(
+      initialValue: _selectedFilter,
+      onSelected: (filter) {
+        setState(() {
+          _selectedFilter = filter;
+        });
+      },
+      offset: const Offset(0, 40), // Position menu below the button
+      shape: const RoundedRectangleBorder(
         borderRadius: LedgerifyRadius.borderRadiusMd,
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<AnalyticsFilter>(
-          value: _selectedFilter,
-          icon: Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: colors.textSecondary,
-            size: 20,
-          ),
-          dropdownColor: colors.surfaceElevated,
-          borderRadius: LedgerifyRadius.borderRadiusMd,
-          style: LedgerifyTypography.labelMedium.copyWith(
-            color: colors.textPrimary,
-          ),
-          items: AnalyticsFilter.values.map((filter) {
-            return DropdownMenuItem<AnalyticsFilter>(
-              value: filter,
-              child: Text(
+      color: colors.surfaceElevated,
+      itemBuilder: (context) => AnalyticsFilter.values.map((filter) {
+        final isSelected = filter == _selectedFilter;
+        return PopupMenuItem<AnalyticsFilter>(
+          value: filter,
+          child: Row(
+            children: [
+              if (isSelected)
+                Icon(
+                  Icons.check_rounded,
+                  color: colors.accent,
+                  size: 18,
+                )
+              else
+                const SizedBox(width: 18),
+              LedgerifySpacing.horizontalSm,
+              Text(
                 filter.displayName,
                 style: LedgerifyTypography.labelMedium.copyWith(
-                  color: colors.textPrimary,
+                  color: isSelected ? colors.accent : colors.textPrimary,
                 ),
               ),
-            );
-          }).toList(),
-          onChanged: (filter) {
-            if (filter != null) {
-              setState(() {
-                _selectedFilter = filter;
-              });
-            }
-          },
+            ],
+          ),
+        );
+      }).toList(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: LedgerifySpacing.md,
+          vertical: LedgerifySpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: colors.surfaceHighlight,
+          borderRadius: LedgerifyRadius.borderRadiusMd,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _selectedFilter.displayName,
+              style: LedgerifyTypography.labelMedium.copyWith(
+                color: colors.textPrimary,
+              ),
+            ),
+            LedgerifySpacing.horizontalXs,
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: colors.textSecondary,
+              size: 20,
+            ),
+          ],
         ),
       ),
     );
