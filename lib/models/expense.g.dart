@@ -72,6 +72,8 @@ class ExpenseSourceAdapter extends TypeAdapter<ExpenseSource> {
         return ExpenseSource.manual;
       case 1:
         return ExpenseSource.sms;
+      case 2:
+        return ExpenseSource.recurring;
       default:
         return ExpenseSource.manual;
     }
@@ -85,6 +87,9 @@ class ExpenseSourceAdapter extends TypeAdapter<ExpenseSource> {
         break;
       case ExpenseSource.sms:
         writer.writeByte(1);
+        break;
+      case ExpenseSource.recurring:
+        writer.writeByte(2);
         break;
     }
   }

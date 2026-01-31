@@ -6,6 +6,7 @@ part 'expense.g.dart';
 /// Enum representing the source of an expense entry.
 /// - manual: User entered the expense manually
 /// - sms: Expense was parsed from an SMS (future feature)
+/// - recurring: Expense was auto-generated from a recurring template
 @HiveType(typeId: 1)
 enum ExpenseSource {
   @HiveField(0)
@@ -13,6 +14,9 @@ enum ExpenseSource {
 
   @HiveField(1)
   sms,
+
+  @HiveField(2)
+  recurring,
 }
 
 /// Enum representing expense categories.
