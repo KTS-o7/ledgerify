@@ -35,6 +35,7 @@ class AddExpenseScreen extends StatefulWidget {
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  late TextEditingController _titleController;
   late TextEditingController _amountController;
   late TextEditingController _noteController;
 
@@ -50,6 +51,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
     if (_isEditing) {
       final expense = widget.expenseToEdit!;
+      _titleController = TextEditingController(text: expense.merchant ?? '');
       _amountController = TextEditingController(
         text: expense.amount.toStringAsFixed(2),
       );
@@ -57,6 +59,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       _selectedCategory = expense.category;
       _selectedDate = expense.date;
     } else {
+      _titleController = TextEditingController();
       _amountController = TextEditingController();
       _noteController = TextEditingController();
       _selectedCategory = ExpenseCategory.food;
@@ -66,6 +69,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   @override
   void dispose() {
+    _titleController.dispose();
     _amountController.dispose();
     _noteController.dispose();
     super.dispose();
@@ -102,6 +106,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     });
 
     try {
+      final title = _titleController.text.trim();
       final amount = double.parse(_amountController.text.trim());
       final note = _noteController.text.trim();
 
@@ -111,6 +116,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           category: _selectedCategory,
           date: _selectedDate,
           note: note.isEmpty ? null : note,
+          merchant: title.isEmpty ? null : title,
         );
         await widget.expenseService.updateExpense(updated);
       } else {
@@ -119,6 +125,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           category: _selectedCategory,
           date: _selectedDate,
           note: note.isEmpty ? null : note,
+          merchant: title.isEmpty ? null : title,
         );
       }
 
@@ -189,6 +196,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          _buildTitleField(colors),
+                          const SizedBox(height: LedgerifySpacing.xl),
                           _buildAmountField(colors),
                           const SizedBox(height: LedgerifySpacing.xl),
                           _buildCategoryDropdown(colors),
@@ -214,6 +223,66 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
+  Widget _buildTitleField(LedgerifyColorScheme colors) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Title',
+              style: LedgerifyTypography.labelMedium.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: LedgerifySpacing.sm),
+            Text(
+              '(optional)',
+              style: LedgerifyTypography.bodySmall.copyWith(
+                color: colors.textTertiary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: LedgerifySpacing.sm),
+        TextFormField(
+          controller: _titleController,
+          textCapitalization: TextCapitalization.words,
+          style: LedgerifyTypography.bodyLarge.copyWith(
+            color: colors.textPrimary,
+          ),
+          decoration: InputDecoration(
+            hintText: 'e.g., Starbucks, Amazon, Uber',
+            hintStyle: LedgerifyTypography.bodyLarge.copyWith(
+              color: colors.textTertiary,
+            ),
+            filled: true,
+            fillColor: colors.surfaceHighlight,
+            border: OutlineInputBorder(
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+              borderSide: BorderSide(
+                color: colors.accent,
+                width: 1,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: LedgerifySpacing.lg,
+              vertical: LedgerifySpacing.lg,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildAmountField(LedgerifyColorScheme colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,7 +293,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             color: colors.textSecondary,
           ),
         ),
-        SizedBox(height: LedgerifySpacing.sm),
+        const SizedBox(height: LedgerifySpacing.sm),
         TextFormField(
           controller: _amountController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
