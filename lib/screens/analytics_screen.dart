@@ -4,6 +4,7 @@ import '../models/expense.dart';
 import '../services/expense_service.dart';
 import '../theme/ledgerify_theme.dart';
 import '../widgets/charts/category_donut_chart.dart';
+import '../widgets/charts/monthly_bar_chart.dart';
 import '../widgets/charts/spending_line_chart.dart';
 
 /// Analytics filter options for date range selection
@@ -24,7 +25,7 @@ enum AnalyticsFilter {
 /// - Filter dropdown for date range selection
 /// - Category breakdown donut chart
 /// - Spending trend line chart with daily/weekly/monthly modes
-/// - Monthly comparison placeholder (coming soon)
+/// - Monthly comparison bar chart
 class AnalyticsScreen extends StatefulWidget {
   final ExpenseService expenseService;
 
@@ -135,15 +136,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
                 LedgerifySpacing.verticalXl,
 
-                // Monthly Comparison Placeholder
+                // Monthly Comparison Bar Chart
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: LedgerifySpacing.lg,
                   ),
-                  child: _buildPlaceholderCard(
-                    colors,
-                    title: 'Monthly Comparison',
-                    icon: Icons.bar_chart_rounded,
+                  child: MonthlyBarChart(
+                    expenseService: widget.expenseService,
                   ),
                 ),
               ],
@@ -197,55 +196,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             }
           },
         ),
-      ),
-    );
-  }
-
-  /// Builds a placeholder card for coming soon features
-  Widget _buildPlaceholderCard(
-    LedgerifyColorScheme colors, {
-    required String title,
-    required IconData icon,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(LedgerifySpacing.xl),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: LedgerifyRadius.borderRadiusLg,
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Icon(
-                icon,
-                color: colors.textSecondary,
-                size: 20,
-              ),
-              LedgerifySpacing.horizontalSm,
-              Text(
-                title,
-                style: LedgerifyTypography.labelLarge.copyWith(
-                  color: colors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-          LedgerifySpacing.verticalXl,
-          Icon(
-            icon,
-            size: 48,
-            color: colors.textTertiary,
-          ),
-          LedgerifySpacing.verticalMd,
-          Text(
-            'Coming soon',
-            style: LedgerifyTypography.bodyMedium.copyWith(
-              color: colors.textTertiary,
-            ),
-          ),
-          LedgerifySpacing.verticalXl,
-        ],
       ),
     );
   }
