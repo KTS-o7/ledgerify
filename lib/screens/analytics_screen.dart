@@ -4,6 +4,7 @@ import '../models/expense.dart';
 import '../services/expense_service.dart';
 import '../theme/ledgerify_theme.dart';
 import '../widgets/charts/category_donut_chart.dart';
+import '../widgets/charts/spending_line_chart.dart';
 
 /// Analytics filter options for date range selection
 enum AnalyticsFilter {
@@ -22,7 +23,7 @@ enum AnalyticsFilter {
 /// Displays comprehensive spending analytics with:
 /// - Filter dropdown for date range selection
 /// - Category breakdown donut chart
-/// - Spending trend placeholder (coming soon)
+/// - Spending trend line chart with daily/weekly/monthly modes
 /// - Monthly comparison placeholder (coming soon)
 class AnalyticsScreen extends StatefulWidget {
   final ExpenseService expenseService;
@@ -122,15 +123,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
                 LedgerifySpacing.verticalXl,
 
-                // Spending Trend Placeholder
+                // Spending Trend Line Chart
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: LedgerifySpacing.lg,
                   ),
-                  child: _buildPlaceholderCard(
-                    colors,
-                    title: 'Spending Trend',
-                    icon: Icons.show_chart_rounded,
+                  child: SpendingLineChart(
+                    expenseService: widget.expenseService,
+                    filterStart: dateRange.start,
+                    filterEnd: dateRange.end,
                   ),
                 ),
 
