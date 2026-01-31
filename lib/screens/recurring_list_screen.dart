@@ -82,7 +82,7 @@ class RecurringListScreen extends StatelessWidget {
 
               // Paused section
               if (pausedItems.isNotEmpty) ...[
-                SizedBox(height: LedgerifySpacing.lg),
+                const SizedBox(height: LedgerifySpacing.lg),
                 _buildSectionHeader(
                     context, colors, 'Paused', pausedItems.length),
                 ...pausedItems.map((item) => _buildListTile(context, item)),
@@ -90,7 +90,7 @@ class RecurringListScreen extends StatelessWidget {
 
               // Ended section
               if (endedItems.isNotEmpty) ...[
-                SizedBox(height: LedgerifySpacing.lg),
+                const SizedBox(height: LedgerifySpacing.lg),
                 _buildSectionHeader(
                     context, colors, 'Ended', endedItems.length),
                 ...endedItems.map((item) => _buildListTile(context, item)),

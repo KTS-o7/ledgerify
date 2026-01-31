@@ -183,7 +183,7 @@ class RecurringExpenseListTile extends StatelessWidget {
                   ),
                 ),
 
-                SizedBox(width: LedgerifySpacing.md),
+                const SizedBox(width: LedgerifySpacing.md),
 
                 // Title and frequency
                 Expanded(
@@ -223,7 +223,7 @@ class RecurringExpenseListTile extends StatelessWidget {
                             ),
                         ],
                       ),
-                      SizedBox(height: LedgerifySpacing.xs),
+                      const SizedBox(height: LedgerifySpacing.xs),
                       Text(
                         recurring.frequencyDescription,
                         style: LedgerifyTypography.bodySmall.copyWith(
@@ -234,7 +234,7 @@ class RecurringExpenseListTile extends StatelessWidget {
                   ),
                 ),
 
-                SizedBox(width: LedgerifySpacing.md),
+                const SizedBox(width: LedgerifySpacing.md),
 
                 // Amount and next due
                 Column(
@@ -246,15 +246,8 @@ class RecurringExpenseListTile extends StatelessWidget {
                         color: colors.textPrimary,
                       ),
                     ),
-                    SizedBox(height: LedgerifySpacing.xs),
-                    Text(
-                      _formatNextDue(recurring),
-                      style: LedgerifyTypography.bodySmall.copyWith(
-                        color: _isDueSoon(recurring)
-                            ? colors.accent
-                            : colors.textTertiary,
-                      ),
-                    ),
+                    const SizedBox(height: LedgerifySpacing.xs),
+                    _buildDueDateText(colors),
                   ],
                 ),
 
@@ -302,10 +295,15 @@ class RecurringExpenseListTile extends StatelessWidget {
     );
   }
 
-  /// Formats the next due date in a user-friendly way.
-  String _formatNextDue(RecurringExpense recurring) {
+  /// Builds the due date text widget with computed values.
+  Widget _buildDueDateText(LedgerifyColorScheme colors) {
     if (!recurring.isActive) {
-      return 'Paused';
+      return Text(
+        'Paused',
+        style: LedgerifyTypography.bodySmall.copyWith(
+          color: colors.textTertiary,
+        ),
+      );
     }
 
     final now = DateTime.now();
@@ -317,59 +315,50 @@ class RecurringExpenseListTile extends StatelessWidget {
     );
 
     final difference = dueDate.difference(today).inDays;
+    final isDueSoon = difference <= 3;
 
+    String text;
     if (difference < 0) {
-      return 'Overdue';
+      text = 'Overdue';
     } else if (difference == 0) {
-      return 'Due today';
+      text = 'Due today';
     } else if (difference == 1) {
-      return 'Due tomorrow';
+      text = 'Due tomorrow';
     } else if (difference < 7) {
-      return 'Due in $difference days';
+      text = 'Due in $difference days';
     } else {
-      // Format as date
-      return 'Due ${_formatDate(dueDate)}';
+      text = 'Due ${_formatDate(dueDate, now.year)}';
     }
+
+    return Text(
+      text,
+      style: LedgerifyTypography.bodySmall.copyWith(
+        color: isDueSoon ? colors.accent : colors.textTertiary,
+      ),
+    );
   }
 
   /// Formats a date as "Jan 15" or "Jan 15, 2027" if different year.
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
-    ];
+  static const _months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec'
+  ];
 
-    if (date.year == now.year) {
-      return '${months[date.month - 1]} ${date.day}';
+  String _formatDate(DateTime date, int currentYear) {
+    if (date.year == currentYear) {
+      return '${_months[date.month - 1]} ${date.day}';
     } else {
-      return '${months[date.month - 1]} ${date.day}, ${date.year}';
+      return '${_months[date.month - 1]} ${date.day}, ${date.year}';
     }
-  }
-
-  /// Checks if the recurring expense is due within 3 days.
-  bool _isDueSoon(RecurringExpense recurring) {
-    if (!recurring.isActive) return false;
-
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dueDate = DateTime(
-      recurring.nextDueDate.year,
-      recurring.nextDueDate.month,
-      recurring.nextDueDate.day,
-    );
-
-    final difference = dueDate.difference(today).inDays;
-    return difference <= 3;
   }
 }

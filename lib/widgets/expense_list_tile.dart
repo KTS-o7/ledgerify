@@ -53,6 +53,10 @@ class ExpenseListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = LedgerifyColors.of(context);
 
+    // Cache computed values
+    final title = _getTitle();
+    final subtitle = _getSubtitle();
+
     return Dismissible(
       key: Key(expense.id),
       direction: DismissDirection.endToStart,
@@ -93,7 +97,7 @@ class ExpenseListTile extends StatelessWidget {
                 ),
               ),
 
-              SizedBox(width: LedgerifySpacing.md),
+              const SizedBox(width: LedgerifySpacing.md),
 
               // Title/Category and subtitle
               Expanded(
@@ -101,14 +105,14 @@ class ExpenseListTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _getTitle(),
+                      title,
                       style: LedgerifyTypography.bodyLarge.copyWith(
                         color: colors.textPrimary,
                       ),
                     ),
-                    if (_getSubtitle().isNotEmpty)
+                    if (subtitle.isNotEmpty)
                       Text(
-                        _getSubtitle(),
+                        subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: LedgerifyTypography.bodySmall.copyWith(
@@ -119,7 +123,7 @@ class ExpenseListTile extends StatelessWidget {
                 ),
               ),
 
-              SizedBox(width: LedgerifySpacing.md),
+              const SizedBox(width: LedgerifySpacing.md),
 
               // Amount and date
               Column(
@@ -131,7 +135,7 @@ class ExpenseListTile extends StatelessWidget {
                       color: colors.textPrimary,
                     ),
                   ),
-                  SizedBox(height: LedgerifySpacing.xs),
+                  const SizedBox(height: LedgerifySpacing.xs),
                   Text(
                     DateFormatter.formatRelative(expense.date),
                     style: LedgerifyTypography.bodySmall.copyWith(
