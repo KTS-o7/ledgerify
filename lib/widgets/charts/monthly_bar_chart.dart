@@ -106,18 +106,20 @@ class _MonthlyBarChartState extends State<MonthlyBarChart>
       child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
-          return BarChart(
-            BarChartData(
-              barGroups: _buildBarGroups(colors, monthlyTotals, maxY, now),
-              titlesData: _buildTitlesData(colors, monthlyTotals, now),
-              gridData: const FlGridData(show: false),
-              borderData: FlBorderData(show: false),
-              barTouchData: _buildBarTouchData(colors, monthlyTotals),
-              alignment: BarChartAlignment.spaceAround,
-              maxY: maxY * 1.15, // Extra space for amount labels
+          return RepaintBoundary(
+            child: BarChart(
+              BarChartData(
+                barGroups: _buildBarGroups(colors, monthlyTotals, maxY, now),
+                titlesData: _buildTitlesData(colors, monthlyTotals, now),
+                gridData: const FlGridData(show: false),
+                borderData: FlBorderData(show: false),
+                barTouchData: _buildBarTouchData(colors, monthlyTotals),
+                alignment: BarChartAlignment.spaceAround,
+                maxY: maxY * 1.15, // Extra space for amount labels
+              ),
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
             ),
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
           );
         },
       ),

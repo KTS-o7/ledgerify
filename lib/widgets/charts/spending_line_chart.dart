@@ -165,73 +165,76 @@ class _SpendingLineChartState extends State<SpendingLineChart>
       child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
-          return LineChart(
-            LineChartData(
-              lineBarsData: [
-                LineChartBarData(
-                  spots: _getAnimatedSpots(chartData.spots),
-                  isCurved: true,
-                  curveSmoothness: 0.3,
-                  color: colors.accent,
-                  barWidth: 2,
-                  isStrokeCapRound: true,
-                  belowBarData: BarAreaData(
-                    show: true,
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        colors.accent.withValues(alpha: 0.2),
-                        colors.accent.withValues(alpha: 0.0),
-                      ],
+          return RepaintBoundary(
+            child: LineChart(
+              LineChartData(
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: _getAnimatedSpots(chartData.spots),
+                    isCurved: true,
+                    curveSmoothness: 0.35,
+                    preventCurveOverShooting: true,
+                    color: colors.accent,
+                    barWidth: 2.5,
+                    isStrokeCapRound: true,
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          colors.accent.withValues(alpha: 0.2),
+                          colors.accent.withValues(alpha: 0.0),
+                        ],
+                      ),
                     ),
+                    dotData: const FlDotData(show: false),
                   ),
-                  dotData: const FlDotData(show: false),
-                ),
-              ],
-              titlesData: _buildTitlesData(colors, chartData),
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: false,
-                horizontalInterval: _calculateGridInterval(chartData.maxY),
-                getDrawingHorizontalLine: (value) {
-                  return FlLine(
-                    color: colors.divider,
-                    strokeWidth: 1,
-                  );
-                },
-              ),
-              borderData: FlBorderData(show: false),
-              lineTouchData: LineTouchData(
-                enabled: true,
-                touchTooltipData: LineTouchTooltipData(
-                  getTooltipColor: (_) => colors.surfaceElevated,
-                  tooltipRoundedRadius: LedgerifyRadius.sm,
-                  tooltipPadding: const EdgeInsets.symmetric(
-                    horizontal: LedgerifySpacing.md,
-                    vertical: LedgerifySpacing.sm,
-                  ),
-                  getTooltipItems: (touchedSpots) {
-                    return touchedSpots.map((spot) {
-                      final label = chartData.labels[spot.x.toInt()];
-                      return LineTooltipItem(
-                        '$label\n${CurrencyFormatter.format(spot.y)}',
-                        LedgerifyTypography.labelMedium.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                      );
-                    }).toList();
+                ],
+                titlesData: _buildTitlesData(colors, chartData),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: _calculateGridInterval(chartData.maxY),
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: colors.divider,
+                      strokeWidth: 1,
+                    );
                   },
                 ),
-                handleBuiltInTouches: true,
+                borderData: FlBorderData(show: false),
+                lineTouchData: LineTouchData(
+                  enabled: true,
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (_) => colors.surfaceElevated,
+                    tooltipRoundedRadius: LedgerifyRadius.sm,
+                    tooltipPadding: const EdgeInsets.symmetric(
+                      horizontal: LedgerifySpacing.md,
+                      vertical: LedgerifySpacing.sm,
+                    ),
+                    getTooltipItems: (touchedSpots) {
+                      return touchedSpots.map((spot) {
+                        final label = chartData.labels[spot.x.toInt()];
+                        return LineTooltipItem(
+                          '$label\n${CurrencyFormatter.format(spot.y)}',
+                          LedgerifyTypography.labelMedium.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
+                  handleBuiltInTouches: true,
+                ),
+                minX: 0,
+                maxX: (chartData.spots.length - 1).toDouble(),
+                minY: 0,
+                maxY: chartData.maxY * 1.1, // 10% padding at top
               ),
-              minX: 0,
-              maxX: (chartData.spots.length - 1).toDouble(),
-              minY: 0,
-              maxY: chartData.maxY * 1.1, // 10% padding at top
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
             ),
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
           );
         },
       ),

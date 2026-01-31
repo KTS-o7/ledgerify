@@ -55,28 +55,31 @@ class _CategoryDonutChartState extends State<CategoryDonutChart> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                PieChart(
-                  PieChartData(
-                    sections: _buildSections(nonZeroEntries, colors),
-                    centerSpaceRadius: 60,
-                    sectionsSpace: 2,
-                    pieTouchData: PieTouchData(
-                      touchCallback: (event, response) {
-                        setState(() {
-                          if (!event.isInterestedForInteractions ||
-                              response == null ||
-                              response.touchedSection == null) {
-                            _touchedIndex = null;
-                            return;
-                          }
-                          _touchedIndex =
-                              response.touchedSection!.touchedSectionIndex;
-                        });
-                      },
+                RepaintBoundary(
+                  child: PieChart(
+                    PieChartData(
+                      sections: _buildSections(nonZeroEntries, colors),
+                      centerSpaceRadius: 60,
+                      sectionsSpace: 2,
+                      startDegreeOffset: -90, // Start from top
+                      pieTouchData: PieTouchData(
+                        touchCallback: (event, response) {
+                          setState(() {
+                            if (!event.isInterestedForInteractions ||
+                                response == null ||
+                                response.touchedSection == null) {
+                              _touchedIndex = null;
+                              return;
+                            }
+                            _touchedIndex =
+                                response.touchedSection!.touchedSectionIndex;
+                          });
+                        },
+                      ),
                     ),
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
                   ),
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
                 ),
                 // Center text
                 _buildCenterText(nonZeroEntries, colors),
