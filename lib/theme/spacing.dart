@@ -160,6 +160,36 @@ class LedgerifyRadius {
     topLeft: Radius.circular(xl),
     topRight: Radius.circular(xl),
   );
+
+  // ============================================
+  // INPUT BORDER HELPERS
+  // ============================================
+
+  /// Medium input border (no visible border)
+  static const OutlineInputBorder inputBorderMd = OutlineInputBorder(
+    borderRadius: borderRadiusMd,
+    borderSide: BorderSide.none,
+  );
+
+  /// Large input border (no visible border)
+  static const OutlineInputBorder inputBorderLg = OutlineInputBorder(
+    borderRadius: borderRadiusLg,
+    borderSide: BorderSide.none,
+  );
+
+  // ============================================
+  // SHAPE HELPERS
+  // ============================================
+
+  /// Medium rounded rectangle shape (buttons)
+  static const RoundedRectangleBorder shapeMd = RoundedRectangleBorder(
+    borderRadius: borderRadiusMd,
+  );
+
+  /// Large rounded rectangle shape (cards)
+  static const RoundedRectangleBorder shapeLg = RoundedRectangleBorder(
+    borderRadius: borderRadiusLg,
+  );
 }
 
 /// Ledgerify Elevation System

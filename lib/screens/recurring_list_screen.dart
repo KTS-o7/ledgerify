@@ -82,7 +82,7 @@ class RecurringListScreen extends StatelessWidget {
 
               // Paused section
               if (pausedItems.isNotEmpty) ...[
-                const SizedBox(height: LedgerifySpacing.lg),
+                LedgerifySpacing.verticalLg,
                 _buildSectionHeader(
                     context, colors, 'Paused', pausedItems.length),
                 ...pausedItems.map((item) => _buildListTile(context, item)),
@@ -90,7 +90,7 @@ class RecurringListScreen extends StatelessWidget {
 
               // Ended section
               if (endedItems.isNotEmpty) ...[
-                const SizedBox(height: LedgerifySpacing.lg),
+                LedgerifySpacing.verticalLg,
                 _buildSectionHeader(
                     context, colors, 'Ended', endedItems.length),
                 ...endedItems.map((item) => _buildListTile(context, item)),
@@ -122,14 +122,14 @@ class RecurringListScreen extends StatelessWidget {
               size: 64,
               color: colors.textTertiary,
             ),
-            SizedBox(height: LedgerifySpacing.lg),
+            LedgerifySpacing.verticalLg,
             Text(
               'No recurring expenses',
               style: LedgerifyTypography.headlineSmall.copyWith(
                 color: colors.textPrimary,
               ),
             ),
-            SizedBox(height: LedgerifySpacing.sm),
+            LedgerifySpacing.verticalSm,
             Text(
               'Add subscriptions, rent, or bills to track them automatically',
               style: LedgerifyTypography.bodyMedium.copyWith(
@@ -137,7 +137,7 @@ class RecurringListScreen extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: LedgerifySpacing.xl),
+            LedgerifySpacing.verticalXl,
             ElevatedButton.icon(
               onPressed: () => _navigateToAdd(context),
               icon: const Icon(Icons.add_rounded),
@@ -150,7 +150,7 @@ class RecurringListScreen extends StatelessWidget {
                   horizontal: LedgerifySpacing.xl,
                   vertical: LedgerifySpacing.md,
                 ),
-                shape: RoundedRectangleBorder(
+                shape: const RoundedRectangleBorder(
                   borderRadius: LedgerifyRadius.borderRadiusMd,
                 ),
               ),
@@ -181,7 +181,7 @@ class RecurringListScreen extends StatelessWidget {
               color: colors.textSecondary,
             ),
           ),
-          SizedBox(width: LedgerifySpacing.sm),
+          LedgerifySpacing.horizontalSm,
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: LedgerifySpacing.sm,
@@ -356,7 +356,7 @@ class RecurringListScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: colors.surface,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusLg,
         ),
         title: Text(

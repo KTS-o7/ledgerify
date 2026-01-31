@@ -57,7 +57,7 @@ class _CategoryBreakdownCardState extends State<CategoryBreakdownCard> {
                     size: 20,
                     color: colors.textSecondary,
                   ),
-                  SizedBox(width: LedgerifySpacing.md),
+                  LedgerifySpacing.horizontalMd,
                   Text(
                     'Category Breakdown',
                     style: LedgerifyTypography.headlineSmall.copyWith(
@@ -159,7 +159,7 @@ class _CategoryRow extends StatelessWidget {
                   color: colors.textSecondary,
                 ),
               ),
-              SizedBox(width: LedgerifySpacing.md),
+              LedgerifySpacing.horizontalMd,
 
               // Category name
               Expanded(
@@ -192,7 +192,7 @@ class _CategoryRow extends StatelessWidget {
             ],
           ),
 
-          SizedBox(height: LedgerifySpacing.sm),
+          LedgerifySpacing.verticalSm,
 
           // Progress bar
           ClipRRect(

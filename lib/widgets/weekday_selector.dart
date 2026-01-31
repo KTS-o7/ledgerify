@@ -41,7 +41,7 @@ class WeekdaySelector extends StatelessWidget {
             color: colors.textSecondary,
           ),
         ),
-        SizedBox(height: LedgerifySpacing.sm),
+        LedgerifySpacing.verticalSm,
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: List.generate(7, (index) {
@@ -80,7 +80,7 @@ class WeekdaySelector extends StatelessWidget {
           }),
         ),
         if (selectedDays.isNotEmpty) ...[
-          SizedBox(height: LedgerifySpacing.sm),
+          LedgerifySpacing.verticalSm,
           Text(
             _buildSelectionDescription(),
             style: LedgerifyTypography.bodySmall.copyWith(

@@ -97,7 +97,7 @@ class ExpenseListTile extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(width: LedgerifySpacing.md),
+              LedgerifySpacing.horizontalMd,
 
               // Title/Category and subtitle
               Expanded(
@@ -123,7 +123,7 @@ class ExpenseListTile extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(width: LedgerifySpacing.md),
+              LedgerifySpacing.horizontalMd,
 
               // Amount and date
               Column(
@@ -135,7 +135,7 @@ class ExpenseListTile extends StatelessWidget {
                       color: colors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: LedgerifySpacing.xs),
+                  LedgerifySpacing.verticalXs,
                   Text(
                     DateFormatter.formatRelative(expense.date),
                     style: LedgerifyTypography.bodySmall.copyWith(

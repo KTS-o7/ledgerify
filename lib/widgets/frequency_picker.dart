@@ -29,7 +29,7 @@ class FrequencyPicker extends StatelessWidget {
             color: colors.textSecondary,
           ),
         ),
-        SizedBox(height: LedgerifySpacing.sm),
+        LedgerifySpacing.verticalSm,
         InkWell(
           onTap: () => _showFrequencyPicker(context, colors),
           borderRadius: LedgerifyRadius.borderRadiusMd,
@@ -49,7 +49,7 @@ class FrequencyPicker extends StatelessWidget {
                   size: 24,
                   color: colors.textSecondary,
                 ),
-                SizedBox(width: LedgerifySpacing.md),
+                LedgerifySpacing.horizontalMd,
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,7 +161,7 @@ class _FrequencyPickerSheet extends StatelessWidget {
                       size: 24,
                       color: isSelected ? colors.accent : colors.textSecondary,
                     ),
-                    SizedBox(width: LedgerifySpacing.md),
+                    LedgerifySpacing.horizontalMd,
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,7 +197,7 @@ class _FrequencyPickerSheet extends StatelessWidget {
             );
           }),
 
-          SizedBox(height: LedgerifySpacing.lg),
+          LedgerifySpacing.verticalLg,
         ],
       ),
     );

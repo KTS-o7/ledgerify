@@ -76,7 +76,7 @@ class MonthlySummaryCard extends StatelessWidget {
             ],
           ),
 
-          SizedBox(height: LedgerifySpacing.lg),
+          LedgerifySpacing.verticalLg,
 
           // Total amount - hero display
           Text(
@@ -86,7 +86,7 @@ class MonthlySummaryCard extends StatelessWidget {
             ),
           ),
 
-          SizedBox(height: LedgerifySpacing.sm),
+          LedgerifySpacing.verticalSm,
 
           // Expense count
           Text(

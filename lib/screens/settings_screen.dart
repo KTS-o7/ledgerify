@@ -38,7 +38,7 @@ class SettingsScreen extends StatelessWidget {
         children: [
           // Appearance section
           _SectionHeader(title: 'Appearance', colors: colors),
-          SizedBox(height: LedgerifySpacing.sm),
+          LedgerifySpacing.verticalSm,
           _SettingsCard(
             colors: colors,
             child: _ThemeTile(
@@ -47,11 +47,11 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
 
-          SizedBox(height: LedgerifySpacing.xl),
+          LedgerifySpacing.verticalXl,
 
           // About section
           _SectionHeader(title: 'About', colors: colors),
-          SizedBox(height: LedgerifySpacing.sm),
+          LedgerifySpacing.verticalSm,
           _SettingsCard(
             colors: colors,
             child: _AboutTile(colors: colors),
@@ -143,7 +143,7 @@ class _ThemeTile extends StatelessWidget {
                   color: colors.textTertiary,
                 ),
               ),
-              SizedBox(width: LedgerifySpacing.sm),
+              LedgerifySpacing.horizontalSm,
               Icon(
                 Icons.chevron_right_rounded,
                 color: colors.textTertiary,
@@ -206,7 +206,7 @@ class _ThemeBottomSheet extends StatelessWidget {
                 ),
               ),
             ),
-            SizedBox(height: LedgerifySpacing.lg),
+            LedgerifySpacing.verticalLg,
 
             // Title
             Text(
@@ -215,7 +215,7 @@ class _ThemeBottomSheet extends StatelessWidget {
                 color: colors.textPrimary,
               ),
             ),
-            SizedBox(height: LedgerifySpacing.lg),
+            LedgerifySpacing.verticalLg,
 
             // Options
             ...AppThemeMode.values.map((mode) => _ThemeOption(
@@ -228,7 +228,7 @@ class _ThemeBottomSheet extends StatelessWidget {
                   },
                 )),
 
-            SizedBox(height: LedgerifySpacing.sm),
+            LedgerifySpacing.verticalSm,
           ],
         ),
       ),
@@ -286,7 +286,7 @@ class _ThemeOption extends StatelessWidget {
                     )
                   : null,
             ),
-            SizedBox(width: LedgerifySpacing.md),
+            LedgerifySpacing.horizontalMd,
 
             // Label
             Text(

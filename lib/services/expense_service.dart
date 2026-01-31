@@ -22,7 +22,7 @@ class MonthSummary {
 /// for calculating totals and filtering by date/category.
 class ExpenseService {
   static const String _boxName = 'expenses';
-  static final Uuid _uuid = const Uuid();
+  static const Uuid _uuid = Uuid();
 
   late Box<Expense> _expenseBox;
 

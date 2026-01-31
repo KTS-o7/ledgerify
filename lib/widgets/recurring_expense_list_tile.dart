@@ -183,7 +183,7 @@ class RecurringExpenseListTile extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(width: LedgerifySpacing.md),
+                LedgerifySpacing.horizontalMd,
 
                 // Title and frequency
                 Expanded(
@@ -223,7 +223,7 @@ class RecurringExpenseListTile extends StatelessWidget {
                             ),
                         ],
                       ),
-                      const SizedBox(height: LedgerifySpacing.xs),
+                      LedgerifySpacing.verticalXs,
                       Text(
                         recurring.frequencyDescription,
                         style: LedgerifyTypography.bodySmall.copyWith(
@@ -234,7 +234,7 @@ class RecurringExpenseListTile extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(width: LedgerifySpacing.md),
+                LedgerifySpacing.horizontalMd,
 
                 // Amount and next due
                 Column(
@@ -246,12 +246,12 @@ class RecurringExpenseListTile extends StatelessWidget {
                         color: colors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: LedgerifySpacing.xs),
+                    LedgerifySpacing.verticalXs,
                     _buildDueDateText(colors),
                   ],
                 ),
 
-                const SizedBox(width: LedgerifySpacing.sm),
+                LedgerifySpacing.horizontalSm,
 
                 // Pay Now button (only for active items)
                 if (recurring.isActive && onPayNow != null)

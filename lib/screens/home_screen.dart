@@ -217,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // Spacing
               const SliverToBoxAdapter(
-                child: SizedBox(height: LedgerifySpacing.xl),
+                child: LedgerifySpacing.verticalXl,
               ),
 
               // Upcoming Recurring Card
@@ -254,7 +254,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // Spacing (only show if upcoming card is visible, handled by card itself)
               const SliverToBoxAdapter(
-                child: SizedBox(height: LedgerifySpacing.xl),
+                child: LedgerifySpacing.verticalXl,
               ),
 
               // Category Breakdown Card
@@ -274,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // Spacing
               if (monthExpenses.isNotEmpty)
                 const SliverToBoxAdapter(
-                  child: SizedBox(height: LedgerifySpacing.xl),
+                  child: LedgerifySpacing.verticalXl,
                 ),
 
               // Expense List or Empty State
@@ -325,14 +325,14 @@ class _HomeScreenState extends State<HomeScreen> {
               size: 80,
               color: colors.textTertiary,
             ),
-            const SizedBox(height: LedgerifySpacing.lg),
+            LedgerifySpacing.verticalLg,
             Text(
               'No expenses yet',
               style: LedgerifyTypography.headlineSmall.copyWith(
                 color: colors.textSecondary,
               ),
             ),
-            const SizedBox(height: LedgerifySpacing.sm),
+            LedgerifySpacing.verticalSm,
             Text(
               'Add your first expense to start tracking',
               textAlign: TextAlign.center,

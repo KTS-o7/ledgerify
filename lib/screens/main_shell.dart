@@ -159,7 +159,7 @@ class _NavItem extends StatelessWidget {
               color: isSelected ? colors.accent : colors.textTertiary,
             ),
             if (isSelected) ...[
-              SizedBox(width: LedgerifySpacing.sm),
+              LedgerifySpacing.horizontalSm,
               Text(
                 label,
                 style: LedgerifyTypography.labelMedium.copyWith(
@@ -253,7 +253,7 @@ class _NavItemWithBadge extends StatelessWidget {
                   ],
                 ),
                 if (isSelected) ...[
-                  SizedBox(width: LedgerifySpacing.sm),
+                  LedgerifySpacing.horizontalSm,
                   Text(
                     label,
                     style: LedgerifyTypography.labelMedium.copyWith(

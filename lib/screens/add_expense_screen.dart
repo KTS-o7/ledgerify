@@ -209,18 +209,18 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _buildTitleField(colors),
-                          const SizedBox(height: LedgerifySpacing.xl),
+                          LedgerifySpacing.verticalXl,
                           _buildAmountField(colors),
-                          const SizedBox(height: LedgerifySpacing.xl),
+                          LedgerifySpacing.verticalXl,
                           _buildCategoryDropdown(colors),
-                          const SizedBox(height: LedgerifySpacing.xl),
+                          LedgerifySpacing.verticalXl,
                           _buildDatePicker(colors),
-                          const SizedBox(height: LedgerifySpacing.xl),
+                          LedgerifySpacing.verticalXl,
                           _buildNoteField(colors),
                           // "Make this recurring" button (edit mode only)
                           if (_isEditing &&
                               widget.recurringService != null) ...[
-                            const SizedBox(height: LedgerifySpacing.xxl),
+                            LedgerifySpacing.verticalXxl,
                             _buildMakeRecurringButton(colors),
                           ],
                         ],
@@ -247,7 +247,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 color: colors.textSecondary,
               ),
             ),
-            const SizedBox(width: LedgerifySpacing.sm),
+            LedgerifySpacing.horizontalSm,
             Text(
               '(optional)',
               style: LedgerifyTypography.bodySmall.copyWith(
@@ -256,7 +256,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             ),
           ],
         ),
-        const SizedBox(height: LedgerifySpacing.sm),
+        LedgerifySpacing.verticalSm,
         TextFormField(
           controller: _titleController,
           textCapitalization: TextCapitalization.words,
@@ -270,11 +270,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             ),
             filled: true,
             fillColor: colors.surfaceHighlight,
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
             ),
-            enabledBorder: OutlineInputBorder(
+            enabledBorder: const OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
             ),
@@ -305,7 +305,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             color: colors.textSecondary,
           ),
         ),
-        const SizedBox(height: LedgerifySpacing.sm),
+        LedgerifySpacing.verticalSm,
         TextFormField(
           controller: _amountController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -326,11 +326,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             ),
             filled: true,
             fillColor: colors.surfaceHighlight,
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
             ),
-            enabledBorder: OutlineInputBorder(
+            enabledBorder: const OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
             ),
@@ -385,9 +385,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             color: colors.textSecondary,
           ),
         ),
-        SizedBox(height: LedgerifySpacing.sm),
+        LedgerifySpacing.verticalSm,
         DropdownButtonFormField<ExpenseCategory>(
-          value: _selectedCategory,
+          initialValue: _selectedCategory,
           dropdownColor: colors.surfaceElevated,
           style: LedgerifyTypography.bodyLarge.copyWith(
             color: colors.textPrimary,
@@ -399,11 +399,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           decoration: InputDecoration(
             filled: true,
             fillColor: colors.surfaceHighlight,
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
             ),
-            enabledBorder: OutlineInputBorder(
+            enabledBorder: const OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
             ),
@@ -429,7 +429,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     size: 24,
                     color: colors.textSecondary,
                   ),
-                  SizedBox(width: LedgerifySpacing.md),
+                  LedgerifySpacing.horizontalMd,
                   Text(
                     category.displayName,
                     style: LedgerifyTypography.bodyLarge.copyWith(
@@ -462,7 +462,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             color: colors.textSecondary,
           ),
         ),
-        SizedBox(height: LedgerifySpacing.sm),
+        LedgerifySpacing.verticalSm,
         InkWell(
           onTap: _selectDate,
           borderRadius: LedgerifyRadius.borderRadiusMd,
@@ -509,7 +509,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 color: colors.textSecondary,
               ),
             ),
-            SizedBox(width: LedgerifySpacing.sm),
+            LedgerifySpacing.horizontalSm,
             Text(
               '(optional)',
               style: LedgerifyTypography.bodySmall.copyWith(
@@ -518,7 +518,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             ),
           ],
         ),
-        SizedBox(height: LedgerifySpacing.sm),
+        LedgerifySpacing.verticalSm,
         TextFormField(
           controller: _noteController,
           maxLines: 3,
@@ -533,11 +533,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             ),
             filled: true,
             fillColor: colors.surfaceHighlight,
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
             ),
-            enabledBorder: OutlineInputBorder(
+            enabledBorder: const OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
             ),
@@ -582,7 +582,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           horizontal: LedgerifySpacing.lg,
           vertical: LedgerifySpacing.md,
         ),
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusMd,
         ),
       ),
@@ -634,7 +634,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             disabledBackgroundColor: colors.surfaceHighlight,
             disabledForegroundColor: colors.textDisabled,
             elevation: 0,
-            shape: RoundedRectangleBorder(
+            shape: const RoundedRectangleBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
             ),
           ),

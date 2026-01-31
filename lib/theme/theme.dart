@@ -73,7 +73,7 @@ class LedgerifyTheme {
         color: colors.surface,
         elevation: LedgerifyElevation.none,
         shadowColor: colors.shadow,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusLg,
         ),
         margin: EdgeInsets.zero,
@@ -92,7 +92,7 @@ class LedgerifyTheme {
           shadowColor: Colors.transparent,
           minimumSize: const Size.fromHeight(56),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(
+          shape: const RoundedRectangleBorder(
             borderRadius: LedgerifyRadius.borderRadiusMd,
           ),
           textStyle: LedgerifyTypography.labelLarge.copyWith(
@@ -112,7 +112,7 @@ class LedgerifyTheme {
           disabledForegroundColor: colors.textDisabled,
           minimumSize: const Size.fromHeight(56),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(
+          shape: const RoundedRectangleBorder(
             borderRadius: LedgerifyRadius.borderRadiusMd,
           ),
           textStyle: LedgerifyTypography.labelLarge.copyWith(
@@ -130,7 +130,7 @@ class LedgerifyTheme {
           disabledForegroundColor: colors.textDisabled,
           minimumSize: const Size.fromHeight(48),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
+          shape: const RoundedRectangleBorder(
             borderRadius: LedgerifyRadius.borderRadiusMd,
           ),
           side: BorderSide(
@@ -149,7 +149,7 @@ class LedgerifyTheme {
           foregroundColor: colors.accent,
           disabledForegroundColor: colors.textDisabled,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          shape: RoundedRectangleBorder(
+          shape: const RoundedRectangleBorder(
             borderRadius: LedgerifyRadius.borderRadiusSm,
           ),
           textStyle: LedgerifyTypography.labelLarge,
@@ -177,7 +177,7 @@ class LedgerifyTheme {
         focusElevation: LedgerifyElevation.medium,
         hoverElevation: LedgerifyElevation.high,
         highlightElevation: LedgerifyElevation.high,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusMd,
         ),
         extendedTextStyle: LedgerifyTypography.labelLarge.copyWith(
@@ -193,11 +193,11 @@ class LedgerifyTheme {
         fillColor: colors.surfaceHighlight,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        border: OutlineInputBorder(
+        border: const OutlineInputBorder(
           borderRadius: LedgerifyRadius.borderRadiusMd,
           borderSide: BorderSide.none,
         ),
-        enabledBorder: OutlineInputBorder(
+        enabledBorder: const OutlineInputBorder(
           borderRadius: LedgerifyRadius.borderRadiusMd,
           borderSide: BorderSide.none,
         ),
@@ -240,7 +240,7 @@ class LedgerifyTheme {
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: colors.surfaceHighlight,
-          border: OutlineInputBorder(
+          border: const OutlineInputBorder(
             borderRadius: LedgerifyRadius.borderRadiusMd,
             borderSide: BorderSide.none,
           ),
@@ -248,7 +248,7 @@ class LedgerifyTheme {
         menuStyle: MenuStyle(
           backgroundColor: WidgetStateProperty.all(colors.surfaceElevated),
           shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(
+            const RoundedRectangleBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
             ),
           ),
@@ -263,7 +263,7 @@ class LedgerifyTheme {
         tileColor: Colors.transparent,
         contentPadding: LedgerifySpacing.listItemPadding,
         minVerticalPadding: LedgerifySpacing.sm,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusMd,
         ),
         titleTextStyle: LedgerifyTypography.bodyLarge.copyWith(
@@ -343,7 +343,7 @@ class LedgerifyTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: colors.surfaceElevated,
         elevation: LedgerifyElevation.high,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusXl,
         ),
         titleTextStyle: LedgerifyTypography.headlineMedium.copyWith(
@@ -362,7 +362,7 @@ class LedgerifyTheme {
         contentTextStyle: LedgerifyTypography.bodyMedium.copyWith(
           color: colors.textPrimary,
         ),
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusMd,
         ),
         behavior: SnackBarBehavior.floating,
@@ -464,7 +464,7 @@ class LedgerifyTheme {
         todayForegroundColor: WidgetStateProperty.all(colors.accent),
         todayBackgroundColor: WidgetStateProperty.all(Colors.transparent),
         todayBorder: BorderSide(color: colors.accent, width: 1),
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: LedgerifyRadius.borderRadiusXl,
         ),
       ),

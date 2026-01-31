@@ -66,10 +66,16 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
     if (_noteController.text.trim().isNotEmpty) return true;
     // Non-monthly frequency with specific options
     if (_selectedFrequency == RecurrenceFrequency.weekly &&
-        _selectedWeekdays.isNotEmpty) return true;
+        _selectedWeekdays.isNotEmpty) {
+      return true;
+    }
     if (_selectedFrequency == RecurrenceFrequency.monthly &&
-        _dayOfMonth != null) return true;
-    if (_selectedFrequency == RecurrenceFrequency.custom) return true;
+        _dayOfMonth != null) {
+      return true;
+    }
+    if (_selectedFrequency == RecurrenceFrequency.custom) {
+      return true;
+    }
     return false;
   }
 
@@ -355,11 +361,11 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
                         children: [
                           // Essential fields (always visible)
                           _buildTitleField(colors),
-                          const SizedBox(height: LedgerifySpacing.xl),
+                          LedgerifySpacing.verticalXl,
                           _buildAmountField(colors),
-                          const SizedBox(height: LedgerifySpacing.xl),
+                          LedgerifySpacing.verticalXl,
                           _buildCategoryDropdown(colors),
-                          const SizedBox(height: LedgerifySpacing.xl),
+                          LedgerifySpacing.verticalXl,
                           FrequencyPicker(
                             value: _selectedFrequency,
                             onChanged: (frequency) {
@@ -374,11 +380,11 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
                               _checkFormValidity();
                             },
                           ),
-                          const SizedBox(height: LedgerifySpacing.xl),
+                          LedgerifySpacing.verticalXl,
                           _buildStartDatePicker(colors),
 
                           // Advanced options toggle
-                          const SizedBox(height: LedgerifySpacing.xl),
+                          LedgerifySpacing.verticalXl,
                           _buildAdvancedOptionsToggle(colors),
 
                           // Advanced options (collapsible)
@@ -387,11 +393,11 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
                             secondChild: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                const SizedBox(height: LedgerifySpacing.lg),
+                                LedgerifySpacing.verticalLg,
                                 _buildFrequencyOptions(colors),
-                                const SizedBox(height: LedgerifySpacing.xl),
+                                LedgerifySpacing.verticalXl,
                                 _buildEndDatePicker(colors),
-                                const SizedBox(height: LedgerifySpacing.xl),
+                                LedgerifySpacing.verticalXl,
                                 _buildNoteField(colors),
                               ],
                             ),
@@ -400,7 +406,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
                                 : CrossFadeState.showFirst,
                             duration: const Duration(milliseconds: 200),
                           ),
-                          const SizedBox(height: LedgerifySpacing.xl),
+                          LedgerifySpacing.verticalXl,
                         ],
                       ),
                     ),
@@ -430,7 +436,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
             size: 20,
             color: colors.textTertiary,
           ),
-          const SizedBox(width: LedgerifySpacing.xs),
+          LedgerifySpacing.horizontalXs,
           Text(
             _showAdvancedOptions
                 ? 'Hide advanced options'
@@ -454,7 +460,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
             color: colors.textSecondary,
           ),
         ),
-        const SizedBox(height: LedgerifySpacing.sm),
+        LedgerifySpacing.verticalSm,
         TextFormField(
           controller: _titleController,
           textCapitalization: TextCapitalization.words,
@@ -468,11 +474,11 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
             ),
             filled: true,
             fillColor: colors.surfaceHighlight,
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
             ),
-            enabledBorder: OutlineInputBorder(
+            enabledBorder: const OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
             ),
@@ -513,7 +519,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
             color: colors.textSecondary,
           ),
         ),
-        SizedBox(height: LedgerifySpacing.sm),
+        LedgerifySpacing.verticalSm,
         TextFormField(
           controller: _amountController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -534,11 +540,11 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
             ),
             filled: true,
             fillColor: colors.surfaceHighlight,
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
             ),
-            enabledBorder: OutlineInputBorder(
+            enabledBorder: const OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
             ),
@@ -579,9 +585,9 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
             color: colors.textSecondary,
           ),
         ),
-        SizedBox(height: LedgerifySpacing.sm),
+        LedgerifySpacing.verticalSm,
         DropdownButtonFormField<ExpenseCategory>(
-          value: _selectedCategory,
+          initialValue: _selectedCategory,
           dropdownColor: colors.surfaceElevated,
           style: LedgerifyTypography.bodyLarge.copyWith(
             color: colors.textPrimary,
@@ -593,11 +599,11 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
           decoration: InputDecoration(
             filled: true,
             fillColor: colors.surfaceHighlight,
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
             ),
-            enabledBorder: OutlineInputBorder(
+            enabledBorder: const OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
             ),
@@ -623,7 +629,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
                     size: 24,
                     color: colors.textSecondary,
                   ),
-                  SizedBox(width: LedgerifySpacing.md),
+                  LedgerifySpacing.horizontalMd,
                   Text(
                     category.displayName,
                     style: LedgerifyTypography.bodyLarge.copyWith(
@@ -679,7 +685,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
             color: colors.textSecondary,
           ),
         ),
-        SizedBox(height: LedgerifySpacing.sm),
+        LedgerifySpacing.verticalSm,
         InkWell(
           onTap: () => _showDayOfMonthPicker(colors),
           borderRadius: LedgerifyRadius.borderRadiusMd,
@@ -840,7 +846,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
                 },
               ),
             ),
-            SizedBox(height: LedgerifySpacing.lg),
+            LedgerifySpacing.verticalLg,
           ],
         ),
       ),
@@ -857,7 +863,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
             color: colors.textSecondary,
           ),
         ),
-        SizedBox(height: LedgerifySpacing.sm),
+        LedgerifySpacing.verticalSm,
         Row(
           children: [
             SizedBox(
@@ -875,7 +881,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: colors.surfaceHighlight,
-                  border: OutlineInputBorder(
+                  border: const OutlineInputBorder(
                     borderRadius: LedgerifyRadius.borderRadiusMd,
                     borderSide: BorderSide.none,
                   ),
@@ -896,7 +902,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
                 },
               ),
             ),
-            SizedBox(width: LedgerifySpacing.md),
+            LedgerifySpacing.horizontalMd,
             Text(
               'days',
               style: LedgerifyTypography.bodyLarge.copyWith(
@@ -919,7 +925,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
             color: colors.textSecondary,
           ),
         ),
-        SizedBox(height: LedgerifySpacing.sm),
+        LedgerifySpacing.verticalSm,
         InkWell(
           onTap: _selectStartDate,
           borderRadius: LedgerifyRadius.borderRadiusMd,
@@ -966,7 +972,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
                 color: colors.textSecondary,
               ),
             ),
-            SizedBox(width: LedgerifySpacing.sm),
+            LedgerifySpacing.horizontalSm,
             Text(
               '(optional)',
               style: LedgerifyTypography.bodySmall.copyWith(
@@ -975,7 +981,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
             ),
           ],
         ),
-        SizedBox(height: LedgerifySpacing.sm),
+        LedgerifySpacing.verticalSm,
         InkWell(
           onTap: _selectEndDate,
           borderRadius: LedgerifyRadius.borderRadiusMd,
@@ -1034,7 +1040,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
                 color: colors.textSecondary,
               ),
             ),
-            SizedBox(width: LedgerifySpacing.sm),
+            LedgerifySpacing.horizontalSm,
             Text(
               '(optional)',
               style: LedgerifyTypography.bodySmall.copyWith(
@@ -1043,7 +1049,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
             ),
           ],
         ),
-        SizedBox(height: LedgerifySpacing.sm),
+        LedgerifySpacing.verticalSm,
         TextFormField(
           controller: _noteController,
           maxLines: 2,
@@ -1058,11 +1064,11 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
             ),
             filled: true,
             fillColor: colors.surfaceHighlight,
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
             ),
-            enabledBorder: OutlineInputBorder(
+            enabledBorder: const OutlineInputBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
               borderSide: BorderSide.none,
             ),
@@ -1111,7 +1117,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
             disabledBackgroundColor: colors.surfaceHighlight,
             disabledForegroundColor: colors.textDisabled,
             elevation: 0,
-            shape: RoundedRectangleBorder(
+            shape: const RoundedRectangleBorder(
               borderRadius: LedgerifyRadius.borderRadiusMd,
             ),
           ),

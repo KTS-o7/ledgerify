@@ -122,7 +122,7 @@ class UpcomingRecurringCard extends StatelessWidget {
               }),
 
               // Bottom padding
-              const SizedBox(height: LedgerifySpacing.sm),
+              LedgerifySpacing.verticalSm,
             ],
           ),
         );
@@ -175,7 +175,7 @@ class _UpcomingRecurringTile extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(width: LedgerifySpacing.md),
+                LedgerifySpacing.horizontalMd,
 
                 // Title and amount
                 Expanded(
@@ -211,7 +211,7 @@ class _UpcomingRecurringTile extends StatelessWidget {
 
                 // Pay Now button
                 if (onPayNow != null) ...[
-                  const SizedBox(width: LedgerifySpacing.sm),
+                  LedgerifySpacing.horizontalSm,
                   IconButton(
                     onPressed: onPayNow,
                     icon: Icon(
