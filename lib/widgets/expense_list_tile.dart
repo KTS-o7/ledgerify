@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import '../models/expense.dart';
+import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
 
-/// A list tile widget for displaying a single expense entry.
+/// Expense List Tile - Ledgerify Design Language
 ///
-/// Shows:
-/// - Category icon
+/// Displays a single expense entry with:
+/// - Category icon in rounded container
 /// - Category name and optional note
-/// - Amount
+/// - Amount and relative date
 /// - Swipe to delete action
 class ExpenseListTile extends StatelessWidget {
   final Expense expense;
@@ -28,92 +29,88 @@ class ExpenseListTile extends StatelessWidget {
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        color: Colors.red,
-        child: const Icon(Icons.delete, color: Colors.white),
+        padding: const EdgeInsets.only(right: LedgerifySpacing.xl),
+        color: LedgerifyColors.negative,
+        child: const Icon(
+          Icons.delete_rounded,
+          color: Colors.white,
+        ),
       ),
       confirmDismiss: (_) async {
         onDelete();
         return false; // We handle deletion in the callback
       },
-      child: ListTile(
+      child: InkWell(
         onTap: onTap,
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: _getCategoryColor(expense.category).withOpacity(0.15),
-            borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: LedgerifySpacing.lg,
+            vertical: LedgerifySpacing.md,
           ),
-          child: Center(
-            child: Text(
-              expense.category.icon,
-              style: const TextStyle(fontSize: 24),
-            ),
-          ),
-        ),
-        title: Text(
-          expense.category.displayName,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: expense.note != null && expense.note!.isNotEmpty
-            ? Text(
-                expense.note!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.grey[600], fontSize: 13),
-              )
-            : null,
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              CurrencyFormatter.format(expense.amount),
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            if (expense.source == ExpenseSource.sms)
+          child: Row(
+            children: [
+              // Category icon container
               Container(
-                margin: const EdgeInsets.only(top: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
+                  color: LedgerifyColors.surfaceHighlight,
+                  borderRadius: LedgerifyRadius.borderRadiusMd,
                 ),
-                child: const Text(
-                  'SMS',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.blue,
-                    fontWeight: FontWeight.w500,
-                  ),
+                child: Icon(
+                  expense.category.icon,
+                  size: 24,
+                  color: LedgerifyColors.textSecondary,
                 ),
               ),
-          ],
+
+              SizedBox(width: LedgerifySpacing.md),
+
+              // Category name and note
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      expense.category.displayName,
+                      style: LedgerifyTypography.bodyLarge,
+                    ),
+                    if (expense.note != null && expense.note!.isNotEmpty)
+                      Text(
+                        expense.note!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: LedgerifyTypography.bodySmall.copyWith(
+                          color: LedgerifyColors.textTertiary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              SizedBox(width: LedgerifySpacing.md),
+
+              // Amount and date
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    CurrencyFormatter.format(expense.amount),
+                    style: LedgerifyTypography.amountMedium,
+                  ),
+                  SizedBox(height: LedgerifySpacing.xs),
+                  Text(
+                    DateFormatter.formatRelative(expense.date),
+                    style: LedgerifyTypography.bodySmall.copyWith(
+                      color: LedgerifyColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
-  }
-
-  /// Returns a color associated with each category
-  Color _getCategoryColor(ExpenseCategory category) {
-    switch (category) {
-      case ExpenseCategory.food:
-        return Colors.orange;
-      case ExpenseCategory.transport:
-        return Colors.blue;
-      case ExpenseCategory.shopping:
-        return Colors.pink;
-      case ExpenseCategory.entertainment:
-        return Colors.purple;
-      case ExpenseCategory.bills:
-        return Colors.teal;
-      case ExpenseCategory.health:
-        return Colors.red;
-      case ExpenseCategory.education:
-        return Colors.indigo;
-      case ExpenseCategory.other:
-        return Colors.grey;
-    }
   }
 }

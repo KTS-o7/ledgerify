@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
 part 'expense.g.dart';
@@ -66,25 +67,26 @@ extension ExpenseCategoryExtension on ExpenseCategory {
     }
   }
 
-  /// Returns an emoji icon for the category (used in UI).
-  String get icon {
+  /// Returns a Material icon for the category.
+  /// Following Ledgerify Design Language - rounded, solid, minimal icons.
+  IconData get icon {
     switch (this) {
       case ExpenseCategory.food:
-        return '🍔';
+        return Icons.restaurant_rounded;
       case ExpenseCategory.transport:
-        return '🚗';
+        return Icons.directions_car_rounded;
       case ExpenseCategory.shopping:
-        return '🛒';
+        return Icons.shopping_bag_rounded;
       case ExpenseCategory.entertainment:
-        return '🎬';
+        return Icons.movie_rounded;
       case ExpenseCategory.bills:
-        return '📄';
+        return Icons.receipt_rounded;
       case ExpenseCategory.health:
-        return '💊';
+        return Icons.medical_services_rounded;
       case ExpenseCategory.education:
-        return '📚';
+        return Icons.school_rounded;
       case ExpenseCategory.other:
-        return '📦';
+        return Icons.more_horiz_rounded;
     }
   }
 }

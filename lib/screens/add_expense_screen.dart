@@ -2,20 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/expense.dart';
 import '../services/expense_service.dart';
+import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
 
-/// Add/Edit Expense Screen
+/// Add/Edit Expense Screen - Ledgerify Design Language
 ///
 /// A form screen for creating or editing an expense entry.
 /// Features:
-/// - Amount input with numeric keyboard
-/// - Category dropdown selection
-/// - Date picker (defaults to today)
+/// - Amount input with currency prefix
+/// - Category dropdown with icons
+/// - Date picker
 /// - Optional note field
-/// - Form validation
+/// - Full-width primary action button
 class AddExpenseScreen extends StatefulWidget {
   final ExpenseService expenseService;
-  final Expense? expenseToEdit; // Null when adding new expense
+  final Expense? expenseToEdit;
 
   const AddExpenseScreen({
     super.key,
@@ -30,23 +31,19 @@ class AddExpenseScreen extends StatefulWidget {
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Form controllers
   late TextEditingController _amountController;
   late TextEditingController _noteController;
 
-  // Form state
   late ExpenseCategory _selectedCategory;
   late DateTime _selectedDate;
   bool _isLoading = false;
 
-  // Check if we're editing an existing expense
   bool get _isEditing => widget.expenseToEdit != null;
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize with existing expense data if editing
     if (_isEditing) {
       final expense = widget.expenseToEdit!;
       _amountController = TextEditingController(
@@ -56,7 +53,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       _selectedCategory = expense.category;
       _selectedDate = expense.date;
     } else {
-      // Default values for new expense
       _amountController = TextEditingController();
       _noteController = TextEditingController();
       _selectedCategory = ExpenseCategory.food;
@@ -71,7 +67,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     super.dispose();
   }
 
-  /// Opens the date picker dialog
   Future<void> _selectDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -88,7 +83,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     }
   }
 
-  /// Validates and saves the expense
+  bool get _isFormValid {
+    final amount = double.tryParse(_amountController.text.trim());
+    return amount != null && amount > 0;
+  }
+
   Future<void> _saveExpense() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -103,7 +102,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       final note = _noteController.text.trim();
 
       if (_isEditing) {
-        // Update existing expense
         final updated = widget.expenseToEdit!.copyWith(
           amount: amount,
           category: _selectedCategory,
@@ -112,7 +110,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         );
         await widget.expenseService.updateExpense(updated);
       } else {
-        // Create new expense
         await widget.expenseService.addExpense(
           amount: amount,
           category: _selectedCategory,
@@ -122,14 +119,19 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       }
 
       if (mounted) {
-        Navigator.pop(context, true); // Return true to indicate success
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error saving expense: $e'),
-            backgroundColor: Colors.red,
+            content: Text(
+              'Error saving expense: $e',
+              style: LedgerifyTypography.bodyMedium.copyWith(
+                color: LedgerifyColors.textPrimary,
+              ),
+            ),
+            backgroundColor: LedgerifyColors.negative,
           ),
         );
       }
@@ -145,77 +147,117 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: LedgerifyColors.background,
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Expense' : 'Add Expense'),
-        centerTitle: true,
-        actions: [
-          // Save button in app bar for easy access
-          if (!_isLoading)
-            TextButton(onPressed: _saveExpense, child: const Text('Save')),
-        ],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.pop(context),
+          color: LedgerifyColors.textPrimary,
+        ),
+        title: Text(
+          _isEditing ? 'Edit Expense' : 'Add Expense',
+          style: LedgerifyTypography.headlineMedium,
+        ),
+        centerTitle: false,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Amount Field
-                    _buildAmountField(),
-                    const SizedBox(height: 24),
-
-                    // Category Dropdown
-                    _buildCategoryDropdown(),
-                    const SizedBox(height: 24),
-
-                    // Date Picker
-                    _buildDatePicker(),
-                    const SizedBox(height: 24),
-
-                    // Note Field
-                    _buildNoteField(),
-                    const SizedBox(height: 32),
-
-                    // Save Button
-                    _buildSaveButton(),
-                  ],
-                ),
+          ? Center(
+              child: CircularProgressIndicator(
+                color: LedgerifyColors.accent,
               ),
+            )
+          : Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(LedgerifySpacing.lg),
+                    child: Form(
+                      key: _formKey,
+                      onChanged: () => setState(() {}),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildAmountField(),
+                          SizedBox(height: LedgerifySpacing.xl),
+                          _buildCategoryDropdown(),
+                          SizedBox(height: LedgerifySpacing.xl),
+                          _buildDatePicker(),
+                          SizedBox(height: LedgerifySpacing.xl),
+                          _buildNoteField(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Bottom action button
+                _buildBottomButton(),
+              ],
             ),
     );
   }
 
-  /// Builds the amount input field with currency symbol
   Widget _buildAmountField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Amount',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          style: LedgerifyTypography.labelMedium.copyWith(
+            color: LedgerifyColors.textSecondary,
+          ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: LedgerifySpacing.sm),
         TextFormField(
           controller: _amountController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [
-            // Allow only numbers and one decimal point
             FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
           ],
+          style: LedgerifyTypography.amountLarge,
           decoration: InputDecoration(
             prefixText: '₹ ',
+            prefixStyle: LedgerifyTypography.amountLarge.copyWith(
+              color: LedgerifyColors.textSecondary,
+            ),
             hintText: '0.00',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            hintStyle: LedgerifyTypography.amountLarge.copyWith(
+              color: LedgerifyColors.textTertiary,
+            ),
             filled: true,
+            fillColor: LedgerifyColors.surfaceHighlight,
+            border: OutlineInputBorder(
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+              borderSide: const BorderSide(
+                color: LedgerifyColors.accent,
+                width: 1,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+              borderSide: const BorderSide(
+                color: LedgerifyColors.negative,
+                width: 1,
+              ),
+            ),
+            errorStyle: LedgerifyTypography.bodySmall.copyWith(
+              color: LedgerifyColors.negative,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: LedgerifySpacing.lg,
+              vertical: LedgerifySpacing.lg,
+            ),
           ),
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
               return 'Please enter an amount';
@@ -229,38 +271,69 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             }
             return null;
           },
-          autofocus: !_isEditing, // Auto focus only when adding new expense
+          autofocus: !_isEditing,
         ),
       ],
     );
   }
 
-  /// Builds the category dropdown selector
   Widget _buildCategoryDropdown() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Category',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          style: LedgerifyTypography.labelMedium.copyWith(
+            color: LedgerifyColors.textSecondary,
+          ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: LedgerifySpacing.sm),
         DropdownButtonFormField<ExpenseCategory>(
           value: _selectedCategory,
+          dropdownColor: LedgerifyColors.surfaceElevated,
+          style: LedgerifyTypography.bodyLarge,
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: LedgerifyColors.textTertiary,
+          ),
           decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
+            fillColor: LedgerifyColors.surfaceHighlight,
+            border: OutlineInputBorder(
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+              borderSide: const BorderSide(
+                color: LedgerifyColors.accent,
+                width: 1,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: LedgerifySpacing.lg,
+              vertical: LedgerifySpacing.md,
+            ),
           ),
           items: ExpenseCategory.values.map((category) {
             return DropdownMenuItem(
               value: category,
               child: Row(
                 children: [
-                  Text(category.icon, style: const TextStyle(fontSize: 20)),
-                  const SizedBox(width: 12),
-                  Text(category.displayName),
+                  Icon(
+                    category.icon,
+                    size: 24,
+                    color: LedgerifyColors.textSecondary,
+                  ),
+                  SizedBox(width: LedgerifySpacing.md),
+                  Text(
+                    category.displayName,
+                    style: LedgerifyTypography.bodyLarge,
+                  ),
                 ],
               ),
             );
@@ -277,36 +350,41 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
-  /// Builds the date picker field
   Widget _buildDatePicker() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Date',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          style: LedgerifyTypography.labelMedium.copyWith(
+            color: LedgerifyColors.textSecondary,
+          ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: LedgerifySpacing.sm),
         InkWell(
           onTap: _selectDate,
-          borderRadius: BorderRadius.circular(12),
-          child: InputDecorator(
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
+          borderRadius: LedgerifyRadius.borderRadiusMd,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: LedgerifySpacing.lg,
+              vertical: LedgerifySpacing.lg,
+            ),
+            decoration: BoxDecoration(
+              color: LedgerifyColors.surfaceHighlight,
+              borderRadius: LedgerifyRadius.borderRadiusMd,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   DateFormatter.format(_selectedDate),
-                  style: Theme.of(context).textTheme.bodyLarge,
+                  style: LedgerifyTypography.bodyLarge,
                 ),
-                const Icon(Icons.calendar_today, size: 20),
+                Icon(
+                  Icons.calendar_today_rounded,
+                  size: 20,
+                  color: LedgerifyColors.textTertiary,
+                ),
               ],
             ),
           ),
@@ -315,7 +393,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
-  /// Builds the optional note field
   Widget _buildNoteField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,45 +401,99 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           children: [
             Text(
               'Note',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: LedgerifyTypography.labelMedium.copyWith(
+                color: LedgerifyColors.textSecondary,
+              ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: LedgerifySpacing.sm),
             Text(
               '(optional)',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+              style: LedgerifyTypography.bodySmall.copyWith(
+                color: LedgerifyColors.textTertiary,
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: LedgerifySpacing.sm),
         TextFormField(
           controller: _noteController,
           maxLines: 3,
           maxLength: 200,
+          style: LedgerifyTypography.bodyLarge,
           decoration: InputDecoration(
-            hintText: 'Add a note about this expense...',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            hintText: 'Add a note...',
+            hintStyle: LedgerifyTypography.bodyLarge.copyWith(
+              color: LedgerifyColors.textTertiary,
+            ),
             filled: true,
+            fillColor: LedgerifyColors.surfaceHighlight,
+            border: OutlineInputBorder(
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+              borderSide: const BorderSide(
+                color: LedgerifyColors.accent,
+                width: 1,
+              ),
+            ),
+            counterStyle: LedgerifyTypography.bodySmall.copyWith(
+              color: LedgerifyColors.textTertiary,
+            ),
+            contentPadding: const EdgeInsets.all(LedgerifySpacing.lg),
           ),
         ),
       ],
     );
   }
 
-  /// Builds the main save button
-  Widget _buildSaveButton() {
-    return FilledButton(
-      onPressed: _saveExpense,
-      style: FilledButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  Widget _buildBottomButton() {
+    return Container(
+      padding: EdgeInsets.only(
+        left: LedgerifySpacing.lg,
+        right: LedgerifySpacing.lg,
+        bottom: LedgerifySpacing.lg + MediaQuery.of(context).padding.bottom,
+        top: LedgerifySpacing.lg,
       ),
-      child: Text(
-        _isEditing ? 'Update Expense' : 'Add Expense',
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      decoration: BoxDecoration(
+        color: LedgerifyColors.background,
+        border: Border(
+          top: BorderSide(
+            color: LedgerifyColors.surface,
+            width: 1,
+          ),
+        ),
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: ElevatedButton(
+          onPressed: _isFormValid ? _saveExpense : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: LedgerifyColors.accent,
+            foregroundColor: LedgerifyColors.background,
+            disabledBackgroundColor: LedgerifyColors.surfaceHighlight,
+            disabledForegroundColor: LedgerifyColors.textDisabled,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+            ),
+          ),
+          child: Text(
+            _isEditing ? 'Update Expense' : 'Add Expense',
+            style: LedgerifyTypography.labelLarge.copyWith(
+              fontWeight: FontWeight.w600,
+              color: _isFormValid
+                  ? LedgerifyColors.background
+                  : LedgerifyColors.textDisabled,
+            ),
+          ),
+        ),
       ),
     );
   }

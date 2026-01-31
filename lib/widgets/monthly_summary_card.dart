@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
+import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
 
-/// A card widget displaying the monthly total with navigation arrows.
+/// Monthly Summary Card - Ledgerify Design Language
 ///
-/// Shows:
-/// - Current month/year
-/// - Total expenses for the month
-/// - Number of transactions
-/// - Left/Right arrows to navigate between months
+/// Displays the monthly total with navigation arrows.
+/// Flat surface, no gradient, pistachio accent for emphasis.
 class MonthlySummaryCard extends StatelessWidget {
   final DateTime selectedMonth;
   final double total;
@@ -33,25 +31,11 @@ class MonthlySummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(LedgerifySpacing.xl),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.primary.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: LedgerifyColors.surface,
+        borderRadius: LedgerifyRadius.borderRadiusLg,
       ),
       child: Column(
         children: [
@@ -62,58 +46,64 @@ class MonthlySummaryCard extends StatelessWidget {
               // Previous month button
               IconButton(
                 onPressed: onPreviousMonth,
-                icon: const Icon(Icons.chevron_left),
-                color: Colors.white,
+                icon: const Icon(Icons.chevron_left_rounded),
+                color: LedgerifyColors.textTertiary,
                 iconSize: 28,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 40,
+                  minHeight: 40,
+                ),
               ),
               // Month/Year display
               Text(
                 DateFormatter.formatMonthYear(selectedMonth),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
+                style: LedgerifyTypography.bodyMedium.copyWith(
+                  color: LedgerifyColors.textTertiary,
                 ),
               ),
               // Next month button
               IconButton(
                 onPressed: _canGoNext ? onNextMonth : null,
-                icon: const Icon(Icons.chevron_right),
-                color: _canGoNext ? Colors.white : Colors.white38,
+                icon: const Icon(Icons.chevron_right_rounded),
+                color: _canGoNext
+                    ? LedgerifyColors.textTertiary
+                    : LedgerifyColors.textDisabled,
                 iconSize: 28,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 40,
+                  minHeight: 40,
+                ),
               ),
             ],
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: LedgerifySpacing.lg),
 
-          // Total amount
+          // Total amount - hero display
           Text(
             CurrencyFormatter.format(total),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.5,
-            ),
+            style: LedgerifyTypography.amountHero,
           ),
 
-          const SizedBox(height: 8),
+          SizedBox(height: LedgerifySpacing.sm),
 
           // Expense count
           Text(
-            expenseCount == 0
-                ? 'No expenses'
-                : expenseCount == 1
-                ? '1 expense'
-                : '$expenseCount expenses',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
-              fontSize: 14,
+            _getExpenseCountText(),
+            style: LedgerifyTypography.bodySmall.copyWith(
+              color: LedgerifyColors.textTertiary,
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _getExpenseCountText() {
+    if (expenseCount == 0) return 'No expenses';
+    if (expenseCount == 1) return '1 expense';
+    return '$expenseCount expenses';
   }
 }
