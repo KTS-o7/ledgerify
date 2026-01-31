@@ -17,6 +17,7 @@ class RecurringExpenseListTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onTogglePause;
   final VoidCallback onDelete;
+  final VoidCallback? onPayNow;
 
   const RecurringExpenseListTile({
     super.key,
@@ -24,6 +25,7 @@ class RecurringExpenseListTile extends StatelessWidget {
     required this.onTap,
     required this.onTogglePause,
     required this.onDelete,
+    this.onPayNow,
   });
 
   @override
@@ -147,7 +149,23 @@ class RecurringExpenseListTile extends StatelessWidget {
                   ],
                 ),
 
-                SizedBox(width: LedgerifySpacing.sm),
+                const SizedBox(width: LedgerifySpacing.sm),
+
+                // Pay Now button (only for active items)
+                if (recurring.isActive && onPayNow != null)
+                  IconButton(
+                    onPressed: onPayNow,
+                    icon: Icon(
+                      Icons.payment_rounded,
+                      color: colors.accent,
+                    ),
+                    tooltip: 'Pay Now',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
+                  ),
 
                 // Pause/Resume button
                 IconButton(

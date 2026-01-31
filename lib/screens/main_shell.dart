@@ -51,6 +51,7 @@ class _MainShellState extends State<MainShell> {
           ),
           RecurringListScreen(
             recurringService: widget.recurringService,
+            expenseService: widget.expenseService,
             isEmbedded: true, // No back button when embedded in tabs
           ),
           SettingsScreen(

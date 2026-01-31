@@ -168,6 +168,54 @@ class RecurringExpenseService {
   }
 
   // ============================================
+  // Manual Payment
+  // ============================================
+
+  /// Manually pays a recurring expense now.
+  ///
+  /// This will:
+  /// 1. Generate an expense for today (or the nextDueDate if in the past)
+  /// 2. Update lastGeneratedDate to today
+  /// 3. Advance nextDueDate to the next occurrence
+  ///
+  /// Returns the generated expense, or null if the recurring expense
+  /// is paused, ended, or not found.
+  Future<Expense?> payNow(String id, ExpenseService expenseService) async {
+    final recurring = get(id);
+    if (recurring == null) return null;
+    if (!recurring.isActive) return null;
+    if (recurring.hasEnded) return null;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // Use today's date for the expense (or nextDueDate if it's in the past)
+    final expenseDate =
+        recurring.nextDueDate.isBefore(today) ? recurring.nextDueDate : today;
+
+    // Generate the expense
+    final expense = await expenseService.addExpense(
+      amount: recurring.amount,
+      category: recurring.category,
+      date: expenseDate,
+      note: _buildExpenseNote(recurring),
+      source: ExpenseSource.recurring,
+      merchant: recurring.title,
+    );
+
+    // Calculate the next due date
+    final nextDue = calculateNextDueDate(recurring, from: today);
+
+    // Update the recurring expense
+    await update(recurring.copyWith(
+      lastGeneratedDate: today,
+      nextDueDate: nextDue,
+    ));
+
+    return expense;
+  }
+
+  // ============================================
   // Generation
   // ============================================
 

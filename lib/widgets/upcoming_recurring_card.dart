@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/expense.dart';
 import '../models/recurring_expense.dart';
+import '../services/expense_service.dart';
 import '../services/recurring_expense_service.dart';
 import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
@@ -18,15 +19,29 @@ import '../utils/currency_formatter.dart';
 /// - Hidden when no upcoming items
 class UpcomingRecurringCard extends StatelessWidget {
   final RecurringExpenseService recurringService;
+  final ExpenseService? expenseService;
   final VoidCallback onViewAll;
   final Function(RecurringExpense) onTapItem;
+  final Function(RecurringExpense, Expense)? onPayNow;
 
   const UpcomingRecurringCard({
     super.key,
     required this.recurringService,
+    this.expenseService,
     required this.onViewAll,
     required this.onTapItem,
+    this.onPayNow,
   });
+
+  Future<void> _handlePayNow(
+      BuildContext context, RecurringExpense item) async {
+    if (expenseService == null) return;
+
+    final expense = await recurringService.payNow(item.id, expenseService!);
+    if (expense != null && onPayNow != null) {
+      onPayNow!(item, expense);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,6 +113,9 @@ class UpcomingRecurringCard extends StatelessWidget {
                 return _UpcomingRecurringTile(
                   item: item,
                   onTap: () => onTapItem(item),
+                  onPayNow: expenseService != null
+                      ? () => _handlePayNow(context, item)
+                      : null,
                   showDivider: !isLast,
                   colors: colors,
                 );
@@ -117,12 +135,14 @@ class UpcomingRecurringCard extends StatelessWidget {
 class _UpcomingRecurringTile extends StatelessWidget {
   final RecurringExpense item;
   final VoidCallback onTap;
+  final VoidCallback? onPayNow;
   final bool showDivider;
   final LedgerifyColorScheme colors;
 
   const _UpcomingRecurringTile({
     required this.item,
     required this.onTap,
+    this.onPayNow,
     required this.showDivider,
     required this.colors,
   });
@@ -188,6 +208,25 @@ class _UpcomingRecurringTile extends StatelessWidget {
                     color: _getDueDateColor(item.nextDueDate),
                   ),
                 ),
+
+                // Pay Now button
+                if (onPayNow != null) ...[
+                  const SizedBox(width: LedgerifySpacing.sm),
+                  IconButton(
+                    onPressed: onPayNow,
+                    icon: Icon(
+                      Icons.payment_rounded,
+                      size: 20,
+                      color: colors.accent,
+                    ),
+                    tooltip: 'Pay Now',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

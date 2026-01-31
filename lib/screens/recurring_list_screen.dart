@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/recurring_expense.dart';
+import '../services/expense_service.dart';
 import '../services/recurring_expense_service.dart';
 import '../theme/ledgerify_theme.dart';
+import '../utils/currency_formatter.dart';
 import '../widgets/recurring_expense_list_tile.dart';
 import 'add_recurring_screen.dart';
 
@@ -15,6 +17,7 @@ import 'add_recurring_screen.dart';
 /// - FAB to add new recurring expense
 class RecurringListScreen extends StatelessWidget {
   final RecurringExpenseService recurringService;
+  final ExpenseService? expenseService;
 
   /// When true, removes back button (used when embedded in bottom nav)
   final bool isEmbedded;
@@ -22,6 +25,7 @@ class RecurringListScreen extends StatelessWidget {
   const RecurringListScreen({
     super.key,
     required this.recurringService,
+    this.expenseService,
     this.isEmbedded = false,
   });
 
@@ -208,6 +212,7 @@ class RecurringListScreen extends StatelessWidget {
       onTap: () => _navigateToEdit(context, item),
       onTogglePause: () => _togglePause(context, item),
       onDelete: () => _confirmDelete(context, item),
+      onPayNow: expenseService != null ? () => _payNow(context, item) : null,
     );
   }
 
@@ -260,6 +265,29 @@ class RecurringListScreen extends StatelessWidget {
             ),
           ),
           backgroundColor: LedgerifyColors.of(context).accent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  /// Pays a recurring expense now.
+  void _payNow(BuildContext context, RecurringExpense item) async {
+    if (expenseService == null) return;
+
+    final colors = LedgerifyColors.of(context);
+    final expense = await recurringService.payNow(item.id, expenseService!);
+
+    if (expense != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${item.title} paid - ${CurrencyFormatter.format(expense.amount)}',
+            style: LedgerifyTypography.bodyMedium.copyWith(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: colors.accent,
           behavior: SnackBarBehavior.floating,
         ),
       );

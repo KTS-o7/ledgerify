@@ -228,11 +228,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: UpcomingRecurringCard(
                     recurringService: widget.recurringService,
+                    expenseService: widget.expenseService,
                     onViewAll: () {
                       // Navigate to Recurring tab
                       widget.onNavigateToRecurring?.call();
                     },
                     onTapItem: _navigateToEditRecurring,
+                    onPayNow: (recurring, expense) {
+                      // Show confirmation snackbar
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '${recurring.title} paid - ${CurrencyFormatter.format(expense.amount)}',
+                            style: LedgerifyTypography.bodyMedium.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                          backgroundColor: colors.surfaceElevated,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
