@@ -30,10 +30,9 @@ if ! command -v flutter &> /dev/null; then
     exit 1
 fi
 
-# Get list of available emulators (parse the table format)
+# Get emulator ID (first Android emulator found)
 echo -e "${YELLOW}Checking available emulators...${NC}"
-# Skip header lines, get emulator IDs (first column before the bullet)
-EMULATOR_ID=$(flutter emulators 2>/dev/null | grep "android" | awk -F'•' '{print $1}' | xargs)
+EMULATOR_ID=$(flutter emulators 2>/dev/null | grep "android" | head -1 | cut -d'•' -f1 | xargs)
 
 if [ -z "$EMULATOR_ID" ]; then
     echo -e "${RED}No Android emulators found. Please create one using Android Studio.${NC}"
@@ -45,7 +44,7 @@ echo -e "${GREEN}Found emulator: ${EMULATOR_ID}${NC}"
 
 # Check if emulator is already running
 echo -e "${YELLOW}Checking for running devices...${NC}"
-RUNNING_DEVICE=$(flutter devices 2>/dev/null | grep -i "emulator-\|android-" | head -n 1 || true)
+RUNNING_DEVICE=$(flutter devices 2>/dev/null | grep -i "emulator-" | head -n 1 || true)
 
 if [ -n "$RUNNING_DEVICE" ]; then
     echo -e "${GREEN}Emulator already running!${NC}"
@@ -74,6 +73,7 @@ else
     done
     
     if [ $COUNTER -ge $MAX_WAIT ]; then
+        echo ""
         echo -e "${RED}Timeout waiting for emulator to boot${NC}"
         exit 1
     fi
@@ -97,5 +97,5 @@ echo ""
 echo -e "${YELLOW}Press Ctrl+C to stop${NC}"
 echo ""
 
-# Run the app on the emulator
-flutter run -d emulator-5554
+# Run the app (auto-detect device)
+flutter run
