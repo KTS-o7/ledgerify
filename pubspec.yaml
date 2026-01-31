@@ -20,6 +20,9 @@ dependencies:
   # Date formatting
   intl: ^0.19.0
 
+  # Charts for expense visualization
+  fl_chart: ^0.69.0
+
   # Cupertino icons for iOS-style icons (optional, for consistency)
   cupertino_icons: ^1.0.6
 
