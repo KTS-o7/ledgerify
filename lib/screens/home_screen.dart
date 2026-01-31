@@ -8,7 +8,7 @@ import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
 import '../widgets/expense_list_tile.dart';
 import '../widgets/monthly_summary_card.dart';
-import '../widgets/category_breakdown_card.dart';
+import '../widgets/charts/category_donut_chart.dart';
 import '../widgets/upcoming_recurring_card.dart';
 import 'add_expense_screen.dart';
 import 'add_recurring_screen.dart';
@@ -264,7 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: const EdgeInsets.symmetric(
                       horizontal: LedgerifySpacing.lg,
                     ),
-                    child: CategoryBreakdownCard(
+                    child: CategoryDonutChart(
                       breakdown: categoryBreakdown,
                       total: monthTotal,
                     ),
