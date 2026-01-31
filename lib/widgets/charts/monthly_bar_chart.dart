@@ -33,7 +33,7 @@ class _MonthlyBarChartState extends State<MonthlyBarChart>
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 800),
     );
     _animation = CurvedAnimation(
       parent: _animationController,
@@ -109,7 +109,7 @@ class _MonthlyBarChartState extends State<MonthlyBarChart>
           return BarChart(
             BarChartData(
               barGroups: _buildBarGroups(colors, monthlyTotals, maxY, now),
-              titlesData: _buildTitlesData(colors, monthlyTotals),
+              titlesData: _buildTitlesData(colors, monthlyTotals, now),
               gridData: const FlGridData(show: false),
               borderData: FlBorderData(show: false),
               barTouchData: _buildBarTouchData(colors, monthlyTotals),
@@ -166,6 +166,7 @@ class _MonthlyBarChartState extends State<MonthlyBarChart>
   FlTitlesData _buildTitlesData(
     LedgerifyColorScheme colors,
     List<MonthlyTotal> monthlyTotals,
+    DateTime now,
   ) {
     final dateFormat = DateFormat('MMM');
 
@@ -185,7 +186,6 @@ class _MonthlyBarChartState extends State<MonthlyBarChart>
 
             final month = monthlyTotals[index];
             final date = DateTime(month.year, month.month);
-            final now = DateTime.now();
             final isCurrentMonth =
                 month.year == now.year && month.month == now.month;
 

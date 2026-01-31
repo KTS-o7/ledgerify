@@ -107,10 +107,35 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           final total = breakdown.values.fold(0.0, (sum, value) => sum + value);
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 32),
+            padding: const EdgeInsets.only(bottom: LedgerifySpacing.xxl),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Category Breakdown Section Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: LedgerifySpacing.lg,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.pie_chart_rounded,
+                        color: colors.textSecondary,
+                        size: 20,
+                      ),
+                      LedgerifySpacing.horizontalSm,
+                      Text(
+                        'Category Breakdown',
+                        style: LedgerifyTypography.labelLarge.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                LedgerifySpacing.verticalMd,
+
                 // Category Breakdown Donut Chart
                 Padding(
                   padding: const EdgeInsets.symmetric(
