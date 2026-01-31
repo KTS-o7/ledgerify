@@ -30,27 +30,26 @@ if ! command -v flutter &> /dev/null; then
     exit 1
 fi
 
-# Get list of available emulators
+# Get list of available emulators (parse the table format)
 echo -e "${YELLOW}Checking available emulators...${NC}"
-EMULATORS=$(flutter emulators 2>/dev/null | grep -E "^[A-Za-z]" | grep -v "available" | grep -v "To run" | grep -v "To create" | grep -v "You can" | awk '{print $1}')
+# Skip header lines, get emulator IDs (first column before the bullet)
+EMULATOR_ID=$(flutter emulators 2>/dev/null | grep "android" | awk -F'•' '{print $1}' | xargs)
 
-if [ -z "$EMULATORS" ]; then
-    echo -e "${RED}No emulators found. Please create one using Android Studio.${NC}"
+if [ -z "$EMULATOR_ID" ]; then
+    echo -e "${RED}No Android emulators found. Please create one using Android Studio.${NC}"
     echo -e "${YELLOW}Run: flutter emulators --create --name dev_phone${NC}"
     exit 1
 fi
 
-# Get the first emulator
-EMULATOR_ID=$(echo "$EMULATORS" | head -n 1)
 echo -e "${GREEN}Found emulator: ${EMULATOR_ID}${NC}"
 
 # Check if emulator is already running
 echo -e "${YELLOW}Checking for running devices...${NC}"
-RUNNING_DEVICES=$(flutter devices 2>/dev/null | grep -i "emulator\|android" | grep -v "No devices" || true)
+RUNNING_DEVICE=$(flutter devices 2>/dev/null | grep -i "emulator-\|android-" | head -n 1 || true)
 
-if [ -n "$RUNNING_DEVICES" ]; then
+if [ -n "$RUNNING_DEVICE" ]; then
     echo -e "${GREEN}Emulator already running!${NC}"
-    echo "$RUNNING_DEVICES"
+    echo "$RUNNING_DEVICE"
 else
     # Launch emulator
     echo -e "${YELLOW}Launching emulator: ${EMULATOR_ID}${NC}"
@@ -62,9 +61,11 @@ else
     COUNTER=0
     MAX_WAIT=90
     while [ $COUNTER -lt $MAX_WAIT ]; do
-        DEVICE_READY=$(flutter devices 2>/dev/null | grep -i "emulator" || true)
+        DEVICE_READY=$(flutter devices 2>/dev/null | grep -i "emulator-" || true)
         if [ -n "$DEVICE_READY" ]; then
+            echo ""
             echo -e "${GREEN}Emulator is ready!${NC}"
+            echo "$DEVICE_READY"
             break
         fi
         sleep 2
@@ -76,8 +77,10 @@ else
         echo -e "${RED}Timeout waiting for emulator to boot${NC}"
         exit 1
     fi
-    echo ""
 fi
+
+# Small delay to ensure emulator is fully ready
+sleep 2
 
 # Run flutter app with hot reload
 echo ""
@@ -94,5 +97,5 @@ echo ""
 echo -e "${YELLOW}Press Ctrl+C to stop${NC}"
 echo ""
 
-# Run the app
-flutter run
+# Run the app on the emulator
+flutter run -d emulator-5554
