@@ -23,26 +23,26 @@ class ExpenseListTile extends StatelessWidget {
   });
 
   /// Returns the title to display.
-  /// For recurring expenses, show the merchant (recurring title).
-  /// Otherwise show the category name.
+  /// If merchant/title is set, show it. Otherwise show category name.
   String _getTitle() {
-    if (expense.source == ExpenseSource.recurring &&
-        expense.merchant != null &&
-        expense.merchant!.isNotEmpty) {
+    if (expense.merchant != null && expense.merchant!.isNotEmpty) {
       return expense.merchant!;
     }
     return expense.category.displayName;
   }
 
   /// Returns the subtitle to display.
-  /// For recurring expenses, show the category.
-  /// Otherwise show the note if present, or category if title was merchant.
+  /// If title was shown, show category as subtitle.
+  /// Otherwise show note if present.
   String _getSubtitle() {
-    if (expense.source == ExpenseSource.recurring) {
-      // For recurring, show category as subtitle
+    final hasTitle = expense.merchant != null && expense.merchant!.isNotEmpty;
+
+    if (hasTitle) {
+      // Title is shown, so show category as subtitle
       return expense.category.displayName;
     }
-    // For manual expenses, show note or nothing
+
+    // No title, show note if present
     if (expense.note != null && expense.note!.isNotEmpty) {
       return expense.note!;
     }
