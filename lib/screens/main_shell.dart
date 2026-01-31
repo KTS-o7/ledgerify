@@ -5,6 +5,7 @@ import '../services/expense_service.dart';
 import '../services/recurring_expense_service.dart';
 import '../services/theme_service.dart';
 import '../theme/ledgerify_theme.dart';
+import 'analytics_screen.dart';
 import 'home_screen.dart';
 import 'recurring_list_screen.dart';
 import 'settings_screen.dart';
@@ -14,6 +15,7 @@ import 'settings_screen.dart';
 /// Provides bottom navigation between:
 /// - Home (expense dashboard)
 /// - Recurring (recurring expenses list)
+/// - Analytics (spending analytics)
 /// - Settings (app preferences)
 ///
 /// Uses IndexedStack to preserve state across tab switches.
@@ -53,6 +55,9 @@ class _MainShellState extends State<MainShell> {
             recurringService: widget.recurringService,
             expenseService: widget.expenseService,
             isEmbedded: true, // No back button when embedded in tabs
+          ),
+          AnalyticsScreen(
+            expenseService: widget.expenseService,
           ),
           SettingsScreen(
             themeService: widget.themeService,
@@ -105,10 +110,17 @@ class _MainShellState extends State<MainShell> {
                 recurringService: widget.recurringService,
               ),
               _NavItem(
-                icon: Icons.settings_rounded,
-                label: 'Settings',
+                icon: Icons.analytics_rounded,
+                label: 'Analytics',
                 isSelected: _currentIndex == 2,
                 onTap: () => _switchTab(2),
+                colors: colors,
+              ),
+              _NavItem(
+                icon: Icons.settings_rounded,
+                label: 'Settings',
+                isSelected: _currentIndex == 3,
+                onTap: () => _switchTab(3),
                 colors: colors,
               ),
             ],
