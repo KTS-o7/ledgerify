@@ -210,7 +210,11 @@ class ExpenseService {
   /// Weekly spending totals for last N weeks (for line chart - weekly mode).
   /// Returns list of WeeklyTotal sorted by weekStart ascending.
   /// Each week starts on Monday.
+  /// Always returns exactly N weeks, with 0 total for weeks with no expenses.
   List<WeeklyTotal> getWeeklySpending(int weeks) {
+    // Guard clause for invalid input
+    if (weeks <= 0) return [];
+
     final now = DateTime.now();
     // Calculate the start of the current week (Monday)
     final currentWeekStart = now.subtract(Duration(days: now.weekday - 1));
@@ -224,8 +228,12 @@ class ExpenseService {
     final startDate =
         startOfCurrentWeek.subtract(Duration(days: (weeks - 1) * 7));
 
-    // Map to accumulate totals by week start date
+    // Pre-populate all N weeks with 0 total
     final weeklyTotals = <DateTime, double>{};
+    for (var i = 0; i < weeks; i++) {
+      final weekStart = startDate.add(Duration(days: i * 7));
+      weeklyTotals[weekStart] = 0;
+    }
 
     // Single pass through expenses in range
     for (final expense in _expenseBox.values) {
@@ -265,7 +273,11 @@ class ExpenseService {
 
   /// Monthly spending totals for last N months (for line chart monthly mode + bar chart).
   /// Returns list of MonthlyTotal sorted by date ascending (oldest first).
+  /// Always returns exactly N months, with 0 total for months with no expenses.
   List<MonthlyTotal> getMonthlyTotals(int months) {
+    // Guard clause for invalid input
+    if (months <= 0) return [];
+
     final now = DateTime.now();
 
     // Calculate the start month
@@ -276,8 +288,19 @@ class ExpenseService {
       startYear--;
     }
 
-    // Map to accumulate totals by year/month key
+    // Pre-populate all N months with 0 total
     final monthlyTotals = <String, double>{};
+    var year = startYear;
+    var month = startMonth;
+    for (var i = 0; i < months; i++) {
+      final key = '$year-$month';
+      monthlyTotals[key] = 0;
+      month++;
+      if (month > 12) {
+        month = 1;
+        year++;
+      }
+    }
 
     // Single pass through expenses in range
     for (final expense in _expenseBox.values) {
