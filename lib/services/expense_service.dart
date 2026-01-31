@@ -2,6 +2,30 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../models/expense.dart';
 
+/// Represents spending total for a single week
+class WeeklyTotal {
+  final DateTime weekStart;
+  final double total;
+
+  const WeeklyTotal({
+    required this.weekStart,
+    required this.total,
+  });
+}
+
+/// Represents spending total for a single month
+class MonthlyTotal {
+  final int year;
+  final int month;
+  final double total;
+
+  const MonthlyTotal({
+    required this.year,
+    required this.month,
+    required this.total,
+  });
+}
+
 /// Holds pre-computed summary data for a month.
 /// Used for efficient single-pass data retrieval.
 class MonthSummary {
@@ -164,6 +188,159 @@ class ExpenseService {
   Map<ExpenseCategory, double> getCurrentMonthCategoryBreakdown() {
     final now = DateTime.now();
     return getMonthSummary(now.year, now.month).breakdown;
+  }
+
+  /// Daily spending for a specific month (for line chart - daily mode).
+  /// Returns map of day number (1-31) to total amount spent that day.
+  /// Days with no expenses are not included in the map.
+  Map<int, double> getDailySpending(int year, int month) {
+    final dailyTotals = <int, double>{};
+
+    // Single pass through expenses for the month
+    for (final expense in _expenseBox.values) {
+      if (expense.date.year == year && expense.date.month == month) {
+        final day = expense.date.day;
+        dailyTotals[day] = (dailyTotals[day] ?? 0) + expense.amount;
+      }
+    }
+
+    return dailyTotals;
+  }
+
+  /// Weekly spending totals for last N weeks (for line chart - weekly mode).
+  /// Returns list of WeeklyTotal sorted by weekStart ascending.
+  /// Each week starts on Monday.
+  List<WeeklyTotal> getWeeklySpending(int weeks) {
+    final now = DateTime.now();
+    // Calculate the start of the current week (Monday)
+    final currentWeekStart = now.subtract(Duration(days: now.weekday - 1));
+    final startOfCurrentWeek = DateTime(
+      currentWeekStart.year,
+      currentWeekStart.month,
+      currentWeekStart.day,
+    );
+
+    // Calculate the start date (N weeks back from current week start)
+    final startDate =
+        startOfCurrentWeek.subtract(Duration(days: (weeks - 1) * 7));
+
+    // Map to accumulate totals by week start date
+    final weeklyTotals = <DateTime, double>{};
+
+    // Single pass through expenses in range
+    for (final expense in _expenseBox.values) {
+      final expenseDate = DateTime(
+        expense.date.year,
+        expense.date.month,
+        expense.date.day,
+      );
+
+      // Check if expense is within our date range
+      if (expenseDate.isBefore(startDate) || expenseDate.isAfter(now)) {
+        continue;
+      }
+
+      // Calculate the Monday of the expense's week
+      final weekStart = expenseDate.subtract(
+        Duration(days: expenseDate.weekday - 1),
+      );
+      final normalizedWeekStart = DateTime(
+        weekStart.year,
+        weekStart.month,
+        weekStart.day,
+      );
+
+      weeklyTotals[normalizedWeekStart] =
+          (weeklyTotals[normalizedWeekStart] ?? 0) + expense.amount;
+    }
+
+    // Convert to list of WeeklyTotal and sort ascending
+    final result = weeklyTotals.entries
+        .map((e) => WeeklyTotal(weekStart: e.key, total: e.value))
+        .toList();
+    result.sort((a, b) => a.weekStart.compareTo(b.weekStart));
+
+    return result;
+  }
+
+  /// Monthly spending totals for last N months (for line chart monthly mode + bar chart).
+  /// Returns list of MonthlyTotal sorted by date ascending (oldest first).
+  List<MonthlyTotal> getMonthlyTotals(int months) {
+    final now = DateTime.now();
+
+    // Calculate the start month
+    var startYear = now.year;
+    var startMonth = now.month - (months - 1);
+    while (startMonth <= 0) {
+      startMonth += 12;
+      startYear--;
+    }
+
+    // Map to accumulate totals by year/month key
+    final monthlyTotals = <String, double>{};
+
+    // Single pass through expenses in range
+    for (final expense in _expenseBox.values) {
+      final expYear = expense.date.year;
+      final expMonth = expense.date.month;
+
+      // Check if expense is within our date range
+      final isAfterOrEqualStart = expYear > startYear ||
+          (expYear == startYear && expMonth >= startMonth);
+      final isBeforeOrEqualEnd =
+          expYear < now.year || (expYear == now.year && expMonth <= now.month);
+
+      if (!isAfterOrEqualStart || !isBeforeOrEqualEnd) {
+        continue;
+      }
+
+      final key = '$expYear-$expMonth';
+      monthlyTotals[key] = (monthlyTotals[key] ?? 0) + expense.amount;
+    }
+
+    // Convert to list of MonthlyTotal and sort ascending
+    final result = monthlyTotals.entries.map((e) {
+      final parts = e.key.split('-');
+      return MonthlyTotal(
+        year: int.parse(parts[0]),
+        month: int.parse(parts[1]),
+        total: e.value,
+      );
+    }).toList();
+
+    // Sort by year then month (ascending)
+    result.sort((a, b) {
+      final yearCompare = a.year.compareTo(b.year);
+      if (yearCompare != 0) return yearCompare;
+      return a.month.compareTo(b.month);
+    });
+
+    return result;
+  }
+
+  /// Category breakdown for arbitrary date range (for analytics donut).
+  /// Returns map of category to total amount.
+  Map<ExpenseCategory, double> getCategoryBreakdownForRange(
+    DateTime start,
+    DateTime end,
+  ) {
+    final breakdown = <ExpenseCategory, double>{};
+
+    // Normalize to start of day for consistent comparison
+    final startDate = DateTime(start.year, start.month, start.day);
+    final endDate = DateTime(end.year, end.month, end.day, 23, 59, 59, 999);
+
+    // Single pass through expenses in range
+    for (final expense in _expenseBox.values) {
+      if (expense.date.isBefore(startDate) || expense.date.isAfter(endDate)) {
+        continue;
+      }
+
+      breakdown[expense.category] =
+          (breakdown[expense.category] ?? 0) + expense.amount;
+    }
+
+    return breakdown;
   }
 
   /// Returns the listenable box for reactive UI updates.
