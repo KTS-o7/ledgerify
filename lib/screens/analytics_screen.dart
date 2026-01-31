@@ -130,8 +130,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                   child: SpendingLineChart(
                     expenseService: widget.expenseService,
-                    filterStart: dateRange.start,
-                    filterEnd: dateRange.end,
                   ),
                 ),
 

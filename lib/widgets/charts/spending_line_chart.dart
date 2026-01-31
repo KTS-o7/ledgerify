@@ -22,14 +22,10 @@ enum TrendPeriod {
 /// Follows the Quiet Finance philosophy: calm, professional, minimal.
 class SpendingLineChart extends StatefulWidget {
   final ExpenseService expenseService;
-  final DateTime? filterStart;
-  final DateTime? filterEnd;
 
   const SpendingLineChart({
     super.key,
     required this.expenseService,
-    this.filterStart,
-    this.filterEnd,
   });
 
   @override
