@@ -293,11 +293,13 @@ class RecurringExpenseService {
   }
 
   /// Builds the note for a generated expense.
+  /// Returns the recurring expense's note if set, otherwise null.
+  /// The title is stored in the merchant field, so no need to duplicate here.
   String? _buildExpenseNote(RecurringExpense recurring) {
     if (recurring.note != null && recurring.note!.isNotEmpty) {
-      return '[${recurring.title}] ${recurring.note}';
+      return recurring.note;
     }
-    return '[${recurring.title}] ${recurring.frequencyDescription}';
+    return null;
   }
 
   // ============================================

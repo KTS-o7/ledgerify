@@ -22,6 +22,33 @@ class ExpenseListTile extends StatelessWidget {
     required this.onDelete,
   });
 
+  /// Returns the title to display.
+  /// For recurring expenses, show the merchant (recurring title).
+  /// Otherwise show the category name.
+  String _getTitle() {
+    if (expense.source == ExpenseSource.recurring &&
+        expense.merchant != null &&
+        expense.merchant!.isNotEmpty) {
+      return expense.merchant!;
+    }
+    return expense.category.displayName;
+  }
+
+  /// Returns the subtitle to display.
+  /// For recurring expenses, show the category.
+  /// Otherwise show the note if present, or category if title was merchant.
+  String _getSubtitle() {
+    if (expense.source == ExpenseSource.recurring) {
+      // For recurring, show category as subtitle
+      return expense.category.displayName;
+    }
+    // For manual expenses, show note or nothing
+    if (expense.note != null && expense.note!.isNotEmpty) {
+      return expense.note!;
+    }
+    return '';
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = LedgerifyColors.of(context);
@@ -68,20 +95,20 @@ class ExpenseListTile extends StatelessWidget {
 
               SizedBox(width: LedgerifySpacing.md),
 
-              // Category name and note
+              // Title/Category and subtitle
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      expense.category.displayName,
+                      _getTitle(),
                       style: LedgerifyTypography.bodyLarge.copyWith(
                         color: colors.textPrimary,
                       ),
                     ),
-                    if (expense.note != null && expense.note!.isNotEmpty)
+                    if (_getSubtitle().isNotEmpty)
                       Text(
-                        expense.note!,
+                        _getSubtitle(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: LedgerifyTypography.bodySmall.copyWith(
