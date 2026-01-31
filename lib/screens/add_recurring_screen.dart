@@ -52,9 +52,25 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
   List<int> _selectedWeekdays = [];
   int? _dayOfMonth;
   bool _isLoading = false;
+  bool _showAdvancedOptions = false;
 
   bool get _isEditing => widget.recurringToEdit != null;
   bool get _isPrefilling => widget.prefillFromExpense != null;
+
+  /// Determines if advanced options should be auto-expanded
+  bool get _hasAdvancedOptionsSet {
+    // End date is set
+    if (_endDate != null) return true;
+    // Note is set
+    if (_noteController.text.trim().isNotEmpty) return true;
+    // Non-monthly frequency with specific options
+    if (_selectedFrequency == RecurrenceFrequency.weekly &&
+        _selectedWeekdays.isNotEmpty) return true;
+    if (_selectedFrequency == RecurrenceFrequency.monthly &&
+        _dayOfMonth != null) return true;
+    if (_selectedFrequency == RecurrenceFrequency.custom) return true;
+    return false;
+  }
 
   @override
   void initState() {
@@ -107,6 +123,16 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
       _selectedWeekdays = [];
       _dayOfMonth = null;
     }
+
+    // Auto-expand advanced options when editing with advanced options set
+    // Use post-frame callback to access controllers after they're initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_isEditing && _hasAdvancedOptionsSet) {
+        setState(() {
+          _showAdvancedOptions = true;
+        });
+      }
+    });
   }
 
   @override
@@ -312,29 +338,53 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          // Essential fields (always visible)
                           _buildTitleField(colors),
-                          SizedBox(height: LedgerifySpacing.xl),
+                          const SizedBox(height: LedgerifySpacing.xl),
                           _buildAmountField(colors),
-                          SizedBox(height: LedgerifySpacing.xl),
+                          const SizedBox(height: LedgerifySpacing.xl),
                           _buildCategoryDropdown(colors),
-                          SizedBox(height: LedgerifySpacing.xl),
+                          const SizedBox(height: LedgerifySpacing.xl),
                           FrequencyPicker(
                             value: _selectedFrequency,
                             onChanged: (frequency) {
                               setState(() {
                                 _selectedFrequency = frequency;
+                                // Auto-show advanced if frequency needs options
+                                if (frequency == RecurrenceFrequency.weekly ||
+                                    frequency == RecurrenceFrequency.custom) {
+                                  _showAdvancedOptions = true;
+                                }
                               });
                             },
                           ),
-                          SizedBox(height: LedgerifySpacing.xl),
-                          _buildFrequencyOptions(colors),
-                          SizedBox(height: LedgerifySpacing.xl),
+                          const SizedBox(height: LedgerifySpacing.xl),
                           _buildStartDatePicker(colors),
-                          SizedBox(height: LedgerifySpacing.xl),
-                          _buildEndDatePicker(colors),
-                          SizedBox(height: LedgerifySpacing.xl),
-                          _buildNoteField(colors),
-                          SizedBox(height: LedgerifySpacing.xl),
+
+                          // Advanced options toggle
+                          const SizedBox(height: LedgerifySpacing.xl),
+                          _buildAdvancedOptionsToggle(colors),
+
+                          // Advanced options (collapsible)
+                          AnimatedCrossFade(
+                            firstChild: const SizedBox.shrink(),
+                            secondChild: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const SizedBox(height: LedgerifySpacing.lg),
+                                _buildFrequencyOptions(colors),
+                                const SizedBox(height: LedgerifySpacing.xl),
+                                _buildEndDatePicker(colors),
+                                const SizedBox(height: LedgerifySpacing.xl),
+                                _buildNoteField(colors),
+                              ],
+                            ),
+                            crossFadeState: _showAdvancedOptions
+                                ? CrossFadeState.showSecond
+                                : CrossFadeState.showFirst,
+                            duration: const Duration(milliseconds: 200),
+                          ),
+                          const SizedBox(height: LedgerifySpacing.xl),
                         ],
                       ),
                     ),
@@ -343,6 +393,38 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
                 _buildBottomButton(colors),
               ],
             ),
+    );
+  }
+
+  Widget _buildAdvancedOptionsToggle(LedgerifyColorScheme colors) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _showAdvancedOptions = !_showAdvancedOptions;
+        });
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            _showAdvancedOptions
+                ? Icons.keyboard_arrow_up_rounded
+                : Icons.keyboard_arrow_down_rounded,
+            size: 20,
+            color: colors.textTertiary,
+          ),
+          const SizedBox(width: LedgerifySpacing.xs),
+          Text(
+            _showAdvancedOptions
+                ? 'Hide advanced options'
+                : 'Show advanced options',
+            style: LedgerifyTypography.labelMedium.copyWith(
+              color: colors.textTertiary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -356,7 +438,7 @@ class _AddRecurringScreenState extends State<AddRecurringScreen> {
             color: colors.textSecondary,
           ),
         ),
-        SizedBox(height: LedgerifySpacing.sm),
+        const SizedBox(height: LedgerifySpacing.sm),
         TextFormField(
           controller: _titleController,
           textCapitalization: TextCapitalization.words,

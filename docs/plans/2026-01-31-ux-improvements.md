@@ -2,7 +2,7 @@
 
 **Date:** January 31, 2026  
 **Branch:** `feature/ledgerify-basics`  
-**Status:** In Progress (Phase A Complete)
+**Status:** Complete (All Phases Done)
 
 ---
 
@@ -378,20 +378,20 @@ Note (optional)
 | C.4 | Implement prefill logic | 20m | Done |
 | C.5 | Test conversion flow | 15m | Done |
 
-**Phase C Total: ~1.5 hours** - Committed: (pending)
+**Phase C Total: ~1.5 hours** - Committed: `d17503e`
 
-### Phase D: Smart Defaults (Lower Priority)
+### Phase D: Smart Defaults (Lower Priority) - COMPLETED
 
-| # | Task | Est. |
-|---|------|------|
-| D.1 | Add _showAdvancedOptions state | 10m |
-| D.2 | Create collapsible section widget | 30m |
-| D.3 | Move advanced fields into section | 30m |
-| D.4 | Set smart defaults | 15m |
-| D.5 | Auto-expand for edit mode with advanced options | 15m |
-| D.6 | Test form behavior | 15m |
+| # | Task | Est. | Status |
+|---|------|------|--------|
+| D.1 | Add _showAdvancedOptions state | 10m | Done |
+| D.2 | Create collapsible section widget | 30m | Done |
+| D.3 | Move advanced fields into section | 30m | Done |
+| D.4 | Set smart defaults | 15m | Done |
+| D.5 | Auto-expand for edit mode with advanced options | 15m | Done |
+| D.6 | Test form behavior | 15m | Done |
 
-**Phase D Total: ~2 hours**
+**Phase D Total: ~2 hours** - Committed: `809a84f`
 
 ---
 
@@ -502,8 +502,8 @@ Light Theme:
 - [x] Badge on Recurring tab showing due count
 
 ### Nice to Have
-- [ ] Smart defaults with collapsible advanced options
-- [ ] Smooth tab transitions
+- [x] Smart defaults with collapsible advanced options
+- [x] Smooth tab transitions (AnimatedCrossFade)
 - [ ] Remember last selected tab across app restarts
 
 ---
