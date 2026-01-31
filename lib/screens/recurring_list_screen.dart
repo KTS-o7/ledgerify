@@ -238,6 +238,7 @@ class RecurringListScreen extends StatelessWidget {
           ),
           backgroundColor: LedgerifyColors.of(context).accent,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -266,6 +267,7 @@ class RecurringListScreen extends StatelessWidget {
           ),
           backgroundColor: LedgerifyColors.of(context).accent,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -276,6 +278,10 @@ class RecurringListScreen extends StatelessWidget {
     if (expenseService == null) return;
 
     final colors = LedgerifyColors.of(context);
+
+    // Clear any existing snackbar first
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
     final expense = await recurringService.payNow(item.id, expenseService!);
 
     if (expense != null && context.mounted) {
@@ -289,6 +295,7 @@ class RecurringListScreen extends StatelessWidget {
           ),
           backgroundColor: colors.accent,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -297,6 +304,9 @@ class RecurringListScreen extends StatelessWidget {
   /// Toggles pause/resume state for a recurring expense.
   void _togglePause(BuildContext context, RecurringExpense item) async {
     final colors = LedgerifyColors.of(context);
+
+    // Clear any existing snackbar first
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
     if (item.isActive) {
       await recurringService.pause(item.id);
@@ -311,6 +321,7 @@ class RecurringListScreen extends StatelessWidget {
             ),
             backgroundColor: colors.surfaceElevated,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
             action: SnackBarAction(
               label: 'Undo',
               textColor: colors.accent,
@@ -332,6 +343,7 @@ class RecurringListScreen extends StatelessWidget {
             ),
             backgroundColor: colors.accent,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -388,6 +400,10 @@ class RecurringListScreen extends StatelessWidget {
   /// Deletes a recurring expense.
   void _deleteRecurring(BuildContext context, RecurringExpense item) async {
     final title = item.title;
+
+    // Clear any existing snackbar first
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
     await recurringService.delete(item.id);
 
     if (context.mounted) {
@@ -401,6 +417,7 @@ class RecurringListScreen extends StatelessWidget {
           ),
           backgroundColor: LedgerifyColors.of(context).negative,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
         ),
       );
     }
