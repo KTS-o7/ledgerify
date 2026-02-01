@@ -354,7 +354,7 @@ class NotificationService {
       prefs.weeklySummaryMinute,
     );
 
-    final androidDetails = const AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       'weekly_summary',
       'Weekly Summary',
       channelDescription: 'Weekly spending and savings summaries',
@@ -368,7 +368,7 @@ class NotificationService {
       'Weekly Summary',
       'Tap to view your weekly spending summary',
       nextSchedule,
-      NotificationDetails(android: androidDetails),
+      const NotificationDetails(android: androidDetails),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
@@ -390,7 +390,7 @@ class NotificationService {
       prefs.dailyReminderMinute,
     );
 
-    final androidDetails = const AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       'daily_reminder',
       'Daily Reminder',
       channelDescription: 'Daily reminders to track expenses',
@@ -404,7 +404,7 @@ class NotificationService {
       'Daily Reminder',
       'Have you logged your expenses today?',
       nextSchedule,
-      NotificationDetails(android: androidDetails),
+      const NotificationDetails(android: androidDetails),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
