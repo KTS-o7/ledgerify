@@ -46,15 +46,16 @@ class CategoryManagementScreen extends StatelessWidget {
   ];
 
   /// Available color options (hex strings for storage)
+  /// Colors chosen for visibility on both dark and light backgrounds
   static const List<String> _colorOptionsHex = [
-    '#EF5350',
-    '#AB47BC',
-    '#5C6BC0',
-    '#29B6F6',
-    '#26A69A',
-    '#9CCC65',
-    '#FFCA28',
-    '#FF7043',
+    '#66BB6A', // Green
+    '#EF5350', // Red
+    '#42A5F5', // Blue
+    '#AB47BC', // Purple
+    '#FFA726', // Orange
+    '#26A69A', // Teal
+    '#EC407A', // Pink
+    '#7E57C2', // Deep Purple
   ];
 
   /// Pre-computed Color objects to avoid parsing on every build

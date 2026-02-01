@@ -17,15 +17,16 @@ class TagManagementScreen extends StatelessWidget {
   });
 
   /// Preset color options for tags (hex strings for storage)
+  /// Colors chosen for visibility on both dark and light backgrounds
   static const List<String> _colorOptionsHex = [
+    '#66BB6A', // Green
     '#EF5350', // Red
+    '#42A5F5', // Blue
     '#AB47BC', // Purple
-    '#5C6BC0', // Indigo
-    '#29B6F6', // Light Blue
+    '#FFA726', // Orange
     '#26A69A', // Teal
-    '#9CCC65', // Light Green
-    '#FFCA28', // Amber
-    '#FF7043', // Deep Orange
+    '#EC407A', // Pink
+    '#7E57C2', // Deep Purple
   ];
 
   /// Pre-computed Color objects to avoid parsing on every build

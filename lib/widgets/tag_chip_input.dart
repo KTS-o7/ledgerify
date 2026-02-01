@@ -200,16 +200,17 @@ class _AddTagSheet extends StatefulWidget {
 
 class _AddTagSheetState extends State<_AddTagSheet> {
   final _nameController = TextEditingController();
-  String _selectedColorHex = '#A8E6CF'; // Default to accent color
+  String _selectedColorHex = '#66BB6A'; // Default to green
 
   // 6 preset colors for tag selection (hex strings for storage)
+  // Colors chosen for visibility on both dark and light backgrounds
   static const List<String> _presetColorHex = [
-    '#A8E6CF', // Pistachio (accent)
-    '#FF6B6B', // Coral Red
-    '#FFB347', // Tangerine
-    '#87CEEB', // Sky Blue
-    '#DDA0DD', // Plum
-    '#F0E68C', // Khaki
+    '#66BB6A', // Green (darker than accent for visibility)
+    '#EF5350', // Red
+    '#42A5F5', // Blue
+    '#AB47BC', // Purple
+    '#FFA726', // Orange
+    '#26A69A', // Teal
   ];
 
   // Pre-computed Color objects to avoid parsing on every build
