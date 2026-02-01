@@ -273,7 +273,7 @@ class _MasterToggleCard extends StatelessWidget {
           Switch(
             value: enabled,
             onChanged: onChanged,
-            activeColor: colors.accent,
+            activeThumbColor: colors.accent,
             activeTrackColor: colors.accentMuted,
             inactiveThumbColor: colors.textTertiary,
             inactiveTrackColor: colors.surfaceHighlight,
@@ -316,7 +316,7 @@ class _BudgetAlertsCard extends StatelessWidget {
             trailing: Switch(
               value: prefs.budgetAlertsEnabled,
               onChanged: preferencesService.setBudgetAlertsEnabled,
-              activeColor: colors.accent,
+              activeThumbColor: colors.accent,
               activeTrackColor: colors.accentMuted,
               inactiveThumbColor: colors.textTertiary,
               inactiveTrackColor: colors.surfaceHighlight,
@@ -441,7 +441,7 @@ class _BudgetAlertsCard extends StatelessWidget {
                                   .removeCustomBudgetThreshold(threshold);
                             },
                             side: BorderSide.none,
-                            shape: RoundedRectangleBorder(
+                            shape: const RoundedRectangleBorder(
                               borderRadius: LedgerifyRadius.borderRadiusSm,
                             ),
                           );
@@ -566,7 +566,7 @@ class _RecurringRemindersCard extends StatelessWidget {
             trailing: Switch(
               value: prefs.recurringRemindersEnabled,
               onChanged: preferencesService.setRecurringRemindersEnabled,
-              activeColor: colors.accent,
+              activeThumbColor: colors.accent,
               activeTrackColor: colors.accentMuted,
               inactiveThumbColor: colors.textTertiary,
               inactiveTrackColor: colors.surfaceHighlight,
@@ -634,7 +634,7 @@ class _RecurringRemindersCard extends StatelessWidget {
               trailing: Switch(
                 value: prefs.overdueRemindersEnabled,
                 onChanged: preferencesService.setOverdueRemindersEnabled,
-                activeColor: colors.accent,
+                activeThumbColor: colors.accent,
                 activeTrackColor: colors.accentMuted,
                 inactiveThumbColor: colors.textTertiary,
                 inactiveTrackColor: colors.surfaceHighlight,
@@ -680,7 +680,7 @@ class _GoalNotificationsCard extends StatelessWidget {
             trailing: Switch(
               value: prefs.goalNotificationsEnabled,
               onChanged: preferencesService.setGoalNotificationsEnabled,
-              activeColor: colors.accent,
+              activeThumbColor: colors.accent,
               activeTrackColor: colors.accentMuted,
               inactiveThumbColor: colors.textTertiary,
               inactiveTrackColor: colors.surfaceHighlight,
@@ -724,7 +724,7 @@ class _GoalNotificationsCard extends StatelessWidget {
                         selectedColor: colors.accentMuted,
                         checkmarkColor: colors.accent,
                         side: BorderSide.none,
-                        shape: RoundedRectangleBorder(
+                        shape: const RoundedRectangleBorder(
                           borderRadius: LedgerifyRadius.borderRadiusSm,
                         ),
                       );
@@ -779,7 +779,7 @@ class _ScheduledNotificationsCard extends StatelessWidget {
                 await preferencesService.setWeeklySummaryEnabled(value);
                 await notificationService.scheduleWeeklySummary();
               },
-              activeColor: colors.accent,
+              activeThumbColor: colors.accent,
               activeTrackColor: colors.accentMuted,
               inactiveThumbColor: colors.textTertiary,
               inactiveTrackColor: colors.surfaceHighlight,
@@ -805,7 +805,7 @@ class _ScheduledNotificationsCard extends StatelessWidget {
                 await preferencesService.setDailyReminderEnabled(value);
                 await notificationService.scheduleDailyReminder();
               },
-              activeColor: colors.accent,
+              activeThumbColor: colors.accent,
               activeTrackColor: colors.accentMuted,
               inactiveThumbColor: colors.textTertiary,
               inactiveTrackColor: colors.surfaceHighlight,
@@ -935,7 +935,7 @@ class _WeeklySummarySheet extends StatelessWidget {
                   backgroundColor: colors.surfaceHighlight,
                   selectedColor: colors.accentMuted,
                   side: BorderSide.none,
-                  shape: RoundedRectangleBorder(
+                  shape: const RoundedRectangleBorder(
                     borderRadius: LedgerifyRadius.borderRadiusSm,
                   ),
                 );
@@ -1022,7 +1022,7 @@ class _QuietHoursCard extends StatelessWidget {
             trailing: Switch(
               value: prefs.quietHoursEnabled,
               onChanged: preferencesService.setQuietHoursEnabled,
-              activeColor: colors.accent,
+              activeThumbColor: colors.accent,
               activeTrackColor: colors.accentMuted,
               inactiveThumbColor: colors.textTertiary,
               inactiveTrackColor: colors.surfaceHighlight,
