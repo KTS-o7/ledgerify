@@ -160,23 +160,25 @@ class IncomeListTile extends StatelessWidget {
 
     // Wrap with Dismissible if onDelete is provided
     if (onDelete != null) {
-      return Dismissible(
-        key: ValueKey(income.id),
-        direction: DismissDirection.endToStart,
-        background: Container(
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: LedgerifySpacing.xl),
-          color: colors.negative,
-          child: const Icon(
-            Icons.delete_rounded,
-            color: Colors.white,
+      return RepaintBoundary(
+        child: Dismissible(
+          key: ValueKey(income.id),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: LedgerifySpacing.xl),
+            color: colors.negative,
+            child: const Icon(
+              Icons.delete_rounded,
+              color: Colors.white,
+            ),
           ),
+          confirmDismiss: (_) async {
+            onDelete!();
+            return false; // We handle deletion in the callback
+          },
+          child: content,
         ),
-        confirmDismiss: (_) async {
-          onDelete!();
-          return false; // We handle deletion in the callback
-        },
-        child: content,
       );
     }
 

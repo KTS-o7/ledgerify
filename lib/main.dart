@@ -108,10 +108,6 @@ void main() async {
   // Schedule recurring notifications if enabled
   await notificationService.rescheduleAll();
 
-  // Generate due recurring expenses and incomes on app open
-  await recurringService.generateDueExpenses(expenseService);
-  await recurringIncomeService.generateDueIncomes(incomeService);
-
   // Run the app
   runApp(LedgerifyApp(
     expenseService: expenseService,
@@ -126,6 +122,17 @@ void main() async {
     notificationService: notificationService,
     notificationPrefsService: notificationPrefsService,
   ));
+
+  // Generate due recurring expenses and incomes after first frame renders
+  // This prevents blocking the initial app startup
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    try {
+      await recurringService.generateDueExpenses(expenseService);
+      await recurringIncomeService.generateDueIncomes(incomeService);
+    } catch (e) {
+      debugPrint('Error generating recurring items: $e');
+    }
+  });
 }
 
 /// The root widget of the Ledgerify application.

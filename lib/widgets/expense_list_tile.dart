@@ -57,94 +57,96 @@ class ExpenseListTile extends StatelessWidget {
     final title = _getTitle();
     final subtitle = _getSubtitle();
 
-    return Dismissible(
-      key: ValueKey(expense.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: LedgerifySpacing.xl),
-        color: colors.negative,
-        child: const Icon(
-          Icons.delete_rounded,
-          color: Colors.white,
-        ),
-      ),
-      confirmDismiss: (_) async {
-        onDelete();
-        return false; // We handle deletion in the callback
-      },
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: LedgerifySpacing.lg,
-            vertical: LedgerifySpacing.md,
+    return RepaintBoundary(
+      child: Dismissible(
+        key: ValueKey(expense.id),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: LedgerifySpacing.xl),
+          color: colors.negative,
+          child: const Icon(
+            Icons.delete_rounded,
+            color: Colors.white,
           ),
-          child: Row(
-            children: [
-              // Category icon container
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: colors.surfaceHighlight,
-                  borderRadius: LedgerifyRadius.borderRadiusMd,
+        ),
+        confirmDismiss: (_) async {
+          onDelete();
+          return false; // We handle deletion in the callback
+        },
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: LedgerifySpacing.lg,
+              vertical: LedgerifySpacing.md,
+            ),
+            child: Row(
+              children: [
+                // Category icon container
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: colors.surfaceHighlight,
+                    borderRadius: LedgerifyRadius.borderRadiusMd,
+                  ),
+                  child: Icon(
+                    expense.category.icon,
+                    size: 24,
+                    color: colors.textSecondary,
+                  ),
                 ),
-                child: Icon(
-                  expense.category.icon,
-                  size: 24,
-                  color: colors.textSecondary,
+
+                LedgerifySpacing.horizontalMd,
+
+                // Title/Category and subtitle
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: LedgerifyTypography.bodyLarge.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      if (subtitle.isNotEmpty)
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: LedgerifyTypography.bodySmall.copyWith(
+                            color: colors.textTertiary,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
 
-              LedgerifySpacing.horizontalMd,
+                LedgerifySpacing.horizontalMd,
 
-              // Title/Category and subtitle
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // Amount and date
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      title,
-                      style: LedgerifyTypography.bodyLarge.copyWith(
+                      CurrencyFormatter.format(expense.amount),
+                      style: LedgerifyTypography.amountMedium.copyWith(
                         color: colors.textPrimary,
                       ),
                     ),
-                    if (subtitle.isNotEmpty)
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: LedgerifyTypography.bodySmall.copyWith(
-                          color: colors.textTertiary,
-                        ),
+                    LedgerifySpacing.verticalXs,
+                    Text(
+                      DateFormatter.formatRelative(expense.date),
+                      style: LedgerifyTypography.bodySmall.copyWith(
+                        color: colors.textTertiary,
                       ),
+                    ),
                   ],
                 ),
-              ),
-
-              LedgerifySpacing.horizontalMd,
-
-              // Amount and date
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    CurrencyFormatter.format(expense.amount),
-                    style: LedgerifyTypography.amountMedium.copyWith(
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  LedgerifySpacing.verticalXs,
-                  Text(
-                    DateFormatter.formatRelative(expense.date),
-                    style: LedgerifyTypography.bodySmall.copyWith(
-                      color: colors.textTertiary,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

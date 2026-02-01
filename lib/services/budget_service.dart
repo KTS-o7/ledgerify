@@ -7,11 +7,22 @@ import '../models/expense.dart';
 ///
 /// This service provides CRUD operations for budgets and utility methods
 /// for calculating budget progress and managing notification flags.
+///
+/// Uses composite keys for O(1) budget lookups by year/month/category.
 class BudgetService {
   static const String _boxName = 'budgets';
   static const Uuid _uuid = Uuid();
 
   late Box<Budget> _budgetBox;
+
+  /// Generates a composite key for budget lookup.
+  /// Format: "year_month_category" or "year_month_overall"
+  String _getBudgetKey(int year, int month, {ExpenseCategory? category}) {
+    if (category != null) {
+      return '${year}_${month}_${category.name}';
+    }
+    return '${year}_${month}_overall';
+  }
 
   /// Returns the listenable box for reactive UI updates.
   Box<Budget> get box => _budgetBox;
@@ -34,16 +45,18 @@ class BudgetService {
   ///
   /// If a budget already exists for the given category/month/year combination,
   /// it will be updated. Otherwise, a new budget will be created.
+  ///
+  /// Uses composite key for O(1) lookup and storage.
   Future<Budget> setBudget({
     ExpenseCategory? category,
     required double amount,
     required int year,
     required int month,
   }) async {
-    // Check if a budget already exists for this category/month/year
-    final existing = category == null
-        ? getOverallBudget(year, month)
-        : getCategoryBudget(category, year, month);
+    final key = _getBudgetKey(year, month, category: category);
+
+    // Check if a budget already exists using direct O(1) lookup
+    final existing = _budgetBox.get(key);
 
     if (existing != null) {
       // Update existing budget
@@ -52,7 +65,7 @@ class BudgetService {
         warning80Sent: false, // Reset notification flags when amount changes
         exceeded100Sent: false,
       );
-      await _budgetBox.put(updated.id, updated);
+      await _budgetBox.put(key, updated);
       return updated;
     }
 
@@ -65,47 +78,70 @@ class BudgetService {
       month: month,
     );
 
-    await _budgetBox.put(budget.id, budget);
+    await _budgetBox.put(key, budget);
     return budget;
   }
 
-  /// Delete a budget
+  /// Delete a budget by its composite key components
+  ///
+  /// For backwards compatibility, also accepts the budget's internal id,
+  /// but composite key lookup is preferred for O(1) performance.
   Future<void> deleteBudget(String id) async {
     await _budgetBox.delete(id);
   }
 
+  /// Delete a budget using year, month, and optional category
+  ///
+  /// Uses composite key for O(1) deletion.
+  Future<void> deleteBudgetByKey({
+    required int year,
+    required int month,
+    ExpenseCategory? category,
+  }) async {
+    final key = _getBudgetKey(year, month, category: category);
+    await _budgetBox.delete(key);
+  }
+
   /// Get overall budget for a month
+  ///
+  /// Uses composite key for O(1) lookup.
   Budget? getOverallBudget(int year, int month) {
-    for (final budget in _budgetBox.values) {
-      if (budget.isOverallBudget &&
-          budget.year == year &&
-          budget.month == month) {
-        return budget;
-      }
-    }
-    return null;
+    final key = _getBudgetKey(year, month);
+    return _budgetBox.get(key);
   }
 
   /// Get category budget for a month
+  ///
+  /// Uses composite key for O(1) lookup.
   Budget? getCategoryBudget(ExpenseCategory category, int year, int month) {
-    for (final budget in _budgetBox.values) {
-      if (budget.category == category &&
-          budget.year == year &&
-          budget.month == month) {
-        return budget;
-      }
-    }
-    return null;
+    final key = _getBudgetKey(year, month, category: category);
+    return _budgetBox.get(key);
   }
 
   /// Get all budgets for a month
+  ///
+  /// This method still requires iteration since we need all budgets
+  /// matching the year/month. However, it's less frequently called
+  /// than individual budget lookups.
   List<Budget> getAllBudgetsForMonth(int year, int month) {
     final budgets = <Budget>[];
-    for (final budget in _budgetBox.values) {
-      if (budget.year == year && budget.month == month) {
-        budgets.add(budget);
+
+    // Check for overall budget using O(1) lookup
+    final overallKey = _getBudgetKey(year, month);
+    final overall = _budgetBox.get(overallKey);
+    if (overall != null) {
+      budgets.add(overall);
+    }
+
+    // Check for each category budget using O(1) lookups
+    for (final category in ExpenseCategory.values) {
+      final categoryKey = _getBudgetKey(year, month, category: category);
+      final categoryBudget = _budgetBox.get(categoryKey);
+      if (categoryBudget != null) {
+        budgets.add(categoryBudget);
       }
     }
+
     // Sort: overall budget first, then by category name
     budgets.sort((a, b) {
       if (a.isOverallBudget && !b.isOverallBudget) return -1;
@@ -138,29 +174,55 @@ class BudgetService {
   }
 
   /// Reset notification flags (called when budget is modified)
+  ///
+  /// Uses composite key for storage.
   Future<void> resetNotificationFlags(Budget budget) async {
+    final key =
+        _getBudgetKey(budget.year, budget.month, category: budget.category);
     final updated = budget.copyWith(
       warning80Sent: false,
       exceeded100Sent: false,
     );
-    await _budgetBox.put(updated.id, updated);
+    await _budgetBox.put(key, updated);
   }
 
   /// Mark warning notification as sent
+  ///
+  /// Uses composite key for storage.
   Future<void> markWarningSent(Budget budget) async {
+    final key =
+        _getBudgetKey(budget.year, budget.month, category: budget.category);
     budget.warning80Sent = true;
-    await budget.save();
+    await _budgetBox.put(key, budget);
   }
 
   /// Mark exceeded notification as sent
+  ///
+  /// Uses composite key for storage.
   Future<void> markExceededSent(Budget budget) async {
+    final key =
+        _getBudgetKey(budget.year, budget.month, category: budget.category);
     budget.exceeded100Sent = true;
-    await budget.save();
+    await _budgetBox.put(key, budget);
   }
 
-  /// Get a budget by ID
-  Budget? getBudget(String id) {
-    return _budgetBox.get(id);
+  /// Get a budget by its key (either composite key or internal id)
+  ///
+  /// Prefer using [getOverallBudget] or [getCategoryBudget] for O(1) lookups.
+  Budget? getBudget(String key) {
+    return _budgetBox.get(key);
+  }
+
+  /// Get a budget using year, month, and optional category
+  ///
+  /// Uses composite key for O(1) lookup.
+  Budget? getBudgetByKey({
+    required int year,
+    required int month,
+    ExpenseCategory? category,
+  }) {
+    final key = _getBudgetKey(year, month, category: category);
+    return _budgetBox.get(key);
   }
 
   /// Get all budgets

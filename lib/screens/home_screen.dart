@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/expense.dart';
@@ -60,15 +62,33 @@ class _HomeScreenState extends State<HomeScreen> {
   String _searchQuery = '';
   ExpenseFilter _filter = ExpenseFilter.empty;
 
+  // Debounce timer for search
+  Timer? _debounceTimer;
+
+  // Pagination state
+  static const int _pageSize = 50;
+  int _currentPage = 0;
+
   @override
   void initState() {
     super.initState();
     _selectedMonth = DateTime.now();
   }
 
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+  void _resetPagination() {
+    _currentPage = 0;
+  }
+
   void _previousMonth() {
     setState(() {
       _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month - 1);
+      _resetPagination();
     });
   }
 
@@ -79,8 +99,15 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _selectedMonth =
             DateTime(_selectedMonth.year, _selectedMonth.month + 1);
+        _resetPagination();
       });
     }
+  }
+
+  void _loadMoreExpenses() {
+    setState(() {
+      _currentPage++;
+    });
   }
 
   Future<void> _showFilterSheet() async {
@@ -252,8 +279,13 @@ class _HomeScreenState extends State<HomeScreen> {
           searchQuery: _searchQuery,
           hasActiveFilters: _filter.hasActiveFilters,
           onSearchChanged: (query) {
-            setState(() {
-              _searchQuery = query;
+            _debounceTimer?.cancel();
+            _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+              if (mounted) {
+                setState(() {
+                  _searchQuery = query;
+                });
+              }
             });
           },
           onFilterTap: _showFilterSheet,
@@ -272,30 +304,51 @@ class _HomeScreenState extends State<HomeScreen> {
           final monthTotal = summary.total;
           final categoryBreakdown = summary.breakdown;
 
-          // Apply search and filters
-          List<Expense> filteredExpenses = monthExpenses;
-
-          // Apply text search (merchant, note)
-          if (_searchQuery.isNotEmpty) {
-            final query = _searchQuery.toLowerCase();
-            filteredExpenses = filteredExpenses.where((e) {
-              final merchant = e.merchant?.toLowerCase() ?? '';
-              final note = e.note?.toLowerCase() ?? '';
-              return merchant.contains(query) || note.contains(query);
-            }).toList();
-          }
-
-          // Apply filters
-          if (_filter.hasActiveFilters) {
-            filteredExpenses =
-                filteredExpenses.where((e) => _filter.matches(e)).toList();
-          }
-
           // Check if we're showing filtered results
           final hasSearchOrFilter =
               _searchQuery.isNotEmpty || _filter.hasActiveFilters;
+
+          // Apply search and filters, or use pagination
+          List<Expense> displayExpenses;
+          bool showLoadMore = false;
+          final totalExpenseCount = monthExpenses.length;
+
+          if (hasSearchOrFilter) {
+            // When searching/filtering, don't paginate - show all matching results
+            displayExpenses = monthExpenses;
+
+            // Apply text search (merchant, note)
+            if (_searchQuery.isNotEmpty) {
+              final query = _searchQuery.toLowerCase();
+              displayExpenses = displayExpenses.where((e) {
+                final merchant = e.merchant?.toLowerCase() ?? '';
+                final note = e.note?.toLowerCase() ?? '';
+                return merchant.contains(query) || note.contains(query);
+              }).toList();
+            }
+
+            // Apply filters
+            if (_filter.hasActiveFilters) {
+              displayExpenses =
+                  displayExpenses.where((e) => _filter.matches(e)).toList();
+            }
+          } else {
+            // Use pagination when not searching/filtering
+            final limit = (_currentPage + 1) * _pageSize;
+            displayExpenses =
+                widget.expenseService.getExpensesForMonthPaginated(
+              _selectedMonth.year,
+              _selectedMonth.month,
+              limit: limit,
+              offset: 0,
+            );
+
+            // Check if there are more expenses to load
+            showLoadMore = displayExpenses.length < totalExpenseCount;
+          }
+
           final noMatchingExpenses =
-              hasSearchOrFilter && filteredExpenses.isEmpty;
+              hasSearchOrFilter && displayExpenses.isEmpty;
 
           return CustomScrollView(
             slivers: [
@@ -380,11 +433,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
 
               // Active filter indicator
-              if (hasSearchOrFilter && filteredExpenses.isNotEmpty)
+              if (hasSearchOrFilter && displayExpenses.isNotEmpty)
                 SliverToBoxAdapter(
                   child: _buildFilterIndicator(
                     colors,
-                    filteredExpenses.length,
+                    displayExpenses.length,
                     monthExpenses.length,
                   ),
                 ),
@@ -401,7 +454,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: _buildNoMatchState(colors),
                 )
               else
-                _buildExpenseList(filteredExpenses, colors),
+                _buildExpenseList(displayExpenses, colors, showLoadMore),
 
               // Bottom padding for FAB
               const SliverToBoxAdapter(
@@ -563,10 +616,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildExpenseList(
-      List<Expense> expenses, LedgerifyColorScheme colors) {
+    List<Expense> expenses,
+    LedgerifyColorScheme colors,
+    bool showLoadMore,
+  ) {
+    // Calculate total item count: expenses + optional load more button
+    final itemCount = expenses.length + (showLoadMore ? 1 : 0);
+
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
+          // Load More button at the end
+          if (index == expenses.length && showLoadMore) {
+            return _buildLoadMoreButton(colors);
+          }
+
           final expense = expenses[index];
           final showDateHeader =
               index == 0 || !_isSameDay(expense.date, expenses[index - 1].date);
@@ -599,7 +663,37 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           );
         },
-        childCount: expenses.length,
+        childCount: itemCount,
+      ),
+    );
+  }
+
+  Widget _buildLoadMoreButton(LedgerifyColorScheme colors) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: LedgerifySpacing.lg,
+        vertical: LedgerifySpacing.xl,
+      ),
+      child: Center(
+        child: TextButton(
+          onPressed: _loadMoreExpenses,
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(
+              horizontal: LedgerifySpacing.xl,
+              vertical: LedgerifySpacing.md,
+            ),
+            backgroundColor: colors.surfaceHighlight,
+            shape: const RoundedRectangleBorder(
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+            ),
+          ),
+          child: Text(
+            'Load More',
+            style: LedgerifyTypography.labelLarge.copyWith(
+              color: colors.textSecondary,
+            ),
+          ),
+        ),
       ),
     );
   }

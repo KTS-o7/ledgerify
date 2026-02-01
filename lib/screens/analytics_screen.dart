@@ -146,6 +146,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           const SizedBox(width: LedgerifySpacing.md),
         ],
       ),
+      // Combined expense and income listener - both needed for financial summary
       body: ValueListenableBuilder(
         valueListenable: widget.expenseService.box.listenable(),
         builder: (context, Box<Expense> expenseBox, _) {
@@ -171,7 +172,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 dateRange.end,
               );
 
-              // For budget progress, reuse data if already current month, otherwise fetch
+              // Pre-compute current month data once for budget progress
               final currentMonthBreakdown = isCurrentMonth
                   ? breakdown
                   : widget.expenseService.getCategoryBreakdownForRange(
@@ -182,23 +183,45 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ? totalExpenses
                   : currentMonthBreakdown.values.fold(0.0, (sum, v) => sum + v);
 
-              // Build chart content (doesn't depend on budgets)
-              final chartsContent = _buildChartsContent(
-                colors,
-                breakdown,
-                totalExpenses,
+              // Build static chart content outside budget listener
+              // These widgets don't depend on budget data
+              final staticChartsChild = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  LedgerifySpacing.verticalXl,
+
+                  // Income vs Expense Comparison Chart
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: LedgerifySpacing.lg,
+                    ),
+                    child: IncomeExpenseChart(
+                      expenseService: widget.expenseService,
+                      incomeService: widget.incomeService,
+                    ),
+                  ),
+
+                  LedgerifySpacing.verticalXl,
+
+                  // Charts content (pre-built, doesn't depend on budgets)
+                  ..._buildChartsContent(
+                    colors,
+                    breakdown,
+                    totalExpenses,
+                  ),
+                ],
               );
 
+              // Budget listener with child parameter to preserve static content
               return ValueListenableBuilder(
                 valueListenable: widget.budgetService.box.listenable(),
-                builder: (context, Box<Budget> budgetBox, _) {
-                  // Get budgets for current month
+                builder: (context, Box<Budget> budgetBox, child) {
+                  // Only compute budget-dependent data here
                   final budgets = widget.budgetService.getAllBudgetsForMonth(
                     now.year,
                     now.month,
                   );
 
-                  // Calculate progress
                   final budgetProgressList = _calculateBudgetProgress(
                     budgets,
                     currentMonthBreakdown,
@@ -213,7 +236,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Financial Insights Section
+                        // Financial Insights Section (depends on income/expense)
                         Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: LedgerifySpacing.lg,
@@ -227,7 +250,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
                         LedgerifySpacing.verticalXl,
 
-                        // Budget Progress Section
+                        // Budget Progress Section (depends on budgets)
                         Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: LedgerifySpacing.lg,
@@ -239,27 +262,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           ),
                         ),
 
-                        LedgerifySpacing.verticalXl,
-
-                        // Income vs Expense Comparison Chart
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: LedgerifySpacing.lg,
-                          ),
-                          child: IncomeExpenseChart(
-                            expenseService: widget.expenseService,
-                            incomeService: widget.incomeService,
-                          ),
-                        ),
-
-                        LedgerifySpacing.verticalXl,
-
-                        // Charts content (pre-built, doesn't depend on budgets)
-                        ...chartsContent,
+                        // Static chart content passed via child parameter
+                        // This preserves the widget tree when only budgets change
+                        if (child != null) child,
                       ],
                     ),
                   );
                 },
+                // Pass static charts as child to avoid rebuilding when budgets change
+                child: staticChartsChild,
               );
             },
           );

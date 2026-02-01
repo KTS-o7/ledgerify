@@ -209,6 +209,45 @@ class ExpenseService {
     return monthExpenses;
   }
 
+  /// Retrieves expenses for a specific month with pagination.
+  /// Returns expenses sorted by date (newest first).
+  ///
+  /// [limit] - Maximum number of expenses to return (default 50)
+  /// [offset] - Number of expenses to skip
+  List<Expense> getExpensesForMonthPaginated(
+    int year,
+    int month, {
+    int limit = 50,
+    int offset = 0,
+  }) {
+    final monthExpenses = <Expense>[];
+
+    for (final expense in _expenseBox.values) {
+      if (expense.date.year == year && expense.date.month == month) {
+        monthExpenses.add(expense);
+      }
+    }
+
+    // Sort by date descending
+    monthExpenses.sort((a, b) => b.date.compareTo(a.date));
+
+    // Apply pagination
+    if (offset >= monthExpenses.length) return [];
+    final end = (offset + limit).clamp(0, monthExpenses.length);
+    return monthExpenses.sublist(offset, end);
+  }
+
+  /// Returns the total count of expenses for a month (for pagination UI).
+  int getExpenseCountForMonth(int year, int month) {
+    int count = 0;
+    for (final expense in _expenseBox.values) {
+      if (expense.date.year == year && expense.date.month == month) {
+        count++;
+      }
+    }
+    return count;
+  }
+
   /// Returns a complete month summary in a single pass.
   /// This is more efficient than calling getExpensesForMonth, calculateTotal,
   /// and getCategoryBreakdown separately.
