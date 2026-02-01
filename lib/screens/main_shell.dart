@@ -61,6 +61,7 @@ class _MainShellState extends State<MainShell> {
           ),
           AnalyticsScreen(
             expenseService: widget.expenseService,
+            budgetService: widget.budgetService,
           ),
           SettingsScreen(
             themeService: widget.themeService,
