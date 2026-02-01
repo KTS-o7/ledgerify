@@ -7,8 +7,10 @@ import '../services/recurring_expense_service.dart';
 import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
 import '../widgets/expense_list_tile.dart';
+import '../widgets/filter_sheet.dart';
 import '../widgets/monthly_summary_card.dart';
 import '../widgets/charts/category_donut_chart.dart';
+import '../widgets/search_filter_bar.dart';
 import '../widgets/upcoming_recurring_card.dart';
 import 'add_expense_screen.dart';
 import 'add_recurring_screen.dart';
@@ -39,6 +41,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late DateTime _selectedMonth;
 
+  // Search and filter state
+  String _searchQuery = '';
+  ExpenseFilter _filter = ExpenseFilter.empty;
+
   @override
   void initState() {
     super.initState();
@@ -60,6 +66,25 @@ class _HomeScreenState extends State<HomeScreen> {
             DateTime(_selectedMonth.year, _selectedMonth.month + 1);
       });
     }
+  }
+
+  Future<void> _showFilterSheet() async {
+    final result = await FilterSheet.show(
+      context,
+      initialFilter: _filter,
+    );
+    if (result != null) {
+      setState(() {
+        _filter = result;
+      });
+    }
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _searchQuery = '';
+      _filter = ExpenseFilter.empty;
+    });
   }
 
   Future<void> _navigateToAddExpense([Expense? expenseToEdit]) async {
@@ -177,11 +202,16 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: Text(
-          'Ledgerify',
-          style: LedgerifyTypography.headlineMedium.copyWith(
-            color: colors.textPrimary,
-          ),
+        title: SearchFilterBar(
+          title: DateFormatter.formatMonthYear(_selectedMonth),
+          searchQuery: _searchQuery,
+          hasActiveFilters: _filter.hasActiveFilters,
+          onSearchChanged: (query) {
+            setState(() {
+              _searchQuery = query;
+            });
+          },
+          onFilterTap: _showFilterSheet,
         ),
         centerTitle: false,
       ),
@@ -196,6 +226,31 @@ class _HomeScreenState extends State<HomeScreen> {
           final monthExpenses = summary.expenses;
           final monthTotal = summary.total;
           final categoryBreakdown = summary.breakdown;
+
+          // Apply search and filters
+          List<Expense> filteredExpenses = monthExpenses;
+
+          // Apply text search (merchant, note)
+          if (_searchQuery.isNotEmpty) {
+            final query = _searchQuery.toLowerCase();
+            filteredExpenses = filteredExpenses.where((e) {
+              final merchant = e.merchant?.toLowerCase() ?? '';
+              final note = e.note?.toLowerCase() ?? '';
+              return merchant.contains(query) || note.contains(query);
+            }).toList();
+          }
+
+          // Apply filters
+          if (_filter.hasActiveFilters) {
+            filteredExpenses =
+                filteredExpenses.where((e) => _filter.matches(e)).toList();
+          }
+
+          // Check if we're showing filtered results
+          final hasSearchOrFilter =
+              _searchQuery.isNotEmpty || _filter.hasActiveFilters;
+          final noMatchingExpenses =
+              hasSearchOrFilter && filteredExpenses.isEmpty;
 
           return CustomScrollView(
             slivers: [
@@ -220,45 +275,47 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: LedgerifySpacing.verticalXl,
               ),
 
-              // Upcoming Recurring Card
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: LedgerifySpacing.lg,
-                  ),
-                  child: UpcomingRecurringCard(
-                    recurringService: widget.recurringService,
-                    expenseService: widget.expenseService,
-                    onViewAll: () {
-                      // Navigate to Recurring tab
-                      widget.onNavigateToRecurring?.call();
-                    },
-                    onTapItem: _navigateToEditRecurring,
-                    onPayNow: (recurring, expense) {
-                      // Show confirmation snackbar
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            '${recurring.title} paid - ${CurrencyFormatter.format(expense.amount)}',
-                            style: LedgerifyTypography.bodyMedium.copyWith(
-                              color: colors.textPrimary,
+              // Upcoming Recurring Card (hide when searching/filtering)
+              if (!hasSearchOrFilter)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: LedgerifySpacing.lg,
+                    ),
+                    child: UpcomingRecurringCard(
+                      recurringService: widget.recurringService,
+                      expenseService: widget.expenseService,
+                      onViewAll: () {
+                        // Navigate to Recurring tab
+                        widget.onNavigateToRecurring?.call();
+                      },
+                      onTapItem: _navigateToEditRecurring,
+                      onPayNow: (recurring, expense) {
+                        // Show confirmation snackbar
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '${recurring.title} paid - ${CurrencyFormatter.format(expense.amount)}',
+                              style: LedgerifyTypography.bodyMedium.copyWith(
+                                color: colors.textPrimary,
+                              ),
                             ),
+                            backgroundColor: colors.surfaceElevated,
                           ),
-                          backgroundColor: colors.surfaceElevated,
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
 
-              // Spacing (only show if upcoming card is visible, handled by card itself)
-              const SliverToBoxAdapter(
-                child: LedgerifySpacing.verticalXl,
-              ),
+              // Spacing (only show if upcoming card is visible)
+              if (!hasSearchOrFilter)
+                const SliverToBoxAdapter(
+                  child: LedgerifySpacing.verticalXl,
+                ),
 
-              // Category Breakdown Card
-              if (monthExpenses.isNotEmpty)
+              // Category Breakdown Card (hide when searching/filtering)
+              if (monthExpenses.isNotEmpty && !hasSearchOrFilter)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -272,9 +329,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
 
               // Spacing
-              if (monthExpenses.isNotEmpty)
+              if (monthExpenses.isNotEmpty && !hasSearchOrFilter)
                 const SliverToBoxAdapter(
                   child: LedgerifySpacing.verticalXl,
+                ),
+
+              // Active filter indicator
+              if (hasSearchOrFilter && filteredExpenses.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: _buildFilterIndicator(
+                    colors,
+                    filteredExpenses.length,
+                    monthExpenses.length,
+                  ),
                 ),
 
               // Expense List or Empty State
@@ -283,8 +350,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   hasScrollBody: false,
                   child: _buildEmptyState(colors),
                 )
+              else if (noMatchingExpenses)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _buildNoMatchState(colors),
+                )
               else
-                _buildExpenseList(monthExpenses, colors),
+                _buildExpenseList(filteredExpenses, colors),
 
               // Bottom padding for FAB
               const SliverToBoxAdapter(
@@ -327,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             LedgerifySpacing.verticalLg,
             Text(
-              'No expenses yet',
+              'No expenses this month',
               style: LedgerifyTypography.headlineSmall.copyWith(
                 color: colors.textSecondary,
               ),
@@ -342,6 +414,116 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildNoMatchState(LedgerifyColorScheme colors) {
+    final hasSearch = _searchQuery.isNotEmpty;
+    final hasFilters = _filter.hasActiveFilters;
+
+    String message;
+    if (hasSearch && !hasFilters) {
+      message = "No expenses match '$_searchQuery'";
+    } else if (!hasSearch && hasFilters) {
+      message = 'No expenses match your filters';
+    } else {
+      message = "No expenses match '$_searchQuery' with current filters";
+    }
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(LedgerifySpacing.xxl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off_rounded,
+              size: 80,
+              color: colors.textTertiary,
+            ),
+            LedgerifySpacing.verticalLg,
+            Text(
+              'No results',
+              style: LedgerifyTypography.headlineSmall.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+            LedgerifySpacing.verticalSm,
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: LedgerifyTypography.bodyMedium.copyWith(
+                color: colors.textTertiary,
+              ),
+            ),
+            LedgerifySpacing.verticalXl,
+            TextButton(
+              onPressed: _clearFilters,
+              child: Text(
+                'Clear filters',
+                style: LedgerifyTypography.labelLarge.copyWith(
+                  color: colors.accent,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterIndicator(
+    LedgerifyColorScheme colors,
+    int filteredCount,
+    int totalCount,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: LedgerifySpacing.lg,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Showing $filteredCount of $totalCount expenses',
+              style: LedgerifyTypography.labelMedium.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: _clearFilters,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: LedgerifySpacing.sm,
+                vertical: LedgerifySpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: colors.accent.withValues(alpha: 0.15),
+                borderRadius: LedgerifyRadius.borderRadiusSm,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.close_rounded,
+                    size: 14,
+                    color: colors.accent,
+                  ),
+                  LedgerifySpacing.horizontalXs,
+                  Text(
+                    'Clear',
+                    style: LedgerifyTypography.labelSmall.copyWith(
+                      color: colors.accent,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
