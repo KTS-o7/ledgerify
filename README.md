@@ -1,6 +1,12 @@
-# Ledgerify
+<p align="center">
+  <img src="Ledegerify_logo.png" alt="Ledgerify Logo" width="200"/>
+</p>
 
-A personal expense tracker built with Flutter. Simple, fast, and offline-first.
+<h1 align="center">Ledgerify</h1>
+
+<p align="center">
+  A personal expense tracker built with Flutter. Simple, fast, and offline-first.
+</p>
 
 ## About
 
