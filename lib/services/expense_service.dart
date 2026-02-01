@@ -1,6 +1,10 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
+import '../models/budget.dart';
 import '../models/expense.dart';
+import '../utils/currency_formatter.dart';
+import 'budget_service.dart';
+import 'notification_service.dart';
 
 /// Represents spending total for a single week
 class WeeklyTotal {
@@ -50,6 +54,16 @@ class ExpenseService {
 
   late Box<Expense> _expenseBox;
 
+  BudgetService? _budgetService;
+  NotificationService? _notificationService;
+
+  /// Set services for budget notifications (called from main.dart after init)
+  void setBudgetServices(
+      BudgetService budgetService, NotificationService notificationService) {
+    _budgetService = budgetService;
+    _notificationService = notificationService;
+  }
+
   /// Initializes Hive and opens the expenses box.
   /// Must be called before any other operations.
   Future<void> init() async {
@@ -74,6 +88,60 @@ class ExpenseService {
   /// Generates a new unique ID for an expense.
   String generateId() => _uuid.v4();
 
+  /// Check budgets and send notifications if thresholds crossed
+  Future<void> _checkBudgetNotifications(Expense expense) async {
+    if (_budgetService == null || _notificationService == null) return;
+
+    final year = expense.date.year;
+    final month = expense.date.month;
+
+    // Get all budgets for this month
+    final budgets = _budgetService!.getAllBudgetsForMonth(year, month);
+    if (budgets.isEmpty) return;
+
+    // Calculate spending
+    final monthExpenses = getExpensesForMonth(year, month);
+    final totalSpending = calculateTotal(monthExpenses);
+    final categorySpending = getCategoryBreakdown(monthExpenses);
+
+    for (final budget in budgets) {
+      final spent = budget.isOverallBudget
+          ? totalSpending
+          : categorySpending[budget.category] ?? 0;
+
+      final progress = _budgetService!.calculateProgress(budget, spent);
+
+      // Check 100% threshold first (exceeded)
+      if (progress.status == BudgetStatus.exceeded && !budget.exceeded100Sent) {
+        final label =
+            budget.isOverallBudget ? 'Monthly' : budget.category!.displayName;
+        await _notificationService!.showBudgetExceeded(
+          title: '$label Budget Exceeded',
+          body:
+              'You\'ve spent ${CurrencyFormatter.format(spent)} of your ${CurrencyFormatter.format(budget.amount)} budget',
+          notificationId: _notificationService!
+              .getNotificationId(budget.id, isWarning: false),
+        );
+        await _budgetService!.markExceededSent(budget);
+      }
+      // Check 80% threshold (warning)
+      else if (progress.status == BudgetStatus.warning &&
+          !budget.warning80Sent) {
+        final label =
+            budget.isOverallBudget ? 'Monthly' : budget.category!.displayName;
+        final percent = (progress.percentage * 100).toStringAsFixed(0);
+        await _notificationService!.showBudgetWarning(
+          title: '$label Budget Warning',
+          body:
+              'You\'ve used $percent% of your ${CurrencyFormatter.format(budget.amount)} budget',
+          notificationId: _notificationService!
+              .getNotificationId(budget.id, isWarning: true),
+        );
+        await _budgetService!.markWarningSent(budget);
+      }
+    }
+  }
+
   /// Adds a new expense to storage.
   /// Returns the created expense.
   Future<Expense> addExpense({
@@ -95,6 +163,10 @@ class ExpenseService {
     );
 
     await _expenseBox.put(expense.id, expense);
+
+    // Check budget notifications
+    await _checkBudgetNotifications(expense);
+
     return expense;
   }
 
@@ -102,6 +174,10 @@ class ExpenseService {
   /// Returns the updated expense.
   Future<Expense> updateExpense(Expense expense) async {
     await _expenseBox.put(expense.id, expense);
+
+    // Check budget notifications
+    await _checkBudgetNotifications(expense);
+
     return expense;
   }
 

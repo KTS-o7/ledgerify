@@ -37,6 +37,9 @@ void main() async {
   final notificationService = NotificationService();
   await notificationService.init();
 
+  // Wire up services for budget notifications
+  expenseService.setBudgetServices(budgetService, notificationService);
+
   // Generate due recurring expenses on app open
   await recurringService.generateDueExpenses(expenseService);
 
