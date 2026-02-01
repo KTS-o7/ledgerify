@@ -4,20 +4,19 @@
 
 ### Option 1: GitHub Actions (Recommended)
 
-1. **Create a version tag:**
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
+1. **Go to Actions tab** on GitHub
+2. **Select "Build Release"** workflow
+3. **Click "Run workflow"**
+4. **Enter version** (e.g., `1.0.0`)
+5. **Optionally enable iOS build** (uses more CI minutes)
+6. **Download artifacts** from the completed workflow run
 
-2. **GitHub Actions will automatically:**
-   - Build Android APK and AAB
-   - Build iOS (unsigned)
-   - Create a GitHub Release with all artifacts
+Artifacts will be named:
+- `ledgerify-v1.0.0-apk` - Android APK
+- `ledgerify-v1.0.0-aab` - Android App Bundle (for Play Store)
+- `ledgerify-v1.0.0-ios` - Unsigned iOS IPA (if enabled)
 
-3. **Download from Releases page**
-
-### Option 2: Manual Build
+### Option 2: Local Build
 
 ```bash
 # Build release APK
@@ -30,6 +29,19 @@ flutter build appbundle --release
 # APK: build/app/outputs/flutter-apk/app-release.apk
 # AAB: build/app/outputs/bundle/release/app-release.aab
 ```
+
+---
+
+## Creating a GitHub Release (Manual)
+
+After building via GitHub Actions:
+
+1. Go to **Releases** → **Draft a new release**
+2. Create a tag (e.g., `v1.0.0`)
+3. Add release title and notes
+4. Download artifacts from the workflow run
+5. Upload the APK/AAB files to the release
+6. Publish
 
 ---
 
@@ -120,17 +132,6 @@ version: 1.0.0+1
 #        └── Version name (semantic versioning)
 ```
 
-### Tagging convention:
-```bash
-# Release version
-git tag v1.0.0
-git push origin v1.0.0
-
-# Pre-release
-git tag v1.0.0-beta.1
-git push origin v1.0.0-beta.1
-```
-
 ---
 
 ## Checklist Before Release
@@ -140,9 +141,8 @@ git push origin v1.0.0-beta.1
 - [ ] Run `flutter test` - all tests pass
 - [ ] Test on physical device
 - [ ] Update README if needed
-- [ ] Update CHANGELOG.md
-- [ ] Create git tag
-- [ ] Verify GitHub Actions build succeeds
+- [ ] Run "Build Release" workflow on GitHub Actions
+- [ ] Create GitHub Release and upload artifacts
 
 ---
 
