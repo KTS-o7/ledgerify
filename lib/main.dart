@@ -102,13 +102,7 @@ void main() async {
   // Wire up services for budget notifications
   expenseService.setBudgetServices(budgetService, notificationService);
 
-  // Request notification permission on first launch
-  await notificationService.requestPermission();
-
-  // Schedule recurring notifications if enabled
-  await notificationService.rescheduleAll();
-
-  // Run the app
+  // Run the app first, then handle notifications
   runApp(LedgerifyApp(
     expenseService: expenseService,
     themeService: themeService,
@@ -123,9 +117,18 @@ void main() async {
     notificationPrefsService: notificationPrefsService,
   ));
 
-  // Generate due recurring expenses and incomes after first frame renders
+  // Handle notifications and recurring items after first frame renders
   // This prevents blocking the initial app startup
   WidgetsBinding.instance.addPostFrameCallback((_) async {
+    // Request notification permission
+    try {
+      await notificationService.requestPermission();
+      await notificationService.rescheduleAll();
+    } catch (e) {
+      debugPrint('Error setting up notifications: $e');
+    }
+
+    // Generate due recurring expenses and incomes
     try {
       await recurringService.generateDueExpenses(expenseService);
       await recurringIncomeService.generateDueIncomes(incomeService);
