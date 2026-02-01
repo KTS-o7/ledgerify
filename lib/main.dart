@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'models/custom_category.dart';
+import 'models/goal.dart';
 import 'models/tag.dart';
 import 'services/budget_service.dart';
 import 'services/custom_category_service.dart';
 import 'services/expense_service.dart';
+import 'services/goal_service.dart';
 import 'services/notification_service.dart';
 import 'services/recurring_expense_service.dart';
 import 'services/tag_service.dart';
@@ -42,22 +44,27 @@ void main() async {
   final notificationService = NotificationService();
   await notificationService.init();
 
-  // Register Hive adapters for Tag and CustomCategory
+  // Register Hive adapters for Tag, CustomCategory, and Goal
   if (!Hive.isAdapterRegistered(6)) {
     Hive.registerAdapter(TagAdapter());
   }
   if (!Hive.isAdapterRegistered(7)) {
     Hive.registerAdapter(CustomCategoryAdapter());
   }
+  if (!Hive.isAdapterRegistered(8)) {
+    Hive.registerAdapter(GoalAdapter());
+  }
 
-  // Open Tag and CustomCategory boxes
+  // Open Tag, CustomCategory, and Goal boxes
   final tagBox = await Hive.openBox<Tag>('tags');
   final customCategoryBox =
       await Hive.openBox<CustomCategory>('custom_categories');
+  final goalBox = await Hive.openBox<Goal>('goals');
 
-  // Create Tag and CustomCategory services
+  // Create Tag, CustomCategory, and Goal services
   final tagService = TagService(tagBox);
   final customCategoryService = CustomCategoryService(customCategoryBox);
+  final goalService = GoalService(goalBox);
 
   // Wire up services for budget notifications
   expenseService.setBudgetServices(budgetService, notificationService);
@@ -73,6 +80,7 @@ void main() async {
     budgetService: budgetService,
     tagService: tagService,
     customCategoryService: customCategoryService,
+    goalService: goalService,
   ));
 }
 
@@ -87,6 +95,7 @@ class LedgerifyApp extends StatelessWidget {
   final BudgetService budgetService;
   final TagService tagService;
   final CustomCategoryService customCategoryService;
+  final GoalService goalService;
 
   const LedgerifyApp({
     super.key,
@@ -96,6 +105,7 @@ class LedgerifyApp extends StatelessWidget {
     required this.budgetService,
     required this.tagService,
     required this.customCategoryService,
+    required this.goalService,
   });
 
   @override
@@ -124,6 +134,7 @@ class LedgerifyApp extends StatelessWidget {
             budgetService: budgetService,
             tagService: tagService,
             customCategoryService: customCategoryService,
+            goalService: goalService,
           ),
         );
       },

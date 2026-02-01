@@ -4,11 +4,13 @@ import '../models/recurring_expense.dart';
 import '../services/budget_service.dart';
 import '../services/custom_category_service.dart';
 import '../services/expense_service.dart';
+import '../services/goal_service.dart';
 import '../services/recurring_expense_service.dart';
 import '../services/tag_service.dart';
 import '../services/theme_service.dart';
 import '../theme/ledgerify_theme.dart';
 import 'analytics_screen.dart';
+import 'goals_screen.dart';
 import 'home_screen.dart';
 import 'recurring_list_screen.dart';
 import 'settings_screen.dart';
@@ -19,6 +21,7 @@ import 'settings_screen.dart';
 /// - Home (expense dashboard)
 /// - Recurring (recurring expenses list)
 /// - Analytics (spending analytics)
+/// - Goals (savings goals)
 /// - Settings (app preferences)
 ///
 /// Uses IndexedStack to preserve state across tab switches.
@@ -29,6 +32,7 @@ class MainShell extends StatefulWidget {
   final BudgetService budgetService;
   final TagService tagService;
   final CustomCategoryService customCategoryService;
+  final GoalService goalService;
 
   const MainShell({
     super.key,
@@ -38,6 +42,7 @@ class MainShell extends StatefulWidget {
     required this.budgetService,
     required this.tagService,
     required this.customCategoryService,
+    required this.goalService,
   });
 
   @override
@@ -70,6 +75,9 @@ class _MainShellState extends State<MainShell> {
           AnalyticsScreen(
             expenseService: widget.expenseService,
             budgetService: widget.budgetService,
+          ),
+          GoalsScreen(
+            goalService: widget.goalService,
           ),
           SettingsScreen(
             themeService: widget.themeService,
@@ -131,10 +139,17 @@ class _MainShellState extends State<MainShell> {
                 colors: colors,
               ),
               _NavItem(
-                icon: Icons.settings_rounded,
-                label: 'Settings',
+                icon: Icons.flag_rounded,
+                label: 'Goals',
                 isSelected: _currentIndex == 3,
                 onTap: () => _switchTab(3),
+                colors: colors,
+              ),
+              _NavItem(
+                icon: Icons.settings_rounded,
+                label: 'Settings',
+                isSelected: _currentIndex == 4,
+                onTap: () => _switchTab(4),
                 colors: colors,
               ),
             ],
