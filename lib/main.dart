@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'services/budget_service.dart';
 import 'services/expense_service.dart';
 import 'services/recurring_expense_service.dart';
 import 'services/theme_service.dart';
@@ -29,6 +30,9 @@ void main() async {
   final recurringService = RecurringExpenseService();
   await recurringService.init();
 
+  final budgetService = BudgetService();
+  await budgetService.init();
+
   // Generate due recurring expenses on app open
   await recurringService.generateDueExpenses(expenseService);
 
@@ -37,6 +41,7 @@ void main() async {
     expenseService: expenseService,
     themeService: themeService,
     recurringService: recurringService,
+    budgetService: budgetService,
   ));
 }
 
@@ -48,12 +53,14 @@ class LedgerifyApp extends StatelessWidget {
   final ExpenseService expenseService;
   final ThemeService themeService;
   final RecurringExpenseService recurringService;
+  final BudgetService budgetService;
 
   const LedgerifyApp({
     super.key,
     required this.expenseService,
     required this.themeService,
     required this.recurringService,
+    required this.budgetService,
   });
 
   @override
@@ -79,6 +86,7 @@ class LedgerifyApp extends StatelessWidget {
             expenseService: expenseService,
             themeService: themeService,
             recurringService: recurringService,
+            budgetService: budgetService,
           ),
         );
       },

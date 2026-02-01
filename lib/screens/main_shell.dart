@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/recurring_expense.dart';
+import '../services/budget_service.dart';
 import '../services/expense_service.dart';
 import '../services/recurring_expense_service.dart';
 import '../services/theme_service.dart';
@@ -23,12 +24,14 @@ class MainShell extends StatefulWidget {
   final ExpenseService expenseService;
   final ThemeService themeService;
   final RecurringExpenseService recurringService;
+  final BudgetService budgetService;
 
   const MainShell({
     super.key,
     required this.expenseService,
     required this.themeService,
     required this.recurringService,
+    required this.budgetService,
   });
 
   @override
