@@ -83,6 +83,7 @@ class _MainShellState extends State<MainShell> {
           AnalyticsScreen(
             expenseService: widget.expenseService,
             budgetService: widget.budgetService,
+            incomeService: widget.incomeService,
           ),
           GoalsScreen(
             goalService: widget.goalService,

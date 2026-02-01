@@ -200,4 +200,86 @@ class IncomeService {
 
     return breakdown;
   }
+
+  /// Returns the total income for a date range.
+  double getTotalIncomeForRange(DateTime start, DateTime end) {
+    double total = 0.0;
+
+    final startDate = DateTime(start.year, start.month, start.day);
+    final endDate = DateTime(end.year, end.month, end.day, 23, 59, 59);
+
+    for (final income in _incomeBox.values) {
+      final incomeDate = DateTime(
+        income.date.year,
+        income.date.month,
+        income.date.day,
+      );
+      if (!incomeDate.isBefore(startDate) && !incomeDate.isAfter(endDate)) {
+        total += income.amount;
+      }
+    }
+
+    return total;
+  }
+
+  /// Returns income breakdown by source for a date range.
+  Map<IncomeSource, double> getIncomeBySourceForRange(
+    DateTime start,
+    DateTime end,
+  ) {
+    final breakdown = <IncomeSource, double>{};
+
+    final startDate = DateTime(start.year, start.month, start.day);
+    final endDate = DateTime(end.year, end.month, end.day, 23, 59, 59);
+
+    for (final income in _incomeBox.values) {
+      final incomeDate = DateTime(
+        income.date.year,
+        income.date.month,
+        income.date.day,
+      );
+      if (!incomeDate.isBefore(startDate) && !incomeDate.isAfter(endDate)) {
+        breakdown[income.source] =
+            (breakdown[income.source] ?? 0) + income.amount;
+      }
+    }
+
+    return breakdown;
+  }
+
+  /// Returns monthly income totals for the last N months.
+  /// Returns a list of (year, month, total) records sorted chronologically.
+  List<MonthlyIncome> getMonthlyTotals(int months) {
+    final now = DateTime.now();
+    final results = <MonthlyIncome>[];
+
+    for (int i = months - 1; i >= 0; i--) {
+      var year = now.year;
+      var month = now.month - i;
+
+      // Handle month underflow
+      while (month <= 0) {
+        month += 12;
+        year--;
+      }
+
+      final total = getTotalIncomeForMonth(year, month);
+      results.add(MonthlyIncome(year: year, month: month, total: total));
+    }
+
+    return results;
+  }
+}
+
+/// Record for monthly income total
+class MonthlyIncome {
+  final int year;
+  final int month;
+  final double total;
+
+  const MonthlyIncome({
+    required this.year,
+    required this.month,
+    required this.total,
+  });
 }
