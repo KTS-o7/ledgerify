@@ -37,6 +37,7 @@ class _SpendingLineChartState extends State<SpendingLineChart>
   TrendPeriod _selectedPeriod = TrendPeriod.monthly;
   late AnimationController _animationController;
   late Animation<double> _animation;
+  late _ChartData _cachedChartData;
 
   @override
   void initState() {
@@ -49,7 +50,16 @@ class _SpendingLineChartState extends State<SpendingLineChart>
       parent: _animationController,
       curve: Curves.easeInOut,
     );
+    _cachedChartData = _computeChartData();
     _animationController.forward();
+  }
+
+  @override
+  void didUpdateWidget(SpendingLineChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.expenseService != widget.expenseService) {
+      _cachedChartData = _computeChartData();
+    }
   }
 
   @override
@@ -62,6 +72,7 @@ class _SpendingLineChartState extends State<SpendingLineChart>
     if (period != _selectedPeriod) {
       setState(() {
         _selectedPeriod = period;
+        _cachedChartData = _computeChartData();
       });
       _animationController.reset();
       _animationController.forward();
@@ -153,7 +164,7 @@ class _SpendingLineChartState extends State<SpendingLineChart>
   }
 
   Widget _buildChart(LedgerifyColorScheme colors) {
-    final chartData = _getChartData();
+    final chartData = _cachedChartData;
 
     // Empty state: less than 2 data points
     if (chartData.spots.length < 2) {
@@ -346,7 +357,7 @@ class _SpendingLineChartState extends State<SpendingLineChart>
     return (dataLength / 5).ceil().toDouble();
   }
 
-  _ChartData _getChartData() {
+  _ChartData _computeChartData() {
     switch (_selectedPeriod) {
       case TrendPeriod.daily:
         return _getDailyData();

@@ -99,10 +99,10 @@ class ExpenseService {
     final budgets = _budgetService!.getAllBudgetsForMonth(year, month);
     if (budgets.isEmpty) return;
 
-    // Calculate spending
-    final monthExpenses = getExpensesForMonth(year, month);
-    final totalSpending = calculateTotal(monthExpenses);
-    final categorySpending = getCategoryBreakdown(monthExpenses);
+    // Calculate spending (single-pass for efficiency)
+    final summary = getMonthSummary(year, month);
+    final totalSpending = summary.total;
+    final categorySpending = summary.breakdown;
 
     for (final budget in budgets) {
       final spent = budget.isOverallBudget

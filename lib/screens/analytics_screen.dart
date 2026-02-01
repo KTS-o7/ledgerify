@@ -142,20 +142,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         valueListenable: widget.expenseService.box.listenable(),
         builder: (context, Box<Expense> expenseBox, _) {
           final dateRange = _getDateRange();
+          final isCurrentMonth = _selectedFilter == AnalyticsFilter.thisMonth;
+
+          // Get breakdown for selected filter range
           final breakdown = widget.expenseService.getCategoryBreakdownForRange(
             dateRange.start,
             dateRange.end,
           );
           final total = breakdown.values.fold(0.0, (sum, value) => sum + value);
 
-          // For budget progress, always use current month spending
-          final currentMonthBreakdown =
-              widget.expenseService.getCategoryBreakdownForRange(
-            DateTime(now.year, now.month, 1),
-            now,
+          // For budget progress, reuse data if already current month, otherwise fetch
+          final currentMonthBreakdown = isCurrentMonth
+              ? breakdown
+              : widget.expenseService.getCategoryBreakdownForRange(
+                  DateTime(now.year, now.month, 1),
+                  now,
+                );
+          final currentMonthTotal = isCurrentMonth
+              ? total
+              : currentMonthBreakdown.values.fold(0.0, (sum, v) => sum + v);
+
+          // Build chart content (doesn't depend on budgets)
+          final chartsContent = _buildChartsContent(
+            colors,
+            breakdown,
+            total,
           );
-          final currentMonthTotal =
-              currentMonthBreakdown.values.fold(0.0, (sum, v) => sum + v);
 
           return ValueListenableBuilder(
             valueListenable: widget.budgetService.box.listenable(),
@@ -195,65 +207,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
                     LedgerifySpacing.verticalXl,
 
-                    // Category Breakdown Section Header
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: LedgerifySpacing.lg,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.pie_chart_rounded,
-                            color: colors.textSecondary,
-                            size: 20,
-                          ),
-                          LedgerifySpacing.horizontalSm,
-                          Text(
-                            'Category Breakdown',
-                            style: LedgerifyTypography.labelLarge.copyWith(
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    LedgerifySpacing.verticalMd,
-
-                    // Category Breakdown Donut Chart
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: LedgerifySpacing.lg,
-                      ),
-                      child: CategoryDonutChart(
-                        breakdown: breakdown,
-                        total: total,
-                      ),
-                    ),
-
-                    LedgerifySpacing.verticalXl,
-
-                    // Spending Trend Line Chart
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: LedgerifySpacing.lg,
-                      ),
-                      child: SpendingLineChart(
-                        expenseService: widget.expenseService,
-                      ),
-                    ),
-
-                    LedgerifySpacing.verticalXl,
-
-                    // Monthly Comparison Bar Chart
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: LedgerifySpacing.lg,
-                      ),
-                      child: MonthlyBarChart(
-                        expenseService: widget.expenseService,
-                      ),
-                    ),
+                    // Charts content (pre-built, doesn't depend on budgets)
+                    ...chartsContent,
                   ],
                 ),
               );
@@ -262,6 +217,75 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         },
       ),
     );
+  }
+
+  /// Builds the charts content list (extracted to avoid rebuilding when only budgets change)
+  List<Widget> _buildChartsContent(
+    LedgerifyColorScheme colors,
+    Map<ExpenseCategory, double> breakdown,
+    double total,
+  ) {
+    return [
+      // Category Breakdown Section Header
+      Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: LedgerifySpacing.lg,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.pie_chart_rounded,
+              color: colors.textSecondary,
+              size: 20,
+            ),
+            LedgerifySpacing.horizontalSm,
+            Text(
+              'Category Breakdown',
+              style: LedgerifyTypography.labelLarge.copyWith(
+                color: colors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      LedgerifySpacing.verticalMd,
+
+      // Category Breakdown Donut Chart
+      Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: LedgerifySpacing.lg,
+        ),
+        child: CategoryDonutChart(
+          breakdown: breakdown,
+          total: total,
+        ),
+      ),
+
+      LedgerifySpacing.verticalXl,
+
+      // Spending Trend Line Chart
+      Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: LedgerifySpacing.lg,
+        ),
+        child: SpendingLineChart(
+          expenseService: widget.expenseService,
+        ),
+      ),
+
+      LedgerifySpacing.verticalXl,
+
+      // Monthly Comparison Bar Chart
+      Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: LedgerifySpacing.lg,
+        ),
+        child: MonthlyBarChart(
+          expenseService: widget.expenseService,
+        ),
+      ),
+    ];
   }
 
   /// Builds the filter dropdown button using PopupMenuButton for better positioning

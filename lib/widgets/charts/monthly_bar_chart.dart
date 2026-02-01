@@ -27,6 +27,7 @@ class _MonthlyBarChartState extends State<MonthlyBarChart>
   late AnimationController _animationController;
   late Animation<double> _animation;
   int? _touchedBarIndex;
+  late List<MonthlyTotal> _cachedMonthlyTotals;
 
   @override
   void initState() {
@@ -39,7 +40,16 @@ class _MonthlyBarChartState extends State<MonthlyBarChart>
       parent: _animationController,
       curve: Curves.easeInOut,
     );
+    _cachedMonthlyTotals = widget.expenseService.getMonthlyTotals(6);
     _animationController.forward();
+  }
+
+  @override
+  void didUpdateWidget(MonthlyBarChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.expenseService != widget.expenseService) {
+      _cachedMonthlyTotals = widget.expenseService.getMonthlyTotals(6);
+    }
   }
 
   @override
@@ -89,7 +99,7 @@ class _MonthlyBarChartState extends State<MonthlyBarChart>
   }
 
   Widget _buildChart(LedgerifyColorScheme colors) {
-    final monthlyTotals = widget.expenseService.getMonthlyTotals(6);
+    final monthlyTotals = _cachedMonthlyTotals;
 
     // Empty state: no data at all
     if (monthlyTotals.isEmpty ||

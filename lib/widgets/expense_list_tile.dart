@@ -58,7 +58,7 @@ class ExpenseListTile extends StatelessWidget {
     final subtitle = _getSubtitle();
 
     return Dismissible(
-      key: Key(expense.id),
+      key: ValueKey(expense.id),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,

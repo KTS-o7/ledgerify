@@ -25,19 +25,35 @@ class CategoryDonutChart extends StatefulWidget {
 
 class _CategoryDonutChartState extends State<CategoryDonutChart> {
   int? _touchedIndex;
+  late List<MapEntry<ExpenseCategory, double>> _nonZeroEntries;
+
+  @override
+  void initState() {
+    super.initState();
+    _computeNonZeroEntries();
+  }
+
+  @override
+  void didUpdateWidget(CategoryDonutChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.breakdown != widget.breakdown) {
+      _computeNonZeroEntries();
+    }
+  }
+
+  void _computeNonZeroEntries() {
+    _nonZeroEntries = widget.breakdown.entries
+        .where((e) => e.value > 0)
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = LedgerifyColors.of(context);
 
-    // Filter out zero amounts and sort by value (descending)
-    final nonZeroEntries = widget.breakdown.entries
-        .where((e) => e.value > 0)
-        .toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
     // Empty state
-    if (nonZeroEntries.isEmpty) {
+    if (_nonZeroEntries.isEmpty) {
       return _buildEmptyState(colors);
     }
 
@@ -58,7 +74,7 @@ class _CategoryDonutChartState extends State<CategoryDonutChart> {
                 RepaintBoundary(
                   child: PieChart(
                     PieChartData(
-                      sections: _buildSections(nonZeroEntries, colors),
+                      sections: _buildSections(_nonZeroEntries, colors),
                       centerSpaceRadius: 60,
                       sectionsSpace: 2,
                       startDegreeOffset: -90, // Start from top
@@ -82,7 +98,7 @@ class _CategoryDonutChartState extends State<CategoryDonutChart> {
                   ),
                 ),
                 // Center text
-                _buildCenterText(nonZeroEntries, colors),
+                _buildCenterText(_nonZeroEntries, colors),
               ],
             ),
           ),
@@ -90,7 +106,7 @@ class _CategoryDonutChartState extends State<CategoryDonutChart> {
           LedgerifySpacing.verticalLg,
 
           // Legend
-          _buildLegend(nonZeroEntries, colors),
+          _buildLegend(_nonZeroEntries, colors),
         ],
       ),
     );
@@ -190,13 +206,14 @@ class _CategoryDonutChartState extends State<CategoryDonutChart> {
       spacing: LedgerifySpacing.lg,
       runSpacing: LedgerifySpacing.sm,
       alignment: WrapAlignment.center,
-      children: entries.map((entry) {
-        final isTouched = entries.indexOf(entry) == _touchedIndex;
+      children: entries.asMap().entries.map((indexedEntry) {
+        final index = indexedEntry.key;
+        final entry = indexedEntry.value;
+        final isTouched = index == _touchedIndex;
 
         return GestureDetector(
           onTap: () {
             setState(() {
-              final index = entries.indexOf(entry);
               _touchedIndex = _touchedIndex == index ? null : index;
             });
           },

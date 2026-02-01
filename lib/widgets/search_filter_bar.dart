@@ -117,7 +117,9 @@ class _SearchFilterBarState extends State<SearchFilterBar>
   void _onSearchChanged(String value) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () {
-      widget.onSearchChanged(value);
+      if (mounted) {
+        widget.onSearchChanged(value);
+      }
     });
   }
 
@@ -131,30 +133,32 @@ class _SearchFilterBarState extends State<SearchFilterBar>
   Widget build(BuildContext context) {
     final colors = LedgerifyColors.of(context);
 
-    return AnimatedBuilder(
-      animation: _expandAnimation,
-      builder: (context, child) {
-        return Stack(
-          children: [
-            // Collapsed state
-            Opacity(
-              opacity: 1.0 - _expandAnimation.value,
-              child: IgnorePointer(
-                ignoring: _isExpanded,
-                child: _buildCollapsedState(colors),
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _expandAnimation,
+        builder: (context, child) {
+          return Stack(
+            children: [
+              // Collapsed state
+              Opacity(
+                opacity: 1.0 - _expandAnimation.value,
+                child: IgnorePointer(
+                  ignoring: _isExpanded,
+                  child: _buildCollapsedState(colors),
+                ),
               ),
-            ),
-            // Expanded state
-            Opacity(
-              opacity: _expandAnimation.value,
-              child: IgnorePointer(
-                ignoring: !_isExpanded,
-                child: _buildExpandedState(colors),
+              // Expanded state
+              Opacity(
+                opacity: _expandAnimation.value,
+                child: IgnorePointer(
+                  ignoring: !_isExpanded,
+                  child: _buildExpandedState(colors),
+                ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 
