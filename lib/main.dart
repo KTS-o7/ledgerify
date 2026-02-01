@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'models/custom_category.dart';
 import 'models/goal.dart';
 import 'models/income.dart';
+import 'models/notification_preferences.dart';
 import 'models/recurring_income.dart';
 import 'models/tag.dart';
 import 'services/budget_service.dart';
@@ -11,6 +12,7 @@ import 'services/custom_category_service.dart';
 import 'services/expense_service.dart';
 import 'services/goal_service.dart';
 import 'services/income_service.dart';
+import 'services/notification_preferences_service.dart';
 import 'services/notification_service.dart';
 import 'services/recurring_expense_service.dart';
 import 'services/recurring_income_service.dart';
@@ -70,8 +72,11 @@ void main() async {
   if (!Hive.isAdapterRegistered(12)) {
     Hive.registerAdapter(RecurringIncomeAdapter());
   }
+  if (!Hive.isAdapterRegistered(13)) {
+    Hive.registerAdapter(NotificationPreferencesAdapter());
+  }
 
-  // Open Tag, CustomCategory, Goal, Income, and RecurringIncome boxes
+  // Open Tag, CustomCategory, Goal, Income, RecurringIncome, and NotificationPreferences boxes
   final tagBox = await Hive.openBox<Tag>('tags');
   final customCategoryBox =
       await Hive.openBox<CustomCategory>('custom_categories');
@@ -79,16 +84,29 @@ void main() async {
   final incomeBox = await Hive.openBox<Income>('incomes');
   final recurringIncomeBox =
       await Hive.openBox<RecurringIncome>('recurring_incomes');
+  final notificationPrefsBox =
+      await Hive.openBox<NotificationPreferences>('notification_preferences');
 
-  // Create Tag, CustomCategory, Goal, Income, and RecurringIncome services
+  // Create Tag, CustomCategory, Goal, Income, RecurringIncome, and NotificationPreferences services
   final tagService = TagService(tagBox);
   final customCategoryService = CustomCategoryService(customCategoryBox);
   final goalService = GoalService(goalBox);
   final incomeService = IncomeService(incomeBox, goalService);
   final recurringIncomeService = RecurringIncomeService(recurringIncomeBox);
+  final notificationPrefsService =
+      NotificationPreferencesService(notificationPrefsBox);
+
+  // Wire up notification service with preferences
+  notificationService.setPreferencesService(notificationPrefsService);
 
   // Wire up services for budget notifications
   expenseService.setBudgetServices(budgetService, notificationService);
+
+  // Request notification permission on first launch
+  await notificationService.requestPermission();
+
+  // Schedule recurring notifications if enabled
+  await notificationService.rescheduleAll();
 
   // Generate due recurring expenses and incomes on app open
   await recurringService.generateDueExpenses(expenseService);
@@ -105,6 +123,8 @@ void main() async {
     goalService: goalService,
     incomeService: incomeService,
     recurringIncomeService: recurringIncomeService,
+    notificationService: notificationService,
+    notificationPrefsService: notificationPrefsService,
   ));
 }
 
@@ -122,6 +142,8 @@ class LedgerifyApp extends StatelessWidget {
   final GoalService goalService;
   final IncomeService incomeService;
   final RecurringIncomeService recurringIncomeService;
+  final NotificationService notificationService;
+  final NotificationPreferencesService notificationPrefsService;
 
   const LedgerifyApp({
     super.key,
@@ -134,6 +156,8 @@ class LedgerifyApp extends StatelessWidget {
     required this.goalService,
     required this.incomeService,
     required this.recurringIncomeService,
+    required this.notificationService,
+    required this.notificationPrefsService,
   });
 
   @override
@@ -165,6 +189,8 @@ class LedgerifyApp extends StatelessWidget {
             goalService: goalService,
             incomeService: incomeService,
             recurringIncomeService: recurringIncomeService,
+            notificationService: notificationService,
+            notificationPrefsService: notificationPrefsService,
           ),
         );
       },

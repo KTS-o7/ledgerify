@@ -26,6 +26,9 @@ dependencies:
   # Local notifications for budget alerts
   flutter_local_notifications: ^17.0.0
 
+  # Timezone support for scheduled notifications
+  timezone: ^0.9.2
+
   # Cupertino icons for iOS-style icons (optional, for consistency)
   cupertino_icons: ^1.0.6
 

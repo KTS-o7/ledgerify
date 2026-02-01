@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import '../services/custom_category_service.dart';
 import '../services/goal_service.dart';
 import '../services/income_service.dart';
+import '../services/notification_preferences_service.dart';
+import '../services/notification_service.dart';
 import '../services/recurring_income_service.dart';
 import '../services/tag_service.dart';
 import '../services/theme_service.dart';
 import '../theme/ledgerify_theme.dart';
 import 'category_management_screen.dart';
+import 'notification_settings_screen.dart';
 import 'recurring_income_screen.dart';
 import 'tag_management_screen.dart';
 
 /// Settings Screen - Ledgerify Design Language
 ///
-/// Allows users to configure app preferences including theme.
+/// Allows users to configure app preferences including theme and notifications.
 /// Note: Recurring expenses are now accessed via bottom navigation tab.
 class SettingsScreen extends StatelessWidget {
   final ThemeService themeService;
@@ -21,6 +24,8 @@ class SettingsScreen extends StatelessWidget {
   final RecurringIncomeService recurringIncomeService;
   final IncomeService incomeService;
   final GoalService goalService;
+  final NotificationService notificationService;
+  final NotificationPreferencesService notificationPrefsService;
 
   const SettingsScreen({
     super.key,
@@ -30,6 +35,8 @@ class SettingsScreen extends StatelessWidget {
     required this.recurringIncomeService,
     required this.incomeService,
     required this.goalService,
+    required this.notificationService,
+    required this.notificationPrefsService,
   });
 
   @override
@@ -59,9 +66,24 @@ class SettingsScreen extends StatelessWidget {
           LedgerifySpacing.verticalSm,
           _SettingsCard(
             colors: colors,
-            child: _ThemeTile(
-              themeService: themeService,
-              colors: colors,
+            child: Column(
+              children: [
+                _ThemeTile(
+                  themeService: themeService,
+                  colors: colors,
+                ),
+                Divider(
+                  height: 1,
+                  indent: 56,
+                  endIndent: 16,
+                  color: colors.surfaceHighlight,
+                ),
+                _NotificationsTile(
+                  colors: colors,
+                  notificationService: notificationService,
+                  notificationPrefsService: notificationPrefsService,
+                ),
+              ],
             ),
           ),
 
@@ -492,6 +514,54 @@ class _RecurringIncomeTile extends StatelessWidget {
               recurringIncomeService: recurringIncomeService,
               incomeService: incomeService,
               goalService: goalService,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Notifications tile
+class _NotificationsTile extends StatelessWidget {
+  final LedgerifyColorScheme colors;
+  final NotificationService notificationService;
+  final NotificationPreferencesService notificationPrefsService;
+
+  const _NotificationsTile({
+    required this.colors,
+    required this.notificationService,
+    required this.notificationPrefsService,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: LedgerifySpacing.lg,
+        vertical: LedgerifySpacing.xs,
+      ),
+      leading: Icon(
+        Icons.notifications_rounded,
+        color: colors.textSecondary,
+      ),
+      title: Text(
+        'Notifications',
+        style: LedgerifyTypography.bodyLarge.copyWith(
+          color: colors.textPrimary,
+        ),
+      ),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: colors.textTertiary,
+      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NotificationSettingsScreen(
+              preferencesService: notificationPrefsService,
+              notificationService: notificationService,
             ),
           ),
         );

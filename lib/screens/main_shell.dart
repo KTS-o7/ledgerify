@@ -6,6 +6,8 @@ import '../services/custom_category_service.dart';
 import '../services/expense_service.dart';
 import '../services/goal_service.dart';
 import '../services/income_service.dart';
+import '../services/notification_preferences_service.dart';
+import '../services/notification_service.dart';
 import '../services/recurring_expense_service.dart';
 import '../services/recurring_income_service.dart';
 import '../services/tag_service.dart';
@@ -37,6 +39,8 @@ class MainShell extends StatefulWidget {
   final GoalService goalService;
   final IncomeService incomeService;
   final RecurringIncomeService recurringIncomeService;
+  final NotificationService notificationService;
+  final NotificationPreferencesService notificationPrefsService;
 
   const MainShell({
     super.key,
@@ -49,6 +53,8 @@ class MainShell extends StatefulWidget {
     required this.goalService,
     required this.incomeService,
     required this.recurringIncomeService,
+    required this.notificationService,
+    required this.notificationPrefsService,
   });
 
   @override
@@ -95,6 +101,8 @@ class _MainShellState extends State<MainShell> {
             recurringIncomeService: widget.recurringIncomeService,
             incomeService: widget.incomeService,
             goalService: widget.goalService,
+            notificationService: widget.notificationService,
+            notificationPrefsService: widget.notificationPrefsService,
           ),
         ],
       ),
