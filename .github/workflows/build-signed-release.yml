@@ -1,0 +1,86 @@
+name: Build Signed Release (Play Store Ready)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version name (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+# This workflow requires the following secrets to be set in GitHub:
+# - KEYSTORE_BASE64: Base64 encoded keystore file
+# - KEYSTORE_PASSWORD: Keystore password
+# - KEY_ALIAS: Key alias name
+# - KEY_PASSWORD: Key password
+
+jobs:
+  build-signed-android:
+    name: Build Signed APK & AAB
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate Hive adapters
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+
+      # Decode keystore from base64 secret
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+
+      # Create key.properties file
+      - name: Create key.properties
+        run: |
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=upload-keystore.jks" >> android/key.properties
+
+      - name: Build Signed APK
+        run: flutter build apk --release
+
+      - name: Build Signed App Bundle
+        run: flutter build appbundle --release
+
+      - name: Rename artifacts with version
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/ledgerify-${{ github.event.inputs.version }}.apk
+          mv build/app/outputs/bundle/release/app-release.aab build/app/outputs/bundle/release/ledgerify-${{ github.event.inputs.version }}.aab
+
+      - name: Upload Signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-apk-${{ github.event.inputs.version }}
+          path: build/app/outputs/flutter-apk/ledgerify-${{ github.event.inputs.version }}.apk
+
+      - name: Upload Signed AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-aab-${{ github.event.inputs.version }}
+          path: build/app/outputs/bundle/release/ledgerify-${{ github.event.inputs.version }}.aab
+
+      # Cleanup sensitive files
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f android/app/upload-keystore.jks
+          rm -f android/key.properties
