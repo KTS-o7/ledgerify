@@ -5,7 +5,9 @@ import '../services/budget_service.dart';
 import '../services/custom_category_service.dart';
 import '../services/expense_service.dart';
 import '../services/goal_service.dart';
+import '../services/income_service.dart';
 import '../services/recurring_expense_service.dart';
+import '../services/recurring_income_service.dart';
 import '../services/tag_service.dart';
 import '../services/theme_service.dart';
 import '../theme/ledgerify_theme.dart';
@@ -33,6 +35,8 @@ class MainShell extends StatefulWidget {
   final TagService tagService;
   final CustomCategoryService customCategoryService;
   final GoalService goalService;
+  final IncomeService incomeService;
+  final RecurringIncomeService recurringIncomeService;
 
   const MainShell({
     super.key,
@@ -43,6 +47,8 @@ class MainShell extends StatefulWidget {
     required this.tagService,
     required this.customCategoryService,
     required this.goalService,
+    required this.incomeService,
+    required this.recurringIncomeService,
   });
 
   @override
@@ -65,6 +71,8 @@ class _MainShellState extends State<MainShell> {
             recurringService: widget.recurringService,
             tagService: widget.tagService,
             customCategoryService: widget.customCategoryService,
+            incomeService: widget.incomeService,
+            goalService: widget.goalService,
             onNavigateToRecurring: () => _switchTab(1),
           ),
           RecurringListScreen(
@@ -83,6 +91,9 @@ class _MainShellState extends State<MainShell> {
             themeService: widget.themeService,
             tagService: widget.tagService,
             customCategoryService: widget.customCategoryService,
+            recurringIncomeService: widget.recurringIncomeService,
+            incomeService: widget.incomeService,
+            goalService: widget.goalService,
           ),
         ],
       ),

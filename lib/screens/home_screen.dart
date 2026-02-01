@@ -4,14 +4,19 @@ import '../models/expense.dart';
 import '../models/recurring_expense.dart';
 import '../services/custom_category_service.dart';
 import '../services/expense_service.dart';
+import '../services/goal_service.dart';
+import '../services/income_service.dart';
 import '../services/recurring_expense_service.dart';
 import '../services/tag_service.dart';
 import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
+import '../widgets/add_edit_goal_sheet.dart';
+import '../widgets/add_income_sheet.dart';
 import '../widgets/expense_list_tile.dart';
 import '../widgets/filter_sheet.dart';
 import '../widgets/monthly_summary_card.dart';
 import '../widgets/charts/category_donut_chart.dart';
+import '../widgets/quick_add_sheet.dart';
 import '../widgets/search_filter_bar.dart';
 import '../widgets/upcoming_recurring_card.dart';
 import 'add_expense_screen.dart';
@@ -29,6 +34,8 @@ class HomeScreen extends StatefulWidget {
   final RecurringExpenseService recurringService;
   final TagService tagService;
   final CustomCategoryService customCategoryService;
+  final IncomeService incomeService;
+  final GoalService goalService;
   final VoidCallback? onNavigateToRecurring;
 
   const HomeScreen({
@@ -37,6 +44,8 @@ class HomeScreen extends StatefulWidget {
     required this.recurringService,
     required this.tagService,
     required this.customCategoryService,
+    required this.incomeService,
+    required this.goalService,
     this.onNavigateToRecurring,
   });
 
@@ -135,6 +144,33 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _showQuickAddSheet() async {
+    final action = await QuickAddSheet.show(context);
+    if (action == null || !mounted) return;
+
+    switch (action) {
+      case QuickAddAction.expense:
+        // Navigate to AddExpenseScreen (existing logic)
+        await _navigateToAddExpense();
+        break;
+      case QuickAddAction.income:
+        // Show AddIncomeSheet
+        await AddIncomeSheet.show(
+          context,
+          incomeService: widget.incomeService,
+          goalService: widget.goalService,
+        );
+        break;
+      case QuickAddAction.goal:
+        // Show AddEditGoalSheet
+        await AddEditGoalSheet.show(
+          context,
+          goalService: widget.goalService,
+        );
+        break;
+    }
   }
 
   Future<void> _confirmDelete(Expense expense) async {
@@ -375,21 +411,10 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _navigateToAddExpense(),
-        icon: const Icon(Icons.add_rounded),
-        label: Text(
-          'Add Expense',
-          style: LedgerifyTypography.labelLarge.copyWith(
-            color: colors.brightness == Brightness.dark
-                ? colors.background
-                : Colors.white,
-          ),
-        ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showQuickAddSheet,
         backgroundColor: colors.accent,
-        foregroundColor: colors.brightness == Brightness.dark
-            ? colors.background
-            : Colors.white,
+        child: Icon(Icons.add_rounded, color: colors.background),
       ),
     );
   }

@@ -1,0 +1,203 @@
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:uuid/uuid.dart';
+import '../models/income.dart';
+import 'goal_service.dart';
+
+/// Service class for managing income entries with Hive local storage.
+///
+/// This service provides CRUD operations for income entries, including
+/// goal allocation management. When income is added with allocations,
+/// contributions are automatically applied to the associated goals.
+class IncomeService {
+  static const Uuid _uuid = Uuid();
+
+  final Box<Income> _incomeBox;
+  final GoalService _goalService;
+
+  /// Creates an IncomeService with the given Hive box and GoalService.
+  IncomeService(this._incomeBox, this._goalService);
+
+  /// Returns the listenable box for reactive UI updates.
+  /// Use this with ValueListenableBuilder to rebuild UI on data changes.
+  Box<Income> get box => _incomeBox;
+
+  /// Generates a new unique ID for an income entry.
+  String generateId() => _uuid.v4();
+
+  // ============================================================================
+  // CRUD Operations
+  // ============================================================================
+
+  /// Retrieves all incomes, sorted by date (newest first).
+  List<Income> getAllIncomes() {
+    final incomes = _incomeBox.values.toList();
+    incomes.sort((a, b) => b.date.compareTo(a.date));
+    return incomes;
+  }
+
+  /// Retrieves incomes for a specific month and year.
+  /// Sorted by date (newest first).
+  List<Income> getIncomesForMonth(int year, int month) {
+    final monthIncomes = _incomeBox.values.where((income) {
+      return income.date.year == year && income.date.month == month;
+    }).toList();
+    monthIncomes.sort((a, b) => b.date.compareTo(a.date));
+    return monthIncomes;
+  }
+
+  /// Retrieves a single income by ID.
+  /// Returns null if not found.
+  Income? getIncome(String id) {
+    return _incomeBox.get(id);
+  }
+
+  /// Adds a new income entry with optional goal allocations.
+  ///
+  /// If [goalAllocations] is provided, contributions are automatically
+  /// applied to the associated goals via GoalService.
+  ///
+  /// Returns the created income entry.
+  Future<Income> addIncome({
+    required double amount,
+    required IncomeSource source,
+    String? description,
+    required DateTime date,
+    List<GoalAllocation>? goalAllocations,
+  }) async {
+    final income = Income(
+      id: generateId(),
+      amount: amount,
+      source: source,
+      description: description,
+      date: date,
+      goalAllocations: goalAllocations ?? [],
+    );
+
+    await _incomeBox.put(income.id, income);
+
+    // Apply goal allocations
+    if (income.hasAllocations) {
+      await _applyAllocations(income.goalAllocations);
+    }
+
+    return income;
+  }
+
+  /// Updates an existing income entry.
+  ///
+  /// If allocations have changed, this method will:
+  /// 1. Reverse the old allocations (remove contributions from goals)
+  /// 2. Apply the new allocations (add contributions to goals)
+  Future<void> updateIncome(Income income) async {
+    final oldIncome = _incomeBox.get(income.id);
+
+    // Reverse old allocations if they existed
+    if (oldIncome != null && oldIncome.hasAllocations) {
+      await _reverseAllocations(oldIncome.goalAllocations);
+    }
+
+    // Save the updated income
+    await _incomeBox.put(income.id, income);
+
+    // Apply new allocations
+    if (income.hasAllocations) {
+      await _applyAllocations(income.goalAllocations);
+    }
+  }
+
+  /// Deletes an income entry by ID.
+  ///
+  /// Automatically reverses any goal allocations associated with
+  /// the income entry being deleted.
+  Future<void> deleteIncome(String id) async {
+    final income = _incomeBox.get(id);
+
+    if (income != null && income.hasAllocations) {
+      await _reverseAllocations(income.goalAllocations);
+    }
+
+    await _incomeBox.delete(id);
+  }
+
+  // ============================================================================
+  // Goal Allocation Logic
+  // ============================================================================
+
+  /// Calculates allocation amounts from percentages.
+  ///
+  /// Takes an income amount and a list of allocation specifications
+  /// (goalId + percentage) and returns a list of [GoalAllocation] objects
+  /// with calculated amounts.
+  ///
+  /// Example:
+  /// ```dart
+  /// final allocations = service.calculateAllocations(10000, [
+  ///   (goalId: 'goal-1', percentage: 20.0), // 2000
+  ///   (goalId: 'goal-2', percentage: 10.0), // 1000
+  /// ]);
+  /// ```
+  List<GoalAllocation> calculateAllocations(
+    double amount,
+    List<({String goalId, double percentage})> allocations,
+  ) {
+    return allocations.map((spec) {
+      final allocatedAmount = (amount * spec.percentage) / 100.0;
+      return GoalAllocation(
+        goalId: spec.goalId,
+        percentage: spec.percentage,
+        amount: allocatedAmount,
+      );
+    }).toList();
+  }
+
+  /// Applies goal allocations by adding contributions to goals via GoalService.
+  Future<void> _applyAllocations(List<GoalAllocation> allocations) async {
+    for (final allocation in allocations) {
+      await _goalService.addContribution(allocation.goalId, allocation.amount);
+    }
+  }
+
+  /// Reverses goal allocations by withdrawing contributions from goals.
+  ///
+  /// Used when deleting an income entry or updating allocations.
+  Future<void> _reverseAllocations(List<GoalAllocation> allocations) async {
+    for (final allocation in allocations) {
+      await _goalService.withdrawContribution(
+          allocation.goalId, allocation.amount);
+    }
+  }
+
+  // ============================================================================
+  // Analytics
+  // ============================================================================
+
+  /// Returns the total income for a specific month.
+  double getTotalIncomeForMonth(int year, int month) {
+    double total = 0.0;
+
+    for (final income in _incomeBox.values) {
+      if (income.date.year == year && income.date.month == month) {
+        total += income.amount;
+      }
+    }
+
+    return total;
+  }
+
+  /// Returns income breakdown by source for a specific month.
+  ///
+  /// Returns a map where keys are [IncomeSource] values and
+  /// values are the total income from that source.
+  Map<IncomeSource, double> getIncomeBySource(int year, int month) {
+    final breakdown = <IncomeSource, double>{};
+
+    for (final income in _incomeBox.values) {
+      if (income.date.year == year && income.date.month == month) {
+        breakdown[income.source] =
+            (breakdown[income.source] ?? 0) + income.amount;
+      }
+    }
+
+    return breakdown;
+  }
+}

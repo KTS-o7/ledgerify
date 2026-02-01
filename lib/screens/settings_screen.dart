@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-import '../services/theme_service.dart';
-import '../services/tag_service.dart';
 import '../services/custom_category_service.dart';
+import '../services/goal_service.dart';
+import '../services/income_service.dart';
+import '../services/recurring_income_service.dart';
+import '../services/tag_service.dart';
+import '../services/theme_service.dart';
 import '../theme/ledgerify_theme.dart';
 import 'category_management_screen.dart';
+import 'recurring_income_screen.dart';
 import 'tag_management_screen.dart';
 
 /// Settings Screen - Ledgerify Design Language
@@ -14,12 +18,18 @@ class SettingsScreen extends StatelessWidget {
   final ThemeService themeService;
   final TagService tagService;
   final CustomCategoryService customCategoryService;
+  final RecurringIncomeService recurringIncomeService;
+  final IncomeService incomeService;
+  final GoalService goalService;
 
   const SettingsScreen({
     super.key,
     required this.themeService,
     required this.tagService,
     required this.customCategoryService,
+    required this.recurringIncomeService,
+    required this.incomeService,
+    required this.goalService,
   });
 
   @override
@@ -77,6 +87,18 @@ class SettingsScreen extends StatelessWidget {
                 _TagsTile(
                   colors: colors,
                   tagService: tagService,
+                ),
+                Divider(
+                  height: 1,
+                  indent: 56,
+                  endIndent: 16,
+                  color: colors.surfaceHighlight,
+                ),
+                _RecurringIncomeTile(
+                  colors: colors,
+                  recurringIncomeService: recurringIncomeService,
+                  incomeService: incomeService,
+                  goalService: goalService,
                 ),
               ],
             ),
@@ -419,6 +441,57 @@ class _TagsTile extends StatelessWidget {
           MaterialPageRoute(
             builder: (context) => TagManagementScreen(
               tagService: tagService,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Recurring Income tile
+class _RecurringIncomeTile extends StatelessWidget {
+  final LedgerifyColorScheme colors;
+  final RecurringIncomeService recurringIncomeService;
+  final IncomeService incomeService;
+  final GoalService goalService;
+
+  const _RecurringIncomeTile({
+    required this.colors,
+    required this.recurringIncomeService,
+    required this.incomeService,
+    required this.goalService,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: LedgerifySpacing.lg,
+        vertical: LedgerifySpacing.xs,
+      ),
+      leading: Icon(
+        Icons.account_balance_wallet_rounded,
+        color: colors.textSecondary,
+      ),
+      title: Text(
+        'Recurring Income',
+        style: LedgerifyTypography.bodyLarge.copyWith(
+          color: colors.textPrimary,
+        ),
+      ),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: colors.textTertiary,
+      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RecurringIncomeScreen(
+              recurringIncomeService: recurringIncomeService,
+              incomeService: incomeService,
+              goalService: goalService,
             ),
           ),
         );

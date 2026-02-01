@@ -3,13 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'models/custom_category.dart';
 import 'models/goal.dart';
+import 'models/income.dart';
+import 'models/recurring_income.dart';
 import 'models/tag.dart';
 import 'services/budget_service.dart';
 import 'services/custom_category_service.dart';
 import 'services/expense_service.dart';
 import 'services/goal_service.dart';
+import 'services/income_service.dart';
 import 'services/notification_service.dart';
 import 'services/recurring_expense_service.dart';
+import 'services/recurring_income_service.dart';
 import 'services/tag_service.dart';
 import 'services/theme_service.dart';
 import 'screens/main_shell.dart';
@@ -44,7 +48,7 @@ void main() async {
   final notificationService = NotificationService();
   await notificationService.init();
 
-  // Register Hive adapters for Tag, CustomCategory, and Goal
+  // Register Hive adapters for Tag, CustomCategory, Goal, and Income
   if (!Hive.isAdapterRegistered(6)) {
     Hive.registerAdapter(TagAdapter());
   }
@@ -54,23 +58,41 @@ void main() async {
   if (!Hive.isAdapterRegistered(8)) {
     Hive.registerAdapter(GoalAdapter());
   }
+  if (!Hive.isAdapterRegistered(9)) {
+    Hive.registerAdapter(IncomeSourceAdapter());
+  }
+  if (!Hive.isAdapterRegistered(10)) {
+    Hive.registerAdapter(GoalAllocationAdapter());
+  }
+  if (!Hive.isAdapterRegistered(11)) {
+    Hive.registerAdapter(IncomeAdapter());
+  }
+  if (!Hive.isAdapterRegistered(12)) {
+    Hive.registerAdapter(RecurringIncomeAdapter());
+  }
 
-  // Open Tag, CustomCategory, and Goal boxes
+  // Open Tag, CustomCategory, Goal, Income, and RecurringIncome boxes
   final tagBox = await Hive.openBox<Tag>('tags');
   final customCategoryBox =
       await Hive.openBox<CustomCategory>('custom_categories');
   final goalBox = await Hive.openBox<Goal>('goals');
+  final incomeBox = await Hive.openBox<Income>('incomes');
+  final recurringIncomeBox =
+      await Hive.openBox<RecurringIncome>('recurring_incomes');
 
-  // Create Tag, CustomCategory, and Goal services
+  // Create Tag, CustomCategory, Goal, Income, and RecurringIncome services
   final tagService = TagService(tagBox);
   final customCategoryService = CustomCategoryService(customCategoryBox);
   final goalService = GoalService(goalBox);
+  final incomeService = IncomeService(incomeBox, goalService);
+  final recurringIncomeService = RecurringIncomeService(recurringIncomeBox);
 
   // Wire up services for budget notifications
   expenseService.setBudgetServices(budgetService, notificationService);
 
-  // Generate due recurring expenses on app open
+  // Generate due recurring expenses and incomes on app open
   await recurringService.generateDueExpenses(expenseService);
+  await recurringIncomeService.generateDueIncomes(incomeService);
 
   // Run the app
   runApp(LedgerifyApp(
@@ -81,6 +103,8 @@ void main() async {
     tagService: tagService,
     customCategoryService: customCategoryService,
     goalService: goalService,
+    incomeService: incomeService,
+    recurringIncomeService: recurringIncomeService,
   ));
 }
 
@@ -96,6 +120,8 @@ class LedgerifyApp extends StatelessWidget {
   final TagService tagService;
   final CustomCategoryService customCategoryService;
   final GoalService goalService;
+  final IncomeService incomeService;
+  final RecurringIncomeService recurringIncomeService;
 
   const LedgerifyApp({
     super.key,
@@ -106,6 +132,8 @@ class LedgerifyApp extends StatelessWidget {
     required this.tagService,
     required this.customCategoryService,
     required this.goalService,
+    required this.incomeService,
+    required this.recurringIncomeService,
   });
 
   @override
@@ -135,6 +163,8 @@ class LedgerifyApp extends StatelessWidget {
             tagService: tagService,
             customCategoryService: customCategoryService,
             goalService: goalService,
+            incomeService: incomeService,
+            recurringIncomeService: recurringIncomeService,
           ),
         );
       },
