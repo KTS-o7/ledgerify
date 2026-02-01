@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'services/budget_service.dart';
 import 'services/expense_service.dart';
+import 'services/notification_service.dart';
 import 'services/recurring_expense_service.dart';
 import 'services/theme_service.dart';
 import 'screens/main_shell.dart';
@@ -32,6 +33,9 @@ void main() async {
 
   final budgetService = BudgetService();
   await budgetService.init();
+
+  final notificationService = NotificationService();
+  await notificationService.init();
 
   // Generate due recurring expenses on app open
   await recurringService.generateDueExpenses(expenseService);

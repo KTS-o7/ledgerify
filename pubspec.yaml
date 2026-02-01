@@ -23,6 +23,9 @@ dependencies:
   # Charts for expense visualization
   fl_chart: ^0.69.0
 
+  # Local notifications for budget alerts
+  flutter_local_notifications: ^17.0.0
+
   # Cupertino icons for iOS-style icons (optional, for consistency)
   cupertino_icons: ^1.0.6
 
