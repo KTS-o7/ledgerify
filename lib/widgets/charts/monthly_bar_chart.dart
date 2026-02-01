@@ -117,7 +117,7 @@ class _MonthlyBarChartState extends State<MonthlyBarChart>
                 alignment: BarChartAlignment.spaceAround,
                 maxY: maxY * 1.15, // Extra space for amount labels
               ),
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 150),
               curve: Curves.easeInOut,
             ),
           );

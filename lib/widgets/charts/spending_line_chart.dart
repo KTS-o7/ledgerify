@@ -232,7 +232,7 @@ class _SpendingLineChartState extends State<SpendingLineChart>
                 minY: 0,
                 maxY: chartData.maxY * 1.1, // 10% padding at top
               ),
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 150),
               curve: Curves.easeInOut,
             ),
           );
