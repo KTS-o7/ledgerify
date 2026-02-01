@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'models/custom_category.dart';
+import 'models/tag.dart';
 import 'services/budget_service.dart';
+import 'services/custom_category_service.dart';
 import 'services/expense_service.dart';
 import 'services/notification_service.dart';
 import 'services/recurring_expense_service.dart';
+import 'services/tag_service.dart';
 import 'services/theme_service.dart';
 import 'screens/main_shell.dart';
 import 'theme/ledgerify_theme.dart';
@@ -37,6 +42,23 @@ void main() async {
   final notificationService = NotificationService();
   await notificationService.init();
 
+  // Register Hive adapters for Tag and CustomCategory
+  if (!Hive.isAdapterRegistered(6)) {
+    Hive.registerAdapter(TagAdapter());
+  }
+  if (!Hive.isAdapterRegistered(7)) {
+    Hive.registerAdapter(CustomCategoryAdapter());
+  }
+
+  // Open Tag and CustomCategory boxes
+  final tagBox = await Hive.openBox<Tag>('tags');
+  final customCategoryBox =
+      await Hive.openBox<CustomCategory>('custom_categories');
+
+  // Create Tag and CustomCategory services
+  final tagService = TagService(tagBox);
+  final customCategoryService = CustomCategoryService(customCategoryBox);
+
   // Wire up services for budget notifications
   expenseService.setBudgetServices(budgetService, notificationService);
 
@@ -49,6 +71,8 @@ void main() async {
     themeService: themeService,
     recurringService: recurringService,
     budgetService: budgetService,
+    tagService: tagService,
+    customCategoryService: customCategoryService,
   ));
 }
 
@@ -61,6 +85,8 @@ class LedgerifyApp extends StatelessWidget {
   final ThemeService themeService;
   final RecurringExpenseService recurringService;
   final BudgetService budgetService;
+  final TagService tagService;
+  final CustomCategoryService customCategoryService;
 
   const LedgerifyApp({
     super.key,
@@ -68,6 +94,8 @@ class LedgerifyApp extends StatelessWidget {
     required this.themeService,
     required this.recurringService,
     required this.budgetService,
+    required this.tagService,
+    required this.customCategoryService,
   });
 
   @override
@@ -94,6 +122,8 @@ class LedgerifyApp extends StatelessWidget {
             themeService: themeService,
             recurringService: recurringService,
             budgetService: budgetService,
+            tagService: tagService,
+            customCategoryService: customCategoryService,
           ),
         );
       },

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/theme_service.dart';
+import '../services/tag_service.dart';
+import '../services/custom_category_service.dart';
 import '../theme/ledgerify_theme.dart';
+import 'category_management_screen.dart';
+import 'tag_management_screen.dart';
 
 /// Settings Screen - Ledgerify Design Language
 ///
@@ -8,10 +12,14 @@ import '../theme/ledgerify_theme.dart';
 /// Note: Recurring expenses are now accessed via bottom navigation tab.
 class SettingsScreen extends StatelessWidget {
   final ThemeService themeService;
+  final TagService tagService;
+  final CustomCategoryService customCategoryService;
 
   const SettingsScreen({
     super.key,
     required this.themeService,
+    required this.tagService,
+    required this.customCategoryService,
   });
 
   @override
@@ -44,6 +52,33 @@ class SettingsScreen extends StatelessWidget {
             child: _ThemeTile(
               themeService: themeService,
               colors: colors,
+            ),
+          ),
+
+          LedgerifySpacing.verticalXl,
+
+          // Data section
+          _SectionHeader(title: 'Data', colors: colors),
+          LedgerifySpacing.verticalSm,
+          _SettingsCard(
+            colors: colors,
+            child: Column(
+              children: [
+                _CustomCategoriesTile(
+                  colors: colors,
+                  customCategoryService: customCategoryService,
+                ),
+                Divider(
+                  height: 1,
+                  indent: 56,
+                  endIndent: 16,
+                  color: colors.surfaceHighlight,
+                ),
+                _TagsTile(
+                  colors: colors,
+                  tagService: tagService,
+                ),
+              ],
             ),
           ),
 
@@ -298,6 +333,96 @@ class _ThemeOption extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Custom Categories tile
+class _CustomCategoriesTile extends StatelessWidget {
+  final LedgerifyColorScheme colors;
+  final CustomCategoryService customCategoryService;
+
+  const _CustomCategoriesTile({
+    required this.colors,
+    required this.customCategoryService,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: LedgerifySpacing.lg,
+        vertical: LedgerifySpacing.xs,
+      ),
+      leading: Icon(
+        Icons.category_rounded,
+        color: colors.textSecondary,
+      ),
+      title: Text(
+        'Custom Categories',
+        style: LedgerifyTypography.bodyLarge.copyWith(
+          color: colors.textPrimary,
+        ),
+      ),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: colors.textTertiary,
+      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CategoryManagementScreen(
+              categoryService: customCategoryService,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Tags tile
+class _TagsTile extends StatelessWidget {
+  final LedgerifyColorScheme colors;
+  final TagService tagService;
+
+  const _TagsTile({
+    required this.colors,
+    required this.tagService,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: LedgerifySpacing.lg,
+        vertical: LedgerifySpacing.xs,
+      ),
+      leading: Icon(
+        Icons.label_rounded,
+        color: colors.textSecondary,
+      ),
+      title: Text(
+        'Tags',
+        style: LedgerifyTypography.bodyLarge.copyWith(
+          color: colors.textPrimary,
+        ),
+      ),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: colors.textTertiary,
+      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TagManagementScreen(
+              tagService: tagService,
+            ),
+          ),
+        );
+      },
     );
   }
 }

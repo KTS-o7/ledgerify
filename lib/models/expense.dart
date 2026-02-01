@@ -100,11 +100,13 @@ extension ExpenseCategoryExtension on ExpenseCategory {
 /// Fields:
 /// - [id]: Unique identifier (UUID)
 /// - [amount]: The expense amount (must be > 0)
-/// - [category]: Category of the expense
+/// - [category]: Category of the expense (built-in)
+/// - [customCategoryId]: Optional custom category ID (overrides category if set)
 /// - [date]: When the expense occurred
 /// - [note]: Optional user note
 /// - [source]: How the expense was added (manual or sms)
 /// - [merchant]: Optional merchant name (useful for SMS parsing later)
+/// - [tagIds]: List of tag IDs associated with this expense
 @HiveType(typeId: 0)
 class Expense extends HiveObject {
   @HiveField(0)
@@ -131,6 +133,16 @@ class Expense extends HiveObject {
   @HiveField(7)
   final DateTime createdAt;
 
+  /// Optional custom category ID. If set, this takes precedence over [category]
+  /// for display purposes, but [category] is still used for analytics grouping.
+  @HiveField(8)
+  final String? customCategoryId;
+
+  /// List of tag IDs associated with this expense.
+  /// Tags provide additional flexible categorization beyond the main category.
+  @HiveField(9)
+  final List<String> tagIds;
+
   Expense({
     required this.id,
     required this.amount,
@@ -140,7 +152,16 @@ class Expense extends HiveObject {
     this.source = ExpenseSource.manual,
     this.merchant,
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+    this.customCategoryId,
+    List<String>? tagIds,
+  })  : createdAt = createdAt ?? DateTime.now(),
+        tagIds = tagIds ?? [];
+
+  /// Whether this expense uses a custom category.
+  bool get hasCustomCategory => customCategoryId != null;
+
+  /// Whether this expense has any tags.
+  bool get hasTags => tagIds.isNotEmpty;
 
   /// Creates a copy of this expense with optional field overrides.
   Expense copyWith({
@@ -152,6 +173,9 @@ class Expense extends HiveObject {
     ExpenseSource? source,
     String? merchant,
     DateTime? createdAt,
+    String? customCategoryId,
+    List<String>? tagIds,
+    bool clearCustomCategory = false,
   }) {
     return Expense(
       id: id ?? this.id,
@@ -162,6 +186,10 @@ class Expense extends HiveObject {
       source: source ?? this.source,
       merchant: merchant ?? this.merchant,
       createdAt: createdAt ?? this.createdAt,
+      customCategoryId: clearCustomCategory
+          ? null
+          : (customCategoryId ?? this.customCategoryId),
+      tagIds: tagIds ?? this.tagIds,
     );
   }
 
@@ -177,6 +205,8 @@ class Expense extends HiveObject {
       'source': source.name,
       'merchant': merchant,
       'createdAt': createdAt.toIso8601String(),
+      'customCategoryId': customCategoryId,
+      'tagIds': tagIds,
     };
   }
 
@@ -199,6 +229,8 @@ class Expense extends HiveObject {
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : null,
+      customCategoryId: json['customCategoryId'] as String?,
+      tagIds: (json['tagIds'] as List<dynamic>?)?.cast<String>() ?? [],
     );
   }
 

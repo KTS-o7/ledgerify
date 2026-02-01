@@ -3,8 +3,12 @@ import 'package:flutter/services.dart';
 import '../models/expense.dart';
 import '../services/expense_service.dart';
 import '../services/recurring_expense_service.dart';
+import '../services/tag_service.dart';
+import '../services/custom_category_service.dart';
 import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
+import '../widgets/tag_chip_input.dart';
+import '../widgets/category_picker_sheet.dart';
 import 'add_recurring_screen.dart';
 
 /// Add/Edit Expense Screen - Ledgerify Design Language
@@ -19,12 +23,16 @@ import 'add_recurring_screen.dart';
 class AddExpenseScreen extends StatefulWidget {
   final ExpenseService expenseService;
   final RecurringExpenseService? recurringService;
+  final TagService tagService;
+  final CustomCategoryService customCategoryService;
   final Expense? expenseToEdit;
 
   const AddExpenseScreen({
     super.key,
     required this.expenseService,
     this.recurringService,
+    required this.tagService,
+    required this.customCategoryService,
     this.expenseToEdit,
   });
 
@@ -44,6 +52,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   bool _isLoading = false;
   bool _isFormValid = false;
 
+  // Tags and custom categories
+  List<String> _selectedTagIds = [];
+  String? _selectedCustomCategoryId;
+
   bool get _isEditing => widget.expenseToEdit != null;
 
   @override
@@ -59,12 +71,16 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       _noteController = TextEditingController(text: expense.note ?? '');
       _selectedCategory = expense.category;
       _selectedDate = expense.date;
+      _selectedTagIds = List<String>.from(expense.tagIds);
+      _selectedCustomCategoryId = expense.customCategoryId;
     } else {
       _titleController = TextEditingController();
       _amountController = TextEditingController();
       _noteController = TextEditingController();
       _selectedCategory = ExpenseCategory.food;
       _selectedDate = DateTime.now();
+      _selectedTagIds = [];
+      _selectedCustomCategoryId = null;
     }
 
     // Listen to amount changes for form validity
@@ -130,16 +146,23 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           date: _selectedDate,
           note: note.isEmpty ? null : note,
           merchant: title.isEmpty ? null : title,
+          customCategoryId: _selectedCustomCategoryId,
+          tagIds: _selectedTagIds,
+          clearCustomCategory: _selectedCustomCategoryId == null,
         );
         await widget.expenseService.updateExpense(updated);
       } else {
-        await widget.expenseService.addExpense(
+        final expense = Expense(
+          id: widget.expenseService.generateId(),
           amount: amount,
           category: _selectedCategory,
           date: _selectedDate,
           note: note.isEmpty ? null : note,
           merchant: title.isEmpty ? null : title,
+          customCategoryId: _selectedCustomCategoryId,
+          tagIds: _selectedTagIds,
         );
+        await widget.expenseService.updateExpense(expense);
       }
 
       if (mounted) {
@@ -212,7 +235,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           LedgerifySpacing.verticalXl,
                           _buildAmountField(colors),
                           LedgerifySpacing.verticalXl,
-                          _buildCategoryDropdown(colors),
+                          _buildCategoryPicker(colors),
+                          LedgerifySpacing.verticalXl,
+                          _buildTagsSection(colors),
                           LedgerifySpacing.verticalXl,
                           _buildDatePicker(colors),
                           LedgerifySpacing.verticalXl,
@@ -375,7 +400,54 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
-  Widget _buildCategoryDropdown(LedgerifyColorScheme colors) {
+  Future<void> _openCategoryPicker() async {
+    final result = await CategoryPickerSheet.show(
+      context,
+      customCategoryService: widget.customCategoryService,
+      selectedBuiltIn:
+          _selectedCustomCategoryId == null ? _selectedCategory : null,
+      selectedCustomId: _selectedCustomCategoryId,
+    );
+
+    if (result != null) {
+      setState(() {
+        if (result.isBuiltIn) {
+          _selectedCategory = result.builtInCategory!;
+          _selectedCustomCategoryId = null;
+        } else if (result.isCustom) {
+          _selectedCustomCategoryId = result.customCategoryId;
+          // Keep the built-in category for analytics grouping
+          // The UI will display custom category info
+        }
+      });
+    }
+  }
+
+  Widget _buildCategoryPicker(LedgerifyColorScheme colors) {
+    // Determine what to display based on selection
+    IconData displayIcon;
+    String displayName;
+    Color iconColor;
+
+    if (_selectedCustomCategoryId != null) {
+      final customCategory =
+          widget.customCategoryService.getCategory(_selectedCustomCategoryId!);
+      if (customCategory != null) {
+        displayIcon = customCategory.icon;
+        displayName = customCategory.name;
+        iconColor = customCategory.color;
+      } else {
+        // Fallback if custom category was deleted
+        displayIcon = _selectedCategory.icon;
+        displayName = _selectedCategory.displayName;
+        iconColor = colors.accent;
+      }
+    } else {
+      displayIcon = _selectedCategory.icon;
+      displayName = _selectedCategory.displayName;
+      iconColor = colors.accent;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -386,69 +458,64 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           ),
         ),
         LedgerifySpacing.verticalSm,
-        DropdownButtonFormField<ExpenseCategory>(
-          initialValue: _selectedCategory,
-          dropdownColor: colors.surfaceElevated,
-          style: LedgerifyTypography.bodyLarge.copyWith(
-            color: colors.textPrimary,
-          ),
-          icon: Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: colors.textTertiary,
-          ),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: colors.surfaceHighlight,
-            border: const OutlineInputBorder(
-              borderRadius: LedgerifyRadius.borderRadiusMd,
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: const OutlineInputBorder(
-              borderRadius: LedgerifyRadius.borderRadiusMd,
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: LedgerifyRadius.borderRadiusMd,
-              borderSide: BorderSide(
-                color: colors.accent,
-                width: 1,
-              ),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
+        InkWell(
+          onTap: _openCategoryPicker,
+          borderRadius: LedgerifyRadius.borderRadiusMd,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
               horizontal: LedgerifySpacing.lg,
-              vertical: LedgerifySpacing.md,
+              vertical: LedgerifySpacing.lg,
             ),
-          ),
-          items: ExpenseCategory.values.map((category) {
-            return DropdownMenuItem(
-              value: category,
-              child: Row(
-                children: [
-                  Icon(
-                    category.icon,
-                    size: 24,
-                    color: colors.textSecondary,
+            decoration: BoxDecoration(
+              color: colors.surfaceHighlight,
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
                   ),
-                  LedgerifySpacing.horizontalMd,
-                  Text(
-                    category.displayName,
+                  child: Icon(
+                    displayIcon,
+                    size: 20,
+                    color: iconColor,
+                  ),
+                ),
+                LedgerifySpacing.horizontalMd,
+                Expanded(
+                  child: Text(
+                    displayName,
                     style: LedgerifyTypography.bodyLarge.copyWith(
                       color: colors.textPrimary,
                     ),
                   ),
-                ],
-              ),
-            );
-          }).toList(),
-          onChanged: (value) {
-            if (value != null) {
-              setState(() {
-                _selectedCategory = value;
-              });
-            }
-          },
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 24,
+                  color: colors.textTertiary,
+                ),
+              ],
+            ),
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _buildTagsSection(LedgerifyColorScheme colors) {
+    return TagChipInput(
+      tagService: widget.tagService,
+      selectedTagIds: _selectedTagIds,
+      onTagsChanged: (newTagIds) {
+        setState(() {
+          _selectedTagIds = newTagIds;
+        });
+      },
     );
   }
 

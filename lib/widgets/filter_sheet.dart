@@ -2,16 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../models/expense.dart';
+import '../models/tag.dart';
+import '../services/tag_service.dart';
 import '../theme/ledgerify_theme.dart';
 
 /// Filter state model for expense filtering.
 ///
 /// Supports filtering by:
 /// - Categories (empty set = all categories)
+/// - Tags (empty set = all tags)
 /// - Date range (start/end dates)
 /// - Amount range (min/max amounts)
 class ExpenseFilter {
   final Set<ExpenseCategory> categories;
+  final Set<String> tagIds;
   final DateTime? startDate;
   final DateTime? endDate;
   final double? minAmount;
@@ -19,6 +23,7 @@ class ExpenseFilter {
 
   const ExpenseFilter({
     this.categories = const {},
+    this.tagIds = const {},
     this.startDate,
     this.endDate,
     this.minAmount,
@@ -28,6 +33,7 @@ class ExpenseFilter {
   /// Returns true if any filter is active
   bool get hasActiveFilters =>
       categories.isNotEmpty ||
+      tagIds.isNotEmpty ||
       startDate != null ||
       endDate != null ||
       minAmount != null ||
@@ -37,6 +43,7 @@ class ExpenseFilter {
   int get activeFilterCount {
     int count = 0;
     if (categories.isNotEmpty) count++;
+    if (tagIds.isNotEmpty) count++;
     if (startDate != null || endDate != null) count++;
     if (minAmount != null || maxAmount != null) count++;
     return count;
@@ -45,6 +52,7 @@ class ExpenseFilter {
   /// Creates a copy with optional field overrides
   ExpenseFilter copyWith({
     Set<ExpenseCategory>? categories,
+    Set<String>? tagIds,
     DateTime? startDate,
     DateTime? endDate,
     double? minAmount,
@@ -56,6 +64,7 @@ class ExpenseFilter {
   }) {
     return ExpenseFilter(
       categories: categories ?? this.categories,
+      tagIds: tagIds ?? this.tagIds,
       startDate: clearStartDate ? null : (startDate ?? this.startDate),
       endDate: clearEndDate ? null : (endDate ?? this.endDate),
       minAmount: clearMinAmount ? null : (minAmount ?? this.minAmount),
@@ -71,6 +80,12 @@ class ExpenseFilter {
     // Category filter
     if (categories.isNotEmpty && !categories.contains(expense.category)) {
       return false;
+    }
+
+    // Check tags (if any tag filter is set, expense must have at least one matching tag)
+    if (tagIds.isNotEmpty) {
+      final hasMatchingTag = expense.tagIds.any((id) => tagIds.contains(id));
+      if (!hasMatchingTag) return false;
     }
 
     // Date range filter
@@ -106,6 +121,7 @@ class ExpenseFilter {
     if (identical(this, other)) return true;
     return other is ExpenseFilter &&
         _setEquals(other.categories, categories) &&
+        _setEquals(other.tagIds, tagIds) &&
         other.startDate == startDate &&
         other.endDate == endDate &&
         other.minAmount == minAmount &&
@@ -116,6 +132,7 @@ class ExpenseFilter {
   int get hashCode {
     return Object.hash(
       Object.hashAll(categories),
+      Object.hashAll(tagIds),
       startDate,
       endDate,
       minAmount,
@@ -131,26 +148,32 @@ class ExpenseFilter {
 
 /// Filter Sheet - Ledgerify Design Language
 ///
-/// A bottom sheet for filtering expenses by category, date range, and amount.
+/// A bottom sheet for filtering expenses by category, tags, date range, and amount.
 /// Follows Quiet Finance design principles: calm, focused, minimal.
 class FilterSheet extends StatefulWidget {
   final ExpenseFilter initialFilter;
+  final TagService tagService;
 
   const FilterSheet({
     super.key,
     required this.initialFilter,
+    required this.tagService,
   });
 
   /// Show as modal bottom sheet, returns updated filter or null if dismissed
   static Future<ExpenseFilter?> show(
     BuildContext context, {
     required ExpenseFilter initialFilter,
+    required TagService tagService,
   }) {
     return showModalBottomSheet<ExpenseFilter>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => FilterSheet(initialFilter: initialFilter),
+      builder: (context) => FilterSheet(
+        initialFilter: initialFilter,
+        tagService: tagService,
+      ),
     );
   }
 
@@ -160,6 +183,7 @@ class FilterSheet extends StatefulWidget {
 
 class _FilterSheetState extends State<FilterSheet> {
   late Set<ExpenseCategory> _selectedCategories;
+  late Set<String> _selectedTagIds;
   late DateTime? _startDate;
   late DateTime? _endDate;
   late TextEditingController _minAmountController;
@@ -167,10 +191,13 @@ class _FilterSheetState extends State<FilterSheet> {
 
   final _dateFormat = DateFormat('MMM d, yyyy');
 
+  late List<Tag> _allTags;
+
   @override
   void initState() {
     super.initState();
     _selectedCategories = Set.from(widget.initialFilter.categories);
+    _selectedTagIds = Set.from(widget.initialFilter.tagIds);
     _startDate = widget.initialFilter.startDate;
     _endDate = widget.initialFilter.endDate;
     _minAmountController = TextEditingController(
@@ -179,6 +206,7 @@ class _FilterSheetState extends State<FilterSheet> {
     _maxAmountController = TextEditingController(
       text: widget.initialFilter.maxAmount?.toStringAsFixed(0) ?? '',
     );
+    _allTags = widget.tagService.getAllTags();
   }
 
   @override
@@ -194,6 +222,7 @@ class _FilterSheetState extends State<FilterSheet> {
 
     return ExpenseFilter(
       categories: _selectedCategories,
+      tagIds: _selectedTagIds,
       startDate: _startDate,
       endDate: _endDate,
       minAmount: minText.isNotEmpty ? double.tryParse(minText) : null,
@@ -204,6 +233,7 @@ class _FilterSheetState extends State<FilterSheet> {
   void _clearAll() {
     setState(() {
       _selectedCategories.clear();
+      _selectedTagIds.clear();
       _startDate = null;
       _endDate = null;
       _minAmountController.clear();
@@ -221,6 +251,16 @@ class _FilterSheetState extends State<FilterSheet> {
         _selectedCategories.remove(category);
       } else {
         _selectedCategories.add(category);
+      }
+    });
+  }
+
+  void _toggleTag(String tagId) {
+    setState(() {
+      if (_selectedTagIds.contains(tagId)) {
+        _selectedTagIds.remove(tagId);
+      } else {
+        _selectedTagIds.add(tagId);
       }
     });
   }
@@ -311,6 +351,9 @@ class _FilterSheetState extends State<FilterSheet> {
               LedgerifySpacing.verticalXl,
               // Categories section
               _buildCategoriesSection(colors),
+              LedgerifySpacing.verticalXl,
+              // Tags section
+              _buildTagsSection(colors),
               LedgerifySpacing.verticalXl,
               // Date range section
               _buildDateRangeSection(colors),
@@ -446,6 +489,84 @@ class _FilterSheetState extends State<FilterSheet> {
       case ExpenseCategory.other:
         return 'Other';
     }
+  }
+
+  Widget _buildTagsSection(LedgerifyColorScheme colors) {
+    if (_allTags.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Tags',
+          style: LedgerifyTypography.labelMedium.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
+        LedgerifySpacing.verticalSm,
+        Wrap(
+          spacing: LedgerifySpacing.sm,
+          runSpacing: LedgerifySpacing.sm,
+          children: _allTags.map((tag) {
+            final isSelected = _selectedTagIds.contains(tag.id);
+            return _buildTagChip(tag, isSelected, colors);
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTagChip(
+    Tag tag,
+    bool isSelected,
+    LedgerifyColorScheme colors,
+  ) {
+    return GestureDetector(
+      onTap: () => _toggleTag(tag.id),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(
+          horizontal: LedgerifySpacing.md,
+          vertical: LedgerifySpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? colors.accent : colors.surfaceHighlight,
+          borderRadius: LedgerifyRadius.borderRadiusSm,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: isSelected ? colors.background : tag.color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            LedgerifySpacing.horizontalXs,
+            Text(
+              tag.name,
+              style: LedgerifyTypography.labelMedium.copyWith(
+                color: isSelected ? colors.background : colors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+            if (isSelected) ...[
+              LedgerifySpacing.horizontalXs,
+              Icon(
+                Icons.check_rounded,
+                size: 14,
+                color: colors.background,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildDateRangeSection(LedgerifyColorScheme colors) {

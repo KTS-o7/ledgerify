@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/expense.dart';
 import '../models/recurring_expense.dart';
+import '../services/custom_category_service.dart';
 import '../services/expense_service.dart';
 import '../services/recurring_expense_service.dart';
+import '../services/tag_service.dart';
 import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
 import '../widgets/expense_list_tile.dart';
@@ -25,12 +27,16 @@ import 'add_recurring_screen.dart';
 class HomeScreen extends StatefulWidget {
   final ExpenseService expenseService;
   final RecurringExpenseService recurringService;
+  final TagService tagService;
+  final CustomCategoryService customCategoryService;
   final VoidCallback? onNavigateToRecurring;
 
   const HomeScreen({
     super.key,
     required this.expenseService,
     required this.recurringService,
+    required this.tagService,
+    required this.customCategoryService,
     this.onNavigateToRecurring,
   });
 
@@ -72,6 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final result = await FilterSheet.show(
       context,
       initialFilter: _filter,
+      tagService: widget.tagService,
     );
     if (result != null) {
       setState(() {
@@ -96,6 +103,8 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context) => AddExpenseScreen(
           expenseService: widget.expenseService,
           recurringService: widget.recurringService,
+          tagService: widget.tagService,
+          customCategoryService: widget.customCategoryService,
           expenseToEdit: expenseToEdit,
         ),
       ),

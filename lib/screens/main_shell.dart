@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/recurring_expense.dart';
 import '../services/budget_service.dart';
+import '../services/custom_category_service.dart';
 import '../services/expense_service.dart';
 import '../services/recurring_expense_service.dart';
+import '../services/tag_service.dart';
 import '../services/theme_service.dart';
 import '../theme/ledgerify_theme.dart';
 import 'analytics_screen.dart';
@@ -25,6 +27,8 @@ class MainShell extends StatefulWidget {
   final ThemeService themeService;
   final RecurringExpenseService recurringService;
   final BudgetService budgetService;
+  final TagService tagService;
+  final CustomCategoryService customCategoryService;
 
   const MainShell({
     super.key,
@@ -32,6 +36,8 @@ class MainShell extends StatefulWidget {
     required this.themeService,
     required this.recurringService,
     required this.budgetService,
+    required this.tagService,
+    required this.customCategoryService,
   });
 
   @override
@@ -52,6 +58,8 @@ class _MainShellState extends State<MainShell> {
           HomeScreen(
             expenseService: widget.expenseService,
             recurringService: widget.recurringService,
+            tagService: widget.tagService,
+            customCategoryService: widget.customCategoryService,
             onNavigateToRecurring: () => _switchTab(1),
           ),
           RecurringListScreen(
@@ -65,6 +73,8 @@ class _MainShellState extends State<MainShell> {
           ),
           SettingsScreen(
             themeService: widget.themeService,
+            tagService: widget.tagService,
+            customCategoryService: widget.customCategoryService,
           ),
         ],
       ),
