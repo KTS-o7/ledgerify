@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/sms_transaction.dart';
+import '../services/custom_category_service.dart';
 import '../services/sms_permission_service.dart';
 import '../services/sms_transaction_service.dart';
 import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
+import 'sms_review_screen.dart';
 
 /// Screen for importing transactions from SMS.
 ///
@@ -11,11 +13,13 @@ import '../utils/currency_formatter.dart';
 class SmsImportScreen extends StatefulWidget {
   final SmsPermissionService smsPermissionService;
   final SmsTransactionService smsTransactionService;
+  final CustomCategoryService customCategoryService;
 
   const SmsImportScreen({
     super.key,
     required this.smsPermissionService,
     required this.smsTransactionService,
+    required this.customCategoryService,
   });
 
   @override
@@ -414,8 +418,15 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
             width: double.infinity,
             child: FilledButton(
               onPressed: () {
-                // TODO: Navigate to pending transactions screen
-                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SmsReviewScreen(
+                      smsTransactionService: widget.smsTransactionService,
+                      customCategoryService: widget.customCategoryService,
+                    ),
+                  ),
+                );
               },
               style: FilledButton.styleFrom(
                 backgroundColor: colors.accent,

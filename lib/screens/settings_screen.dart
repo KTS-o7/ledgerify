@@ -117,6 +117,7 @@ class SettingsScreen extends StatelessWidget {
                   colors: colors,
                   smsPermissionService: smsPermissionService,
                   smsTransactionService: smsTransactionService,
+                  customCategoryService: customCategoryService,
                 ),
               ],
             ),
@@ -472,11 +473,13 @@ class _SmsImportTile extends StatelessWidget {
   final LedgerifyColorScheme colors;
   final SmsPermissionService smsPermissionService;
   final SmsTransactionService smsTransactionService;
+  final CustomCategoryService customCategoryService;
 
   const _SmsImportTile({
     required this.colors,
     required this.smsPermissionService,
     required this.smsTransactionService,
+    required this.customCategoryService,
   });
 
   @override
@@ -513,6 +516,7 @@ class _SmsImportTile extends StatelessWidget {
             builder: (context) => SmsImportScreen(
               smsPermissionService: smsPermissionService,
               smsTransactionService: smsTransactionService,
+              customCategoryService: customCategoryService,
             ),
           ),
         );

@@ -197,6 +197,53 @@ class SmsTransactionService {
     return expenses;
   }
 
+  /// Confirm multiple credit transactions as incomes (batch operation)
+  ///
+  /// [transactions] - List of SMS transactions to confirm
+  /// [sourceOverrides] - Optional map of smsId to IncomeSource for custom sources
+  ///
+  /// Returns the list of created Income records.
+  Future<List<Income>> confirmMultipleAsIncomes(
+    List<SmsTransaction> transactions, {
+    Map<String, IncomeSource>? sourceOverrides,
+  }) async {
+    final incomes = <Income>[];
+
+    for (final transaction in transactions) {
+      if (transaction.isCredit && transaction.isPending) {
+        final source =
+            sourceOverrides?[transaction.smsId] ?? IncomeSource.other;
+        final income = await confirmAsIncome(transaction, source: source);
+        incomes.add(income);
+      }
+    }
+
+    return incomes;
+  }
+
+  /// Confirm multiple debit transactions as expenses with category overrides
+  ///
+  /// [transactions] - List of SMS transactions to confirm
+  /// [categoryOverrides] - Optional map of smsId to ExpenseCategory
+  ///
+  /// Returns the list of created Expense records.
+  Future<List<Expense>> confirmMultipleAsExpensesWithOverrides(
+    List<SmsTransaction> transactions, {
+    Map<String, ExpenseCategory>? categoryOverrides,
+  }) async {
+    final expenses = <Expense>[];
+
+    for (final transaction in transactions) {
+      if (transaction.isDebit && transaction.isPending) {
+        final category = categoryOverrides?[transaction.smsId];
+        final expense = await confirmAsExpense(transaction, category: category);
+        expenses.add(expense);
+      }
+    }
+
+    return expenses;
+  }
+
   /// Skip multiple transactions (batch operation)
   Future<void> skipMultiple(List<SmsTransaction> transactions) async {
     for (final transaction in transactions) {
