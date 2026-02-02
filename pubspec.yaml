@@ -32,6 +32,12 @@ dependencies:
   # Cupertino icons for iOS-style icons (optional, for consistency)
   cupertino_icons: ^1.0.6
 
+  # SMS Reading
+  flutter_sms_inbox: ^1.0.4
+
+  # Permissions
+  permission_handler: ^11.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
