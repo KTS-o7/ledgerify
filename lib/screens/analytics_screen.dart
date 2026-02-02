@@ -5,7 +5,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import '../models/budget.dart';
 import '../models/expense.dart';
-import '../models/income.dart';
 import '../models/smart_insight.dart';
 import '../services/budget_service.dart';
 import '../services/expense_service.dart';
@@ -79,6 +78,37 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   /// Debounce timer for month navigation
   Timer? _monthChangeDebounce;
 
+  // ============================================================================
+  // Cached Analytics Data
+  // ============================================================================
+
+  /// Cached expense summary for selected month
+  MonthSummary? _expenseSummary;
+
+  /// Cached income summary for selected month
+  IncomeSummary? _incomeSummary;
+
+  /// Cached expense summary for previous month (comparison)
+  MonthSummary? _prevExpenseSummary;
+
+  /// Cached budgets for selected month
+  List<Budget>? _budgets;
+
+  /// Cached budget progress list
+  List<BudgetProgress>? _budgetProgressList;
+
+  /// Cached smart insights
+  List<SmartInsight>? _insights;
+
+  /// Cached monthly totals for trend chart
+  List<MonthlyTotal>? _monthlyTotals;
+
+  /// Cached average spending for pace indicator
+  double _avgSpending = 0;
+
+  /// Flag to track if data has been initialized
+  bool _isDataInitialized = false;
+
   @override
   void initState() {
     super.initState();
@@ -93,12 +123,86 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           incomeService: widget.incomeService,
           budgetService: widget.budgetService,
         );
+
+    // Add listeners to Hive boxes for reactive updates
+    widget.expenseService.box.listenable().addListener(_onDataChanged);
+    widget.incomeService.box.listenable().addListener(_onDataChanged);
+    widget.budgetService.box.listenable().addListener(_onDataChanged);
+
+    // Initial data load
+    _refreshAnalyticsData();
   }
 
   @override
   void dispose() {
     _monthChangeDebounce?.cancel();
+
+    // Remove Hive box listeners
+    widget.expenseService.box.listenable().removeListener(_onDataChanged);
+    widget.incomeService.box.listenable().removeListener(_onDataChanged);
+    widget.budgetService.box.listenable().removeListener(_onDataChanged);
+
     super.dispose();
+  }
+
+  /// Callback for Hive box changes - refreshes cached data
+  void _onDataChanged() {
+    if (mounted) {
+      _refreshAnalyticsData();
+    }
+  }
+
+  /// Refreshes all cached analytics data for the selected month
+  void _refreshAnalyticsData() {
+    final year = _selectedMonth.year;
+    final month = _selectedMonth.month;
+
+    // Current month data
+    _expenseSummary = widget.expenseService.getMonthSummary(year, month);
+    _incomeSummary = widget.incomeService.getMonthSummary(year, month);
+
+    // Previous month for comparison
+    final prevMonth = DateTime(year, month - 1);
+    _prevExpenseSummary = widget.expenseService.getMonthSummary(
+      prevMonth.year,
+      prevMonth.month,
+    );
+
+    // Generate insights
+    _insights = _insightService.generateInsights(year, month);
+
+    // Monthly totals for trend chart (6 months)
+    _monthlyTotals = widget.expenseService.getMonthlyTotals(6);
+
+    // Calculate average monthly spending (last 3 completed months) for pace indicator
+    _avgSpending = 0;
+    if (_monthlyTotals != null && _monthlyTotals!.length >= 2) {
+      // Exclude current month from average if we're viewing current month
+      final totalsForAverage = _isCurrentMonth && _monthlyTotals!.length > 1
+          ? _monthlyTotals!.sublist(0, _monthlyTotals!.length - 1).take(3)
+          : _monthlyTotals!.take(3);
+
+      if (totalsForAverage.isNotEmpty) {
+        _avgSpending =
+            totalsForAverage.map((m) => m.total).reduce((a, b) => a + b) /
+                totalsForAverage.length;
+      }
+    }
+
+    // Budget data for the selected month
+    _budgets = widget.budgetService.getAllBudgetsForMonth(year, month);
+    _budgetProgressList = _calculateBudgetProgress(
+      _budgets!,
+      _expenseSummary!.breakdown,
+      _expenseSummary!.total,
+    );
+
+    _isDataInitialized = true;
+
+    // Trigger rebuild
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   /// Navigate to the previous month (debounced)
@@ -106,12 +210,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     _monthChangeDebounce?.cancel();
     _monthChangeDebounce = Timer(const Duration(milliseconds: 100), () {
       if (mounted) {
-        setState(() {
-          _selectedMonth = DateTime(
-            _selectedMonth.year,
-            _selectedMonth.month - 1,
-          );
-        });
+        _selectedMonth = DateTime(
+          _selectedMonth.year,
+          _selectedMonth.month - 1,
+        );
+        _refreshAnalyticsData();
       }
     });
   }
@@ -124,9 +227,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     _monthChangeDebounce?.cancel();
     _monthChangeDebounce = Timer(const Duration(milliseconds: 100), () {
       if (mounted && !nextMonth.isAfter(DateTime(now.year, now.month))) {
-        setState(() {
-          _selectedMonth = nextMonth;
-        });
+        _selectedMonth = nextMonth;
+        _refreshAnalyticsData();
       }
     });
   }
@@ -253,22 +355,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       body: GestureDetector(
         onHorizontalDragEnd: _handleHorizontalSwipe,
         behavior: HitTestBehavior.translucent,
-        child: ValueListenableBuilder(
-          valueListenable: widget.expenseService.box.listenable(),
-          builder: (context, Box<Expense> expenseBox, _) {
-            return ValueListenableBuilder(
-              valueListenable: widget.incomeService.box.listenable(),
-              builder: (context, Box<Income> incomeBox, _) {
-                return ValueListenableBuilder(
-                  valueListenable: widget.budgetService.box.listenable(),
-                  builder: (context, Box<Budget> budgetBox, _) {
-                    return _buildContent(colors);
-                  },
-                );
-              },
-            );
-          },
-        ),
+        child: _isDataInitialized
+            ? _buildContent(colors)
+            : const Center(child: CircularProgressIndicator()),
       ),
     );
   }
@@ -324,64 +413,33 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  /// Builds the main scrollable content
+  /// Builds the main scrollable content using cached data
   Widget _buildContent(LedgerifyColorScheme colors) {
     final year = _selectedMonth.year;
     final month = _selectedMonth.month;
 
-    // Current month data
-    final expenseSummary = widget.expenseService.getMonthSummary(year, month);
-    final incomeSummary = widget.incomeService.getMonthSummary(year, month);
+    // Use cached data (already computed in _refreshAnalyticsData)
+    final expenseSummary = _expenseSummary!;
+    final incomeSummary = _incomeSummary!;
+    final prevExpenseSummary = _prevExpenseSummary!;
+    final insights = _insights!;
+    final monthlyTotals = _monthlyTotals!;
+    final budgetProgressList = _budgetProgressList!;
 
-    // Previous month for comparison
-    final prevMonth = DateTime(year, month - 1);
-    final prevExpenseSummary = widget.expenseService.getMonthSummary(
-      prevMonth.year,
-      prevMonth.month,
-    );
-
-    // Generate insights
-    final insights = _insightService.generateInsights(year, month);
-
-    // Category breakdown items with trends
+    // Build category items (needs context for colors, so computed here)
     final categoryItems = _buildCategoryBreakdownItems(
       context,
       expenseSummary.breakdown,
       prevExpenseSummary.breakdown,
     );
 
-    // Monthly totals for trend chart (6 months)
-    final monthlyTotals = widget.expenseService.getMonthlyTotals(6);
-
     // Find the index of selected month in the trend data
     final selectedMonthIndex = monthlyTotals.indexWhere(
       (m) => m.year == year && m.month == month,
     );
 
-    // Calculate average monthly spending (last 3 completed months) for pace indicator
-    double avgSpending = 0;
-    if (monthlyTotals.length >= 2) {
-      // Exclude current month from average if we're viewing current month
-      final totalsForAverage = _isCurrentMonth && monthlyTotals.length > 1
-          ? monthlyTotals.sublist(0, monthlyTotals.length - 1).take(3)
-          : monthlyTotals.take(3);
-
-      if (totalsForAverage.isNotEmpty) {
-        avgSpending =
-            totalsForAverage.map((m) => m.total).reduce((a, b) => a + b) /
-                totalsForAverage.length;
-      }
-    }
-
-    // Budget data for the selected month
-    final budgets = widget.budgetService.getAllBudgetsForMonth(year, month);
-    final budgetProgressList = _calculateBudgetProgress(
-      budgets,
-      expenseSummary.breakdown,
-      expenseSummary.total,
-    );
-
     // Get month labels for hero card
+    final prevMonth = DateTime(year, month - 1);
     final currentMonthLabel = _shortMonthNames[month];
     final prevMonthLabel = _shortMonthNames[prevMonth.month];
 
@@ -416,10 +474,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ],
 
           // Spending Pace Indicator (only for current month)
-          if (_isCurrentMonth && avgSpending > 0) ...[
+          if (_isCurrentMonth && _avgSpending > 0) ...[
             SpendingPaceIndicator(
               totalSpentThisMonth: expenseSummary.total,
-              averageMonthlySpending: avgSpending,
+              averageMonthlySpending: _avgSpending,
               selectedMonth: _selectedMonth,
             ),
             LedgerifySpacing.verticalLg,

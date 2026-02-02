@@ -231,9 +231,7 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
                   foregroundColor: colors.background,
                   padding:
                       const EdgeInsets.symmetric(vertical: LedgerifySpacing.md),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: LedgerifyRadius.borderRadiusMd,
-                  ),
+                  shape: LedgerifyRadius.shapeMd,
                 ),
                 child: Text(
                   'Grant Permission',
@@ -316,9 +314,7 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
               foregroundColor: colors.background,
               padding:
                   const EdgeInsets.symmetric(vertical: LedgerifySpacing.md),
-              shape: RoundedRectangleBorder(
-                borderRadius: LedgerifyRadius.borderRadiusMd,
-              ),
+              shape: LedgerifyRadius.shapeMd,
             ),
           ),
         ),
@@ -426,9 +422,7 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
                 foregroundColor: colors.background,
                 padding:
                     const EdgeInsets.symmetric(vertical: LedgerifySpacing.md),
-                shape: RoundedRectangleBorder(
-                  borderRadius: LedgerifyRadius.borderRadiusMd,
-                ),
+                shape: LedgerifyRadius.shapeMd,
               ),
               child: const Text('Review Transactions'),
             ),
@@ -447,9 +441,7 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
               side: BorderSide(color: colors.surfaceHighlight),
               padding:
                   const EdgeInsets.symmetric(vertical: LedgerifySpacing.md),
-              shape: RoundedRectangleBorder(
-                borderRadius: LedgerifyRadius.borderRadiusMd,
-              ),
+              shape: LedgerifyRadius.shapeMd,
             ),
             child: const Text('Scan Again'),
           ),

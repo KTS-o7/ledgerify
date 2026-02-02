@@ -114,48 +114,50 @@ class GoalCard extends StatelessWidget {
     return SizedBox(
       width: 64,
       height: 64,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Background track
-          SizedBox(
-            width: 64,
-            height: 64,
-            child: CustomPaint(
-              painter: _CircularProgressPainter(
-                progress: goal.progress.clamp(0.0, 1.0),
-                progressColor: progressColor,
-                trackColor: trackColor,
-                strokeWidth: 5,
+      child: RepaintBoundary(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Background track
+            SizedBox(
+              width: 64,
+              height: 64,
+              child: CustomPaint(
+                painter: _CircularProgressPainter(
+                  progress: goal.progress.clamp(0.0, 1.0),
+                  progressColor: progressColor,
+                  trackColor: trackColor,
+                  strokeWidth: 5,
+                ),
               ),
             ),
-          ),
-          // Center content: percentage or checkmark
-          if (goal.isCompleted)
-            Icon(
-              Icons.check_rounded,
-              size: 28,
-              color: colors.accent,
-            )
-          else
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '$progressPercent%',
-                  style: LedgerifyTypography.labelLarge.copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w600,
+            // Center content: percentage or checkmark
+            if (goal.isCompleted)
+              Icon(
+                Icons.check_rounded,
+                size: 28,
+                color: colors.accent,
+              )
+            else
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '$progressPercent%',
+                    style: LedgerifyTypography.labelLarge.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                Icon(
-                  goal.icon,
-                  size: 16,
-                  color: progressColor,
-                ),
-              ],
-            ),
-        ],
+                  Icon(
+                    goal.icon,
+                    size: 16,
+                    color: progressColor,
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }

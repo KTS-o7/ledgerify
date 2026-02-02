@@ -22,7 +22,7 @@ import '../utils/currency_formatter.dart';
 /// - Type indicator: filled circle for income, outline for expense
 /// - Quick actions: checkmark for income (mark received), Pay for expense
 /// - Hidden when no upcoming items
-class UpcomingRecurringCard extends StatelessWidget {
+class UpcomingRecurringCard extends StatefulWidget {
   final RecurringExpenseService recurringExpenseService;
   final RecurringIncomeService recurringIncomeService;
   final ExpenseService? expenseService;
@@ -44,25 +44,119 @@ class UpcomingRecurringCard extends StatelessWidget {
     this.onIncomeReceived,
   });
 
+  @override
+  State<UpcomingRecurringCard> createState() => _UpcomingRecurringCardState();
+}
+
+class _UpcomingRecurringCardState extends State<UpcomingRecurringCard> {
+  // Cached data to avoid recomputation on every build
+  List<UnifiedRecurringItem> _upcomingItems = [];
+  int _thisWeekCount = 0;
+  DateTime _today = DateTime.now();
+
+  // Box listeners for reactive updates
+  VoidCallback? _expenseBoxListener;
+  VoidCallback? _incomeBoxListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshData();
+    _setupListeners();
+  }
+
+  @override
+  void dispose() {
+    _removeListeners();
+    super.dispose();
+  }
+
+  /// Sets up Hive box listeners for reactive updates
+  void _setupListeners() {
+    _expenseBoxListener = () => _refreshData();
+    _incomeBoxListener = () => _refreshData();
+
+    widget.recurringExpenseService.box
+        .listenable()
+        .addListener(_expenseBoxListener!);
+    widget.recurringIncomeService.box
+        .listenable()
+        .addListener(_incomeBoxListener!);
+  }
+
+  /// Removes Hive box listeners
+  void _removeListeners() {
+    if (_expenseBoxListener != null) {
+      widget.recurringExpenseService.box
+          .listenable()
+          .removeListener(_expenseBoxListener!);
+    }
+    if (_incomeBoxListener != null) {
+      widget.recurringIncomeService.box
+          .listenable()
+          .removeListener(_incomeBoxListener!);
+    }
+  }
+
+  /// Refreshes all cached data from services
+  void _refreshData() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final endDate = today.add(const Duration(days: 14));
+
+    // Get upcoming expenses
+    final upcomingExpenses =
+        widget.recurringExpenseService.getUpcoming(days: 14);
+
+    // Get upcoming income (filter active items due within 14 days)
+    final upcomingIncome =
+        widget.recurringIncomeService.getActiveRecurringIncomes().where((item) {
+      final nextDate = DateTime(
+        item.nextDate.year,
+        item.nextDate.month,
+        item.nextDate.day,
+      );
+      return !nextDate.isAfter(endDate);
+    }).toList();
+
+    // Convert to unified items
+    final items = UnifiedRecurringItemFactory.fromLists(
+      incomes: upcomingIncome,
+      expenses: upcomingExpenses,
+      sortByNextDate: true,
+    );
+
+    // Calculate this week count
+    final thisWeekCount =
+        widget.recurringExpenseService.getUpcomingCount(days: 7) +
+            widget.recurringIncomeService.getUpcomingCount(days: 7);
+
+    setState(() {
+      _upcomingItems = items.take(5).toList();
+      _thisWeekCount = thisWeekCount;
+      _today = today;
+    });
+  }
+
   /// Handles paying an expense now
   Future<void> _handlePayExpense(
       BuildContext context, RecurringExpense expense) async {
-    if (expenseService == null) return;
+    if (widget.expenseService == null) return;
 
-    final generatedExpense =
-        await recurringExpenseService.payNow(expense.id, expenseService!);
-    if (generatedExpense != null && onExpensePaid != null) {
-      onExpensePaid!(expense);
+    final generatedExpense = await widget.recurringExpenseService
+        .payNow(expense.id, widget.expenseService!);
+    if (generatedExpense != null && widget.onExpensePaid != null) {
+      widget.onExpensePaid!(expense);
     }
   }
 
   /// Handles marking income as received
   Future<void> _handleMarkReceived(
       BuildContext context, RecurringIncome income) async {
-    if (incomeService == null) return;
+    if (widget.incomeService == null) return;
 
     // Create the income entry
-    await incomeService!.addIncome(
+    await widget.incomeService!.addIncome(
       amount: income.amount,
       source: income.source,
       description: income.description,
@@ -77,10 +171,10 @@ class UpcomingRecurringCard extends StatelessWidget {
       nextDate: nextDate,
       lastGeneratedDate: DateTime.now(),
     );
-    await recurringIncomeService.updateRecurringIncome(updated);
+    await widget.recurringIncomeService.updateRecurringIncome(updated);
 
-    if (onIncomeReceived != null) {
-      onIncomeReceived!(income);
+    if (widget.onIncomeReceived != null) {
+      widget.onIncomeReceived!(income);
     }
   }
 
@@ -112,178 +206,123 @@ class UpcomingRecurringCard extends StatelessWidget {
     return DateTime(year, month, day);
   }
 
-  /// Gets upcoming items from both services
-  List<UnifiedRecurringItem> _getUpcomingItems() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final endDate = today.add(const Duration(days: 14));
-
-    // Get upcoming expenses
-    final upcomingExpenses = recurringExpenseService.getUpcoming(days: 14);
-
-    // Get upcoming income (filter active items due within 14 days)
-    final upcomingIncome =
-        recurringIncomeService.getActiveRecurringIncomes().where((item) {
-      final nextDate = DateTime(
-        item.nextDate.year,
-        item.nextDate.month,
-        item.nextDate.day,
-      );
-      return !nextDate.isAfter(endDate);
-    }).toList();
-
-    // Convert to unified items
-    final items = UnifiedRecurringItemFactory.fromLists(
-      incomes: upcomingIncome,
-      expenses: upcomingExpenses,
-      sortByNextDate: true,
-    );
-
-    return items.take(5).toList();
-  }
-
-  /// Counts items due this week
-  int _getThisWeekCount() {
-    return recurringExpenseService.getUpcomingCount(days: 7) +
-        recurringIncomeService.getUpcomingCount(days: 7);
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = LedgerifyColors.of(context);
 
-    // Listen to both boxes for updates
-    return ValueListenableBuilder(
-      valueListenable: recurringExpenseService.box.listenable(),
-      builder: (context, Box<RecurringExpense> expenseBox, _) {
-        return ValueListenableBuilder(
-          valueListenable: recurringIncomeService.box.listenable(),
-          builder: (context, Box<RecurringIncome> incomeBox, _) {
-            final upcoming = _getUpcomingItems();
-            final thisWeekCount = _getThisWeekCount();
+    // Hide if no upcoming items
+    if (_upcomingItems.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
-            // Hide if no upcoming items
-            if (upcoming.isEmpty) {
-              return const SizedBox.shrink();
-            }
-
-            return Container(
-              decoration: BoxDecoration(
-                color: colors.surface,
-                borderRadius: LedgerifyRadius.borderRadiusLg,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      LedgerifySpacing.lg,
-                      LedgerifySpacing.lg,
-                      LedgerifySpacing.md,
-                      LedgerifySpacing.sm,
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: LedgerifyRadius.borderRadiusLg,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              LedgerifySpacing.lg,
+              LedgerifySpacing.lg,
+              LedgerifySpacing.md,
+              LedgerifySpacing.sm,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Upcoming',
+                      style: LedgerifyTypography.headlineSmall.copyWith(
+                        color: colors.textPrimary,
+                      ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              'Upcoming',
-                              style: LedgerifyTypography.headlineSmall.copyWith(
-                                color: colors.textPrimary,
-                              ),
-                            ),
-                            if (thisWeekCount > 0) ...[
-                              LedgerifySpacing.horizontalMd,
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: LedgerifySpacing.sm,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.surfaceHighlight,
-                                  borderRadius: LedgerifyRadius.borderRadiusSm,
-                                ),
-                                child: Text(
-                                  '$thisWeekCount this week',
-                                  style:
-                                      LedgerifyTypography.labelSmall.copyWith(
-                                    color: colors.textSecondary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
+                    if (_thisWeekCount > 0) ...[
+                      LedgerifySpacing.horizontalMd,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: LedgerifySpacing.sm,
+                          vertical: 2,
                         ),
-                        TextButton(
-                          onPressed: onViewAll,
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: LedgerifySpacing.sm,
-                              vertical: LedgerifySpacing.xs,
-                            ),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'View all',
-                                style: LedgerifyTypography.labelMedium.copyWith(
-                                  color: colors.accent,
-                                ),
-                              ),
-                              const SizedBox(width: 2),
-                              Icon(
-                                Icons.arrow_forward,
-                                size: 14,
-                                color: colors.accent,
-                              ),
-                            ],
+                        decoration: BoxDecoration(
+                          color: colors.surfaceHighlight,
+                          borderRadius: LedgerifyRadius.borderRadiusSm,
+                        ),
+                        child: Text(
+                          '$_thisWeekCount this week',
+                          style: LedgerifyTypography.labelSmall.copyWith(
+                            color: colors.textSecondary,
                           ),
                         ),
-                      ],
+                      ),
+                    ],
+                  ],
+                ),
+                TextButton(
+                  onPressed: widget.onViewAll,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: LedgerifySpacing.sm,
+                      vertical: LedgerifySpacing.xs,
                     ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'View all',
+                        style: LedgerifyTypography.labelMedium.copyWith(
+                          color: colors.accent,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.arrow_forward,
+                        size: 14,
+                        color: colors.accent,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-                  // List of upcoming items
-                  ...() {
-                    final now = DateTime.now();
-                    final today = DateTime(now.year, now.month, now.day);
-                    return upcoming.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final item = entry.value;
-                      final isLast = index == upcoming.length - 1;
+          // List of upcoming items
+          ..._upcomingItems.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            final isLast = index == _upcomingItems.length - 1;
 
-                      return _UnifiedUpcomingTile(
-                        item: item,
-                        onTap: () => onTapItem(item),
-                        onQuickAction: item.isExpense
-                            ? (expenseService != null
-                                ? () => _handlePayExpense(
-                                    context, item.asRecurringExpense!)
-                                : null)
-                            : (incomeService != null
-                                ? () => _handleMarkReceived(
-                                    context, item.asRecurringIncome!)
-                                : null),
-                        showDivider: !isLast,
-                        colors: colors,
-                        today: today,
-                      );
-                    });
-                  }(),
-
-                  // Bottom padding
-                  LedgerifySpacing.verticalSm,
-                ],
-              ),
+            return _UnifiedUpcomingTile(
+              item: item,
+              onTap: () => widget.onTapItem(item),
+              onQuickAction: item.isExpense
+                  ? (widget.expenseService != null
+                      ? () =>
+                          _handlePayExpense(context, item.asRecurringExpense!)
+                      : null)
+                  : (widget.incomeService != null
+                      ? () =>
+                          _handleMarkReceived(context, item.asRecurringIncome!)
+                      : null),
+              showDivider: !isLast,
+              colors: colors,
+              today: _today,
             );
-          },
-        );
-      },
+          }),
+
+          // Bottom padding
+          LedgerifySpacing.verticalSm,
+        ],
+      ),
     );
   }
 }

@@ -48,6 +48,89 @@ class RecurringListScreen extends StatefulWidget {
 class _RecurringListScreenState extends State<RecurringListScreen> {
   TransactionFilter _filter = TransactionFilter.all;
 
+  // Cached data to avoid recomputation on every build
+  List<UnifiedRecurringItem> _allUnifiedItems = [];
+  List<UnifiedRecurringItem> _upcomingItems = [];
+  List<UnifiedRecurringItem> _activeItems = [];
+  List<UnifiedRecurringItem> _pausedItems = [];
+
+  // Box listeners for reactive updates
+  VoidCallback? _expenseBoxListener;
+  VoidCallback? _incomeBoxListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshData();
+    _setupListeners();
+  }
+
+  @override
+  void dispose() {
+    _removeListeners();
+    super.dispose();
+  }
+
+  /// Sets up Hive box listeners for reactive updates
+  void _setupListeners() {
+    _expenseBoxListener = () => _refreshData();
+    _incomeBoxListener = () => _refreshData();
+
+    widget.recurringExpenseService.box
+        .listenable()
+        .addListener(_expenseBoxListener!);
+    widget.recurringIncomeService.box
+        .listenable()
+        .addListener(_incomeBoxListener!);
+  }
+
+  /// Removes Hive box listeners
+  void _removeListeners() {
+    if (_expenseBoxListener != null) {
+      widget.recurringExpenseService.box
+          .listenable()
+          .removeListener(_expenseBoxListener!);
+    }
+    if (_incomeBoxListener != null) {
+      widget.recurringIncomeService.box
+          .listenable()
+          .removeListener(_incomeBoxListener!);
+    }
+  }
+
+  /// Refreshes all cached data from services
+  void _refreshData() {
+    final recurringExpenses = widget.recurringExpenseService.getAll();
+    final recurringIncomes =
+        widget.recurringIncomeService.getAllRecurringIncomes();
+
+    // Create unified items
+    final allUnifiedItems = UnifiedRecurringItemFactory.fromLists(
+      incomes: recurringIncomes,
+      expenses: recurringExpenses,
+      sortByNextDate: false,
+    );
+
+    // Compute upcoming items (within 7 days) - not affected by filter
+    final upcomingItems = allUnifiedItems
+        .where((item) => item.isActive && item.daysUntilNext <= 7)
+        .toList()
+      ..sort((a, b) => a.nextDate.compareTo(b.nextDate));
+
+    // Separate all items into active and paused (sorted alphabetically)
+    final activeItems = allUnifiedItems.where((item) => item.isActive).toList()
+      ..sort((a, b) => a.title.compareTo(b.title));
+    final pausedItems = allUnifiedItems.where((item) => !item.isActive).toList()
+      ..sort((a, b) => a.title.compareTo(b.title));
+
+    setState(() {
+      _allUnifiedItems = allUnifiedItems;
+      _upcomingItems = upcomingItems;
+      _activeItems = activeItems;
+      _pausedItems = pausedItems;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = LedgerifyColors.of(context);
@@ -81,17 +164,7 @@ class _RecurringListScreenState extends State<RecurringListScreen> {
           ),
         ],
       ),
-      body: ValueListenableBuilder(
-        valueListenable: widget.recurringExpenseService.box.listenable(),
-        builder: (context, Box<RecurringExpense> expenseBox, _) {
-          return ValueListenableBuilder(
-            valueListenable: widget.recurringIncomeService.box.listenable(),
-            builder: (context, Box<RecurringIncome> incomeBox, _) {
-              return _buildContent(context, colors);
-            },
-          );
-        },
-      ),
+      body: _buildContent(context, colors),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddTypeSheet(context, colors),
         backgroundColor: colors.accent,
@@ -102,21 +175,9 @@ class _RecurringListScreenState extends State<RecurringListScreen> {
     );
   }
 
-  /// Builds the main content based on current data.
+  /// Builds the main content based on cached data.
   Widget _buildContent(BuildContext context, LedgerifyColorScheme colors) {
-    // Get all items from both services
-    final recurringExpenses = widget.recurringExpenseService.getAll();
-    final recurringIncomes =
-        widget.recurringIncomeService.getAllRecurringIncomes();
-
-    // Create unified items
-    final allUnifiedItems = UnifiedRecurringItemFactory.fromLists(
-      incomes: recurringIncomes,
-      expenses: recurringExpenses,
-      sortByNextDate: false,
-    );
-
-    if (allUnifiedItems.isEmpty) {
+    if (_allUnifiedItems.isEmpty) {
       return _buildEmptyState(context, colors);
     }
 
@@ -124,21 +185,12 @@ class _RecurringListScreenState extends State<RecurringListScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    // Get upcoming items (within 7 days) - not affected by filter
-    final upcomingItems = allUnifiedItems
-        .where((item) => item.isActive && item.daysUntilNext <= 7)
-        .toList()
-      ..sort((a, b) => a.nextDate.compareTo(b.nextDate));
-    final displayedUpcoming = upcomingItems.take(5).toList();
+    // Use cached upcoming items (take first 5 for display)
+    final displayedUpcoming = _upcomingItems.take(5).toList();
 
-    // Apply filter to main list
-    final filteredItems = _applyFilter(allUnifiedItems);
-
-    // Separate into active and paused
-    final activeItems = filteredItems.where((item) => item.isActive).toList()
-      ..sort((a, b) => a.title.compareTo(b.title));
-    final pausedItems = filteredItems.where((item) => !item.isActive).toList()
-      ..sort((a, b) => a.title.compareTo(b.title));
+    // Apply filter to cached active/paused items
+    final filteredActiveItems = _applyFilter(_activeItems);
+    final filteredPausedItems = _applyFilter(_pausedItems);
 
     return CustomScrollView(
       slivers: [
@@ -146,7 +198,7 @@ class _RecurringListScreenState extends State<RecurringListScreen> {
         if (displayedUpcoming.isNotEmpty) ...[
           SliverToBoxAdapter(
             child: _buildUpcomingSection(context, colors, displayedUpcoming,
-                upcomingItems.length, today),
+                _upcomingItems.length, today),
           ),
           const SliverToBoxAdapter(child: LedgerifySpacing.verticalLg),
         ],
@@ -171,40 +223,40 @@ class _RecurringListScreenState extends State<RecurringListScreen> {
         const SliverToBoxAdapter(child: LedgerifySpacing.verticalMd),
 
         // Active section
-        if (activeItems.isNotEmpty) ...[
+        if (filteredActiveItems.isNotEmpty) ...[
           SliverToBoxAdapter(
             child: _buildSectionHeader(
-                context, colors, 'Active', activeItems.length),
+                context, colors, 'Active', filteredActiveItems.length),
           ),
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) =>
-                  _buildUnifiedTile(context, activeItems[index], today),
-              childCount: activeItems.length,
+                  _buildUnifiedTile(context, filteredActiveItems[index], today),
+              childCount: filteredActiveItems.length,
             ),
           ),
         ],
 
         // Paused section
-        if (pausedItems.isNotEmpty) ...[
+        if (filteredPausedItems.isNotEmpty) ...[
           const SliverToBoxAdapter(child: LedgerifySpacing.verticalLg),
           SliverToBoxAdapter(
             child: _buildSectionHeader(
-                context, colors, 'Paused', pausedItems.length),
+                context, colors, 'Paused', filteredPausedItems.length),
           ),
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) =>
-                  _buildUnifiedTile(context, pausedItems[index], today),
-              childCount: pausedItems.length,
+                  _buildUnifiedTile(context, filteredPausedItems[index], today),
+              childCount: filteredPausedItems.length,
             ),
           ),
         ],
 
         // Empty state when filter yields no results but items exist
-        if (activeItems.isEmpty &&
-            pausedItems.isEmpty &&
-            allUnifiedItems.isNotEmpty)
+        if (filteredActiveItems.isEmpty &&
+            filteredPausedItems.isEmpty &&
+            _allUnifiedItems.isNotEmpty)
           SliverToBoxAdapter(
             child: _buildFilterEmptyState(colors),
           ),

@@ -84,16 +84,61 @@ class _HomeScreenState extends State<HomeScreen> {
   static const int _pageSize = 50;
   int _currentPage = 0;
 
+  // Cached data for performance optimization
+  // These are updated via Hive box listeners instead of recalculating on every build
+  MonthSummary? _cachedExpenseSummary;
+  IncomeSummary? _cachedIncomeSummary;
+  List<UnifiedTransaction> _cachedTransactions = [];
+
   @override
   void initState() {
     super.initState();
     _selectedMonth = DateTime.now();
+
+    // Add listeners to Hive boxes for reactive updates
+    widget.expenseService.box.listenable().addListener(_onDataChanged);
+    widget.incomeService.box.listenable().addListener(_onDataChanged);
+
+    // Initial data load
+    _updateCachedData();
   }
 
   @override
   void dispose() {
+    // Remove listeners to prevent memory leaks
+    widget.expenseService.box.listenable().removeListener(_onDataChanged);
+    widget.incomeService.box.listenable().removeListener(_onDataChanged);
     _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  /// Called when expense or income data changes
+  void _onDataChanged() {
+    _updateCachedData();
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  /// Updates cached summaries and transaction list
+  void _updateCachedData() {
+    // Cache expense summary
+    _cachedExpenseSummary = widget.expenseService.getMonthSummary(
+      _selectedMonth.year,
+      _selectedMonth.month,
+    );
+
+    // Cache income summary
+    _cachedIncomeSummary = widget.incomeService.getMonthSummary(
+      _selectedMonth.year,
+      _selectedMonth.month,
+    );
+
+    // Cache unified transactions
+    _cachedTransactions = _buildUnifiedTransactions(
+      _cachedExpenseSummary!.expenses,
+      _cachedIncomeSummary!.incomes,
+    );
   }
 
   void _resetPagination() {
@@ -110,6 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month - 1);
       _resetPagination();
+      _updateCachedData();
     });
   }
 
@@ -121,6 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _selectedMonth =
             DateTime(_selectedMonth.year, _selectedMonth.month + 1);
         _resetPagination();
+        _updateCachedData();
       });
     }
   }
@@ -430,37 +477,26 @@ class _HomeScreenState extends State<HomeScreen> {
           color: colors.background,
         ),
       ),
-      // Nested ValueListenableBuilders for expenses and income
-      body: ValueListenableBuilder(
-        valueListenable: widget.expenseService.box.listenable(),
-        builder: (context, Box<Expense> expenseBox, _) {
-          return ValueListenableBuilder(
-            valueListenable: widget.incomeService.box.listenable(),
-            builder: (context, Box<Income> incomeBox, _) {
-              return _buildBody(context, colors);
-            },
-          );
-        },
-      ),
+      // Body uses cached data updated via Hive box listeners
+      body: _buildBody(context, colors),
     );
   }
 
   /// Builds the main body content with unified transaction list
   Widget _buildBody(BuildContext context, LedgerifyColorScheme colors) {
-    // Get expense data
-    final expenseSummary = widget.expenseService.getMonthSummary(
-      _selectedMonth.year,
-      _selectedMonth.month,
-    );
+    // Use cached data instead of recalculating on every build
+    final expenseSummary = _cachedExpenseSummary;
+    final incomeSummary = _cachedIncomeSummary;
+
+    // Guard against null (should not happen after initState)
+    if (expenseSummary == null || incomeSummary == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final monthExpenses = expenseSummary.expenses;
     final totalExpenses = expenseSummary.total;
     final categoryBreakdown = expenseSummary.breakdown;
 
-    // Get income data
-    final incomeSummary = widget.incomeService.getMonthSummary(
-      _selectedMonth.year,
-      _selectedMonth.month,
-    );
     final monthIncomes = incomeSummary.incomes;
     final totalIncome = incomeSummary.total;
     final incomeCount = incomeSummary.count;
@@ -469,11 +505,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final hasSearchOrFilter =
         _searchQuery.isNotEmpty || _filter.hasActiveFilters;
 
-    // Build unified transaction list
-    List<UnifiedTransaction> allTransactions = _buildUnifiedTransactions(
-      monthExpenses,
-      monthIncomes,
-    );
+    // Use cached unified transaction list
+    List<UnifiedTransaction> allTransactions = List.from(_cachedTransactions);
 
     // Apply transaction type filter
     allTransactions = _applyTransactionTypeFilter(allTransactions);
