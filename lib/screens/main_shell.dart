@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/recurring_expense.dart';
 import '../services/budget_service.dart';
+import '../services/category_default_service.dart';
 import '../services/custom_category_service.dart';
 import '../services/expense_service.dart';
 import '../services/goal_service.dart';
 import '../services/income_service.dart';
+import '../services/merchant_history_service.dart';
 import '../services/notification_preferences_service.dart';
 import '../services/notification_service.dart';
 import '../services/recurring_expense_service.dart';
@@ -36,6 +38,8 @@ class MainShell extends StatefulWidget {
   final BudgetService budgetService;
   final TagService tagService;
   final CustomCategoryService customCategoryService;
+  final CategoryDefaultService categoryDefaultService;
+  final MerchantHistoryService merchantHistoryService;
   final GoalService goalService;
   final IncomeService incomeService;
   final RecurringIncomeService recurringIncomeService;
@@ -50,6 +54,8 @@ class MainShell extends StatefulWidget {
     required this.budgetService,
     required this.tagService,
     required this.customCategoryService,
+    required this.categoryDefaultService,
+    required this.merchantHistoryService,
     required this.goalService,
     required this.incomeService,
     required this.recurringIncomeService,
@@ -103,6 +109,8 @@ class _MainShellState extends State<MainShell> {
               recurringIncomeService: widget.recurringIncomeService,
               tagService: widget.tagService,
               customCategoryService: widget.customCategoryService,
+              categoryDefaultService: widget.categoryDefaultService,
+              merchantHistoryService: widget.merchantHistoryService,
               incomeService: widget.incomeService,
               goalService: widget.goalService,
               onNavigateToRecurring: () => _switchTab(1),

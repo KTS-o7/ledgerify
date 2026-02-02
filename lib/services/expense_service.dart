@@ -2,9 +2,55 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../models/budget.dart';
 import '../models/expense.dart';
+import '../models/expense_template.dart';
 import '../utils/currency_formatter.dart';
 import 'budget_service.dart';
 import 'notification_service.dart';
+
+/// Spending pace status for month comparison
+enum SpendingPaceStatus { onTrack, faster, slower }
+
+/// Represents spending pace analysis for a month
+class SpendingPace {
+  /// Total spent so far this month
+  final double currentTotal;
+
+  /// Projected end-of-month total based on current daily rate
+  final double projectedTotal;
+
+  /// Average monthly spending (from past 3 months, or however many available)
+  final double averageMonthlyTotal;
+
+  /// Number of months used to calculate the average (1-3)
+  final int monthsInAverage;
+
+  /// Current daily spending rate
+  final double dailyAverage;
+
+  /// Days elapsed in the month
+  final int daysElapsed;
+
+  /// Total days in the month
+  final int daysInMonth;
+
+  /// Spending pace status (onTrack, faster, slower)
+  final SpendingPaceStatus status;
+
+  /// How much faster/slower as a percentage (e.g., 23 for 23% faster)
+  final double percentageDiff;
+
+  const SpendingPace({
+    required this.currentTotal,
+    required this.projectedTotal,
+    required this.averageMonthlyTotal,
+    required this.monthsInAverage,
+    required this.dailyAverage,
+    required this.daysElapsed,
+    required this.daysInMonth,
+    required this.status,
+    required this.percentageDiff,
+  });
+}
 
 /// Represents spending total for a single week
 class WeeklyTotal {
@@ -312,6 +358,90 @@ class ExpenseService {
     return getMonthSummary(now.year, now.month).breakdown;
   }
 
+  /// Returns spending pace analysis for a given month.
+  /// Compares current spending rate against 3-month average to determine
+  /// if user is spending faster or slower than usual.
+  ///
+  /// Returns null if there's insufficient historical data (needs at least 1 month).
+  SpendingPace? getSpendingPace(int year, int month) {
+    final now = DateTime.now();
+    final isCurrentMonth = year == now.year && month == now.month;
+
+    // Calculate days in the requested month
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+
+    // Days elapsed (full month for past months, current day for current month)
+    final daysElapsed = isCurrentMonth ? now.day : daysInMonth;
+
+    // Get current month total
+    final currentTotal = getMonthSummary(year, month).total;
+
+    // Calculate 3-month average (excluding current month)
+    // Get previous 3 months
+    final monthsToAverage = <double>[];
+    var checkYear = year;
+    var checkMonth = month;
+
+    for (var i = 0; i < 3; i++) {
+      // Move to previous month
+      checkMonth--;
+      if (checkMonth <= 0) {
+        checkMonth = 12;
+        checkYear--;
+      }
+
+      final monthTotal = getMonthSummary(checkYear, checkMonth).total;
+      if (monthTotal > 0) {
+        monthsToAverage.add(monthTotal);
+      }
+    }
+
+    // Need at least 1 month of historical data
+    if (monthsToAverage.isEmpty) {
+      return null;
+    }
+
+    // Calculate 3-month average (or however many months we have)
+    final threeMonthAverage =
+        monthsToAverage.reduce((a, b) => a + b) / monthsToAverage.length;
+
+    // Calculate daily average for current period
+    final dailyAverage = daysElapsed > 0 ? currentTotal / daysElapsed : 0.0;
+
+    // Project total for end of month
+    final projectedTotal = dailyAverage * daysInMonth;
+
+    // Calculate percentage difference from 3-month average
+    // Positive = spending faster, Negative = spending slower
+    final percentageDiff =
+        ((projectedTotal - threeMonthAverage) / threeMonthAverage) * 100;
+
+    // Determine status based on percentage difference
+    // Within 10% = on track
+    // More than 10% higher = faster
+    // More than 10% lower = slower
+    final SpendingPaceStatus status;
+    if (percentageDiff.abs() <= 10) {
+      status = SpendingPaceStatus.onTrack;
+    } else if (percentageDiff > 10) {
+      status = SpendingPaceStatus.faster;
+    } else {
+      status = SpendingPaceStatus.slower;
+    }
+
+    return SpendingPace(
+      currentTotal: currentTotal,
+      projectedTotal: projectedTotal,
+      averageMonthlyTotal: threeMonthAverage,
+      monthsInAverage: monthsToAverage.length,
+      dailyAverage: dailyAverage,
+      daysElapsed: daysElapsed,
+      daysInMonth: daysInMonth,
+      status: status,
+      percentageDiff: percentageDiff,
+    );
+  }
+
   /// Daily spending for a specific month (for line chart - daily mode).
   /// Returns map of day number (1-31) to total amount spent that day.
   /// Days with no expenses are not included in the map.
@@ -505,4 +635,85 @@ class ExpenseService {
 
   /// Checks if there are expenses.
   bool get isNotEmpty => _expenseBox.isNotEmpty;
+
+  /// Returns frequent expense templates based on recent spending patterns.
+  ///
+  /// Analyzes the last [daysToAnalyze] days (default 30) or last [maxExpenses]
+  /// expenses (default 50), whichever gives more data. Groups by merchant+category
+  /// combination and returns the most frequent patterns.
+  ///
+  /// [limit] - Maximum number of templates to return (default 3)
+  /// [daysToAnalyze] - Number of days to look back (default 30)
+  /// [maxExpenses] - Maximum number of recent expenses to analyze (default 50)
+  List<ExpenseTemplate> getFrequentTemplates({
+    int limit = 3,
+    int daysToAnalyze = 30,
+    int maxExpenses = 50,
+  }) {
+    if (_expenseBox.isEmpty) return [];
+
+    // Get all expenses sorted by date (newest first)
+    final allExpenses = _expenseBox.values.toList();
+    allExpenses.sort((a, b) => b.date.compareTo(a.date));
+
+    // Calculate cutoff date
+    final cutoffDate = DateTime.now().subtract(Duration(days: daysToAnalyze));
+
+    // Filter to recent expenses (within date range or within maxExpenses count)
+    final recentExpenses = <Expense>[];
+    for (var i = 0; i < allExpenses.length && i < maxExpenses; i++) {
+      final expense = allExpenses[i];
+      // Include if within date range OR within max count
+      if (expense.date.isAfter(cutoffDate) ||
+          recentExpenses.length < maxExpenses) {
+        recentExpenses.add(expense);
+      }
+    }
+
+    if (recentExpenses.isEmpty) return [];
+
+    // Group by merchant+category combination
+    // Key: "merchant|categoryIndex" or "null|categoryIndex" for no merchant
+    final groups = <String, List<Expense>>{};
+
+    for (final expense in recentExpenses) {
+      final merchantKey = expense.merchant?.toLowerCase().trim() ?? '';
+      final key = '$merchantKey|${expense.category.index}';
+      groups.putIfAbsent(key, () => []).add(expense);
+    }
+
+    // Convert groups to templates with usage count and average amount
+    final templates = <ExpenseTemplate>[];
+
+    for (final entry in groups.entries) {
+      final expenses = entry.value;
+      final keyParts = entry.key.split('|');
+      final merchantKey = keyParts[0];
+      final categoryIndex = int.parse(keyParts[1]);
+
+      // Calculate average amount
+      final totalAmount = expenses.fold(0.0, (sum, e) => sum + e.amount);
+      final averageAmount = totalAmount / expenses.length;
+
+      // Get the most common merchant name formatting (preserve original case)
+      String? merchant;
+      if (merchantKey.isNotEmpty) {
+        // Use the most recent expense's merchant formatting
+        merchant = expenses.first.merchant;
+      }
+
+      templates.add(ExpenseTemplate(
+        merchant: merchant,
+        amount: averageAmount,
+        category: ExpenseCategory.values[categoryIndex],
+        usageCount: expenses.length,
+      ));
+    }
+
+    // Sort by usage count (most frequent first)
+    templates.sort((a, b) => b.usageCount.compareTo(a.usageCount));
+
+    // Return top templates
+    return templates.take(limit).toList();
+  }
 }

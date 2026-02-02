@@ -5,10 +5,12 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/expense.dart';
 import '../models/income.dart';
 import '../models/unified_recurring_item.dart';
+import '../services/category_default_service.dart';
 import '../services/custom_category_service.dart';
 import '../services/expense_service.dart';
 import '../services/goal_service.dart';
 import '../services/income_service.dart';
+import '../services/merchant_history_service.dart';
 import '../services/recurring_expense_service.dart';
 import '../services/recurring_income_service.dart';
 import '../services/tag_service.dart';
@@ -21,6 +23,7 @@ import '../widgets/filter_sheet.dart';
 import '../widgets/charts/category_donut_chart.dart';
 import '../widgets/quick_add_sheet.dart';
 import '../widgets/search_filter_bar.dart';
+import '../widgets/spending_pace_card.dart';
 import '../widgets/transaction_filter_chips.dart';
 import '../widgets/unified_transaction_tile.dart';
 import '../widgets/upcoming_recurring_card.dart';
@@ -40,6 +43,8 @@ class HomeScreen extends StatefulWidget {
   final RecurringIncomeService recurringIncomeService;
   final TagService tagService;
   final CustomCategoryService customCategoryService;
+  final CategoryDefaultService categoryDefaultService;
+  final MerchantHistoryService merchantHistoryService;
   final IncomeService incomeService;
   final GoalService goalService;
   final VoidCallback? onNavigateToRecurring;
@@ -51,6 +56,8 @@ class HomeScreen extends StatefulWidget {
     required this.recurringIncomeService,
     required this.tagService,
     required this.customCategoryService,
+    required this.categoryDefaultService,
+    required this.merchantHistoryService,
     required this.incomeService,
     required this.goalService,
     this.onNavigateToRecurring,
@@ -91,6 +98,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _resetPagination() {
     _currentPage = 0;
+  }
+
+  /// Whether the selected month is the current month
+  bool get _isCurrentMonth {
+    final now = DateTime.now();
+    return _selectedMonth.year == now.year && _selectedMonth.month == now.month;
   }
 
   void _previousMonth() {
@@ -149,6 +162,8 @@ class _HomeScreenState extends State<HomeScreen> {
           recurringService: widget.recurringService,
           tagService: widget.tagService,
           customCategoryService: widget.customCategoryService,
+          categoryDefaultService: widget.categoryDefaultService,
+          merchantHistoryService: widget.merchantHistoryService,
           expenseToEdit: expenseToEdit,
         ),
       ),
@@ -188,7 +203,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showQuickAddSheet() async {
-    final action = await QuickAddSheet.show(context);
+    final action = await QuickAddSheet.show(
+      context,
+      expenseService: widget.expenseService,
+    );
+    // If action is null, either dismissed or template was used (expense already created)
     if (action == null || !mounted) return;
 
     switch (action) {
@@ -395,6 +414,22 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         centerTitle: false,
       ),
+      // FAB for quick expense access
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showQuickAddSheet,
+        backgroundColor: colors.accent,
+        foregroundColor: colors.background,
+        elevation: 2,
+        highlightElevation: 4,
+        shape: const RoundedRectangleBorder(
+          borderRadius: LedgerifyRadius.borderRadiusLg,
+        ),
+        child: Icon(
+          Icons.add_rounded,
+          size: 28,
+          color: colors.background,
+        ),
+      ),
       // Nested ValueListenableBuilders for expenses and income
       body: ValueListenableBuilder(
         valueListenable: widget.expenseService.box.listenable(),
@@ -506,6 +541,19 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
+
+        // Spending Pace One-liner (only for current month with spending data)
+        if (_isCurrentMonth && monthExpenses.isNotEmpty && !hasSearchOrFilter)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(
+                left: LedgerifySpacing.lg,
+                right: LedgerifySpacing.lg,
+                top: LedgerifySpacing.sm,
+              ),
+              child: Center(child: _buildSpendingPaceOneLiner()),
+            ),
+          ),
 
         // Spacing
         const SliverToBoxAdapter(
@@ -649,9 +697,9 @@ class _HomeScreenState extends State<HomeScreen> {
         else
           _buildTransactionsList(displayTransactions, colors, showLoadMore),
 
-        // Bottom padding
+        // Bottom padding (accounts for FAB)
         const SliverToBoxAdapter(
-          child: SizedBox(height: LedgerifySpacing.xl),
+          child: SizedBox(height: 88), // 56dp FAB + 16dp margin + 16dp extra
         ),
       ],
     );
@@ -696,6 +744,22 @@ class _HomeScreenState extends State<HomeScreen> {
             .where((t) => t.type == TransactionType.expense)
             .toList();
     }
+  }
+
+  /// Builds the spending pace one-liner widget (only for current month)
+  Widget? _buildSpendingPaceOneLiner() {
+    // Only show for current month
+    if (!_isCurrentMonth) return null;
+
+    final pace = widget.expenseService.getSpendingPace(
+      _selectedMonth.year,
+      _selectedMonth.month,
+    );
+
+    // Don't show if no historical data to compare
+    if (pace == null) return null;
+
+    return SpendingPaceOneLiner(pace: pace);
   }
 
   Widget _buildAddButton(LedgerifyColorScheme colors) {

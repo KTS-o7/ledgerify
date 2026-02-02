@@ -4,14 +4,17 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'models/custom_category.dart';
 import 'models/goal.dart';
 import 'models/income.dart';
+import 'models/merchant_history.dart';
 import 'models/notification_preferences.dart';
 import 'models/recurring_income.dart';
 import 'models/tag.dart';
 import 'services/budget_service.dart';
+import 'services/category_default_service.dart';
 import 'services/custom_category_service.dart';
 import 'services/expense_service.dart';
 import 'services/goal_service.dart';
 import 'services/income_service.dart';
+import 'services/merchant_history_service.dart';
 import 'services/notification_preferences_service.dart';
 import 'services/notification_service.dart';
 import 'services/recurring_expense_service.dart';
@@ -63,12 +66,17 @@ void main() async {
   if (!Hive.isAdapterRegistered(13)) {
     Hive.registerAdapter(NotificationPreferencesAdapter());
   }
+  if (!Hive.isAdapterRegistered(14)) {
+    Hive.registerAdapter(MerchantHistoryAdapter());
+  }
 
   // Initialize independent services in parallel
   final themeService = ThemeService();
   final recurringService = RecurringExpenseService();
   final budgetService = BudgetService();
   final notificationService = NotificationService();
+  final categoryDefaultService = CategoryDefaultService();
+  final merchantHistoryService = MerchantHistoryService();
 
   // Compaction strategy: compact when deleted entries exceed 20% of total
   bool compactWhen(int entries, int deletedEntries) =>
@@ -80,6 +88,8 @@ void main() async {
     recurringService.init(),
     budgetService.init(),
     notificationService.init(),
+    categoryDefaultService.init(),
+    merchantHistoryService.init(),
     // Open boxes in parallel
     Hive.openBox<Tag>('tags'),
     Hive.openBox<CustomCategory>('custom_categories'),
@@ -121,6 +131,8 @@ void main() async {
     budgetService: budgetService,
     tagService: tagService,
     customCategoryService: customCategoryService,
+    categoryDefaultService: categoryDefaultService,
+    merchantHistoryService: merchantHistoryService,
     goalService: goalService,
     incomeService: incomeService,
     recurringIncomeService: recurringIncomeService,
@@ -160,6 +172,8 @@ class LedgerifyApp extends StatelessWidget {
   final BudgetService budgetService;
   final TagService tagService;
   final CustomCategoryService customCategoryService;
+  final CategoryDefaultService categoryDefaultService;
+  final MerchantHistoryService merchantHistoryService;
   final GoalService goalService;
   final IncomeService incomeService;
   final RecurringIncomeService recurringIncomeService;
@@ -174,6 +188,8 @@ class LedgerifyApp extends StatelessWidget {
     required this.budgetService,
     required this.tagService,
     required this.customCategoryService,
+    required this.categoryDefaultService,
+    required this.merchantHistoryService,
     required this.goalService,
     required this.incomeService,
     required this.recurringIncomeService,
@@ -207,6 +223,8 @@ class LedgerifyApp extends StatelessWidget {
             budgetService: budgetService,
             tagService: tagService,
             customCategoryService: customCategoryService,
+            categoryDefaultService: categoryDefaultService,
+            merchantHistoryService: merchantHistoryService,
             goalService: goalService,
             incomeService: incomeService,
             recurringIncomeService: recurringIncomeService,
