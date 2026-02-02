@@ -35,10 +35,20 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
   }
 
   Future<void> _checkPermission() async {
-    final granted = await widget.smsPermissionService.isGranted();
-    setState(() {
-      _hasPermission = granted;
-    });
+    try {
+      final granted = await widget.smsPermissionService.isGranted();
+      setState(() {
+        _hasPermission = granted;
+      });
+    } catch (e) {
+      // Permission check failed - likely plugin not properly registered
+      // This can happen on hot reload; user should restart the app
+      debugPrint('Permission check failed: $e');
+      setState(() {
+        _hasPermission = false;
+        _errorMessage = 'Please restart the app to enable SMS features';
+      });
+    }
   }
 
   Future<void> _requestPermission() async {
@@ -47,29 +57,37 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
       _errorMessage = null;
     });
 
-    final status = await widget.smsPermissionService.getStatus();
+    try {
+      final status = await widget.smsPermissionService.getStatus();
 
-    if (status == SmsPermissionStatus.permanentlyDenied) {
-      // Need to open settings
-      final opened = await widget.smsPermissionService.openSettings();
-      if (!opened) {
-        setState(() {
-          _errorMessage = 'Could not open settings';
-          _isLoading = false;
-        });
+      if (status == SmsPermissionStatus.permanentlyDenied) {
+        // Need to open settings
+        final opened = await widget.smsPermissionService.openSettings();
+        if (!opened) {
+          setState(() {
+            _errorMessage = 'Could not open settings';
+            _isLoading = false;
+          });
+        }
+        return;
       }
-      return;
+
+      final granted = await widget.smsPermissionService.requestPermission();
+
+      setState(() {
+        _hasPermission = granted;
+        _isLoading = false;
+        if (!granted) {
+          _errorMessage = 'SMS permission is required to import transactions';
+        }
+      });
+    } catch (e) {
+      debugPrint('Permission request failed: $e');
+      setState(() {
+        _errorMessage = 'Please restart the app to enable SMS features';
+        _isLoading = false;
+      });
     }
-
-    final granted = await widget.smsPermissionService.requestPermission();
-
-    setState(() {
-      _hasPermission = granted;
-      _isLoading = false;
-      if (!granted) {
-        _errorMessage = 'SMS permission is required to import transactions';
-      }
-    });
   }
 
   Future<void> _startImport() async {
