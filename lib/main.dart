@@ -7,6 +7,7 @@ import 'models/income.dart';
 import 'models/merchant_history.dart';
 import 'models/notification_preferences.dart';
 import 'models/recurring_income.dart';
+import 'models/sms_transaction.dart';
 import 'models/tag.dart';
 import 'services/budget_service.dart';
 import 'services/category_default_service.dart';
@@ -19,8 +20,12 @@ import 'services/notification_preferences_service.dart';
 import 'services/notification_service.dart';
 import 'services/recurring_expense_service.dart';
 import 'services/recurring_income_service.dart';
+import 'services/sms_permission_service.dart';
+import 'services/sms_service.dart';
+import 'services/sms_transaction_service.dart';
 import 'services/tag_service.dart';
 import 'services/theme_service.dart';
+import 'services/transaction_parsing_service.dart';
 import 'screens/main_shell.dart';
 import 'theme/ledgerify_theme.dart';
 
@@ -69,6 +74,12 @@ void main() async {
   if (!Hive.isAdapterRegistered(14)) {
     Hive.registerAdapter(MerchantHistoryAdapter());
   }
+  if (!Hive.isAdapterRegistered(15)) {
+    Hive.registerAdapter(SmsTransactionAdapter());
+  }
+  if (!Hive.isAdapterRegistered(16)) {
+    Hive.registerAdapter(SmsTransactionStatusAdapter());
+  }
 
   // Initialize independent services in parallel
   final themeService = ThemeService();
@@ -77,6 +88,13 @@ void main() async {
   final notificationService = NotificationService();
   final categoryDefaultService = CategoryDefaultService();
   final merchantHistoryService = MerchantHistoryService();
+
+  final smsPermissionService = SmsPermissionService();
+  final transactionParsingService = TransactionParsingService();
+  final smsService = SmsService(
+    permissionService: smsPermissionService,
+    parsingService: transactionParsingService,
+  );
 
   // Compaction strategy: compact when deleted entries exceed 20% of total
   bool compactWhen(int entries, int deletedEntries) =>
@@ -117,6 +135,13 @@ void main() async {
   final notificationPrefsService =
       NotificationPreferencesService(notificationPrefsBox);
 
+  final smsTransactionService = SmsTransactionService(
+    smsService: smsService,
+    expenseService: expenseService,
+    incomeService: incomeService,
+  );
+  await smsTransactionService.init();
+
   // Wire up notification service with preferences
   notificationService.setPreferencesService(notificationPrefsService);
 
@@ -138,6 +163,8 @@ void main() async {
     recurringIncomeService: recurringIncomeService,
     notificationService: notificationService,
     notificationPrefsService: notificationPrefsService,
+    smsPermissionService: smsPermissionService,
+    smsTransactionService: smsTransactionService,
   ));
 
   // Handle notifications and recurring items after first frame renders
@@ -179,6 +206,8 @@ class LedgerifyApp extends StatelessWidget {
   final RecurringIncomeService recurringIncomeService;
   final NotificationService notificationService;
   final NotificationPreferencesService notificationPrefsService;
+  final SmsPermissionService smsPermissionService;
+  final SmsTransactionService smsTransactionService;
 
   const LedgerifyApp({
     super.key,
@@ -195,6 +224,8 @@ class LedgerifyApp extends StatelessWidget {
     required this.recurringIncomeService,
     required this.notificationService,
     required this.notificationPrefsService,
+    required this.smsPermissionService,
+    required this.smsTransactionService,
   });
 
   @override
@@ -230,6 +261,8 @@ class LedgerifyApp extends StatelessWidget {
             recurringIncomeService: recurringIncomeService,
             notificationService: notificationService,
             notificationPrefsService: notificationPrefsService,
+            smsPermissionService: smsPermissionService,
+            smsTransactionService: smsTransactionService,
           ),
         );
       },

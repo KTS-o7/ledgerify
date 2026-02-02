@@ -12,6 +12,8 @@ import '../services/notification_preferences_service.dart';
 import '../services/notification_service.dart';
 import '../services/recurring_expense_service.dart';
 import '../services/recurring_income_service.dart';
+import '../services/sms_permission_service.dart';
+import '../services/sms_transaction_service.dart';
 import '../services/tag_service.dart';
 import '../services/theme_service.dart';
 import '../theme/ledgerify_theme.dart';
@@ -45,6 +47,8 @@ class MainShell extends StatefulWidget {
   final RecurringIncomeService recurringIncomeService;
   final NotificationService notificationService;
   final NotificationPreferencesService notificationPrefsService;
+  final SmsPermissionService smsPermissionService;
+  final SmsTransactionService smsTransactionService;
 
   const MainShell({
     super.key,
@@ -61,6 +65,8 @@ class MainShell extends StatefulWidget {
     required this.recurringIncomeService,
     required this.notificationService,
     required this.notificationPrefsService,
+    required this.smsPermissionService,
+    required this.smsTransactionService,
   });
 
   @override
