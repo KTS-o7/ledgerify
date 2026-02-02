@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import '../services/custom_category_service.dart';
 import '../services/notification_preferences_service.dart';
 import '../services/notification_service.dart';
+import '../services/sms_permission_service.dart';
+import '../services/sms_transaction_service.dart';
 import '../services/tag_service.dart';
 import '../services/theme_service.dart';
 import '../theme/ledgerify_theme.dart';
 import 'category_management_screen.dart';
 import 'notification_settings_screen.dart';
+import 'sms_import_screen.dart';
 import 'tag_management_screen.dart';
 
 /// Settings Screen - Ledgerify Design Language
@@ -19,6 +22,8 @@ class SettingsScreen extends StatelessWidget {
   final CustomCategoryService customCategoryService;
   final NotificationService notificationService;
   final NotificationPreferencesService notificationPrefsService;
+  final SmsPermissionService smsPermissionService;
+  final SmsTransactionService smsTransactionService;
 
   const SettingsScreen({
     super.key,
@@ -27,6 +32,8 @@ class SettingsScreen extends StatelessWidget {
     required this.customCategoryService,
     required this.notificationService,
     required this.notificationPrefsService,
+    required this.smsPermissionService,
+    required this.smsTransactionService,
   });
 
   @override
@@ -99,6 +106,17 @@ class SettingsScreen extends StatelessWidget {
                 _TagsTile(
                   colors: colors,
                   tagService: tagService,
+                ),
+                Divider(
+                  height: 1,
+                  indent: 56,
+                  endIndent: 16,
+                  color: colors.surfaceHighlight,
+                ),
+                _SmsImportTile(
+                  colors: colors,
+                  smsPermissionService: smsPermissionService,
+                  smsTransactionService: smsTransactionService,
                 ),
               ],
             ),
@@ -441,6 +459,60 @@ class _TagsTile extends StatelessWidget {
           MaterialPageRoute(
             builder: (context) => TagManagementScreen(
               tagService: tagService,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// SMS Import tile
+class _SmsImportTile extends StatelessWidget {
+  final LedgerifyColorScheme colors;
+  final SmsPermissionService smsPermissionService;
+  final SmsTransactionService smsTransactionService;
+
+  const _SmsImportTile({
+    required this.colors,
+    required this.smsPermissionService,
+    required this.smsTransactionService,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: LedgerifySpacing.lg,
+        vertical: LedgerifySpacing.xs,
+      ),
+      leading: Icon(
+        Icons.sms_rounded,
+        color: colors.textSecondary,
+      ),
+      title: Text(
+        'SMS Import',
+        style: LedgerifyTypography.bodyLarge.copyWith(
+          color: colors.textPrimary,
+        ),
+      ),
+      subtitle: Text(
+        'Import transactions from bank SMS',
+        style: LedgerifyTypography.bodySmall.copyWith(
+          color: colors.textTertiary,
+        ),
+      ),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: colors.textTertiary,
+      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SmsImportScreen(
+              smsPermissionService: smsPermissionService,
+              smsTransactionService: smsTransactionService,
             ),
           ),
         );

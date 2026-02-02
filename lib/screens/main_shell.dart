@@ -142,6 +142,8 @@ class _MainShellState extends State<MainShell> {
               customCategoryService: widget.customCategoryService,
               notificationService: widget.notificationService,
               notificationPrefsService: widget.notificationPrefsService,
+              smsPermissionService: widget.smsPermissionService,
+              smsTransactionService: widget.smsTransactionService,
             ),
           ],
         ),
