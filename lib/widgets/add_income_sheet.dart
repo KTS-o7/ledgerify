@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/income.dart';
 import '../models/goal.dart';
+import '../models/recurring_income.dart';
+import '../models/recurring_expense.dart';
 import '../services/income_service.dart';
 import '../services/goal_service.dart';
+import '../services/recurring_income_service.dart';
 import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
+import 'recurring_toggle_section.dart';
 
 /// Add Income Sheet - Ledgerify Design Language
 ///
@@ -15,12 +19,14 @@ import '../utils/currency_formatter.dart';
 class AddIncomeSheet extends StatefulWidget {
   final IncomeService incomeService;
   final GoalService goalService;
+  final RecurringIncomeService? recurringIncomeService;
   final Income? existingIncome; // null = creating new
 
   const AddIncomeSheet({
     super.key,
     required this.incomeService,
     required this.goalService,
+    this.recurringIncomeService,
     this.existingIncome,
   });
 
@@ -29,6 +35,7 @@ class AddIncomeSheet extends StatefulWidget {
     BuildContext context, {
     required IncomeService incomeService,
     required GoalService goalService,
+    RecurringIncomeService? recurringIncomeService,
     Income? existingIncome,
   }) {
     return showModalBottomSheet<void>(
@@ -38,6 +45,7 @@ class AddIncomeSheet extends StatefulWidget {
       builder: (context) => AddIncomeSheet(
         incomeService: incomeService,
         goalService: goalService,
+        recurringIncomeService: recurringIncomeService,
         existingIncome: existingIncome,
       ),
     );
@@ -62,7 +70,17 @@ class _AddIncomeSheetState extends State<AddIncomeSheet> {
   late Map<String, bool> _goalEnabled; // goalId -> enabled
   late Map<String, TextEditingController> _percentageControllers;
 
+  // Recurring template info (for incomes generated from recurring)
+  RecurringIncome? _recurringTemplate;
+
+  // Recurring settings for "Make this recurring" toggle
+  RecurringSettings? _recurringSettings;
+
   bool get _isEditing => widget.existingIncome != null;
+
+  /// Whether this income was generated from a recurring template.
+  bool get _isFromRecurring =>
+      _isEditing && widget.existingIncome!.isFromRecurring;
 
   @override
   void initState() {
@@ -114,6 +132,20 @@ class _AddIncomeSheetState extends State<AddIncomeSheet> {
       controller.addListener(_onFormChanged);
     }
     _checkFormValidity();
+
+    // Load the recurring template if this income was generated from one
+    _loadRecurringTemplate();
+  }
+
+  /// Loads the recurring template if this income was generated from one.
+  void _loadRecurringTemplate() {
+    if (_isFromRecurring && widget.recurringIncomeService != null) {
+      final recurringId = widget.existingIncome!.recurringIncomeId;
+      if (recurringId != null) {
+        _recurringTemplate =
+            widget.recurringIncomeService!.getRecurringIncome(recurringId);
+      }
+    }
   }
 
   void _onFormChanged() {
@@ -254,25 +286,31 @@ class _AddIncomeSheetState extends State<AddIncomeSheet> {
         }
       }
 
+      Income savedIncome;
       if (_isEditing) {
         // Update existing income
-        final updatedIncome = widget.existingIncome!.copyWith(
+        savedIncome = widget.existingIncome!.copyWith(
           amount: amount,
           source: _selectedSource,
           description: description.isNotEmpty ? description : null,
           date: _selectedDate,
           goalAllocations: allocations,
         );
-        await widget.incomeService.updateIncome(updatedIncome);
+        await widget.incomeService.updateIncome(savedIncome);
       } else {
         // Add new income
-        await widget.incomeService.addIncome(
+        savedIncome = await widget.incomeService.addIncome(
           amount: amount,
           source: _selectedSource,
           description: description.isNotEmpty ? description : null,
           date: _selectedDate,
           goalAllocations: allocations,
         );
+      }
+
+      // Create recurring template if settings were provided
+      if (_recurringSettings != null && widget.recurringIncomeService != null) {
+        await _createRecurringFromIncome(savedIncome);
       }
 
       if (mounted) {
@@ -385,6 +423,45 @@ class _AddIncomeSheetState extends State<AddIncomeSheet> {
     }
   }
 
+  /// Creates a recurring income template from the saved income.
+  Future<void> _createRecurringFromIncome(Income income) async {
+    if (_recurringSettings == null || widget.recurringIncomeService == null) {
+      return;
+    }
+
+    final settings = _recurringSettings!;
+
+    // Calculate next date based on frequency
+    final nextDate = _calculateNextDate(income.date, settings.frequency);
+
+    await widget.recurringIncomeService!.createRecurringIncome(
+      amount: income.amount,
+      source: income.source,
+      description: income.description,
+      frequency: settings.frequency,
+      nextDate: nextDate,
+      goalAllocations: income.goalAllocations,
+    );
+  }
+
+  /// Calculates the next occurrence date based on frequency.
+  DateTime _calculateNextDate(
+      DateTime startDate, RecurrenceFrequency frequency) {
+    switch (frequency) {
+      case RecurrenceFrequency.daily:
+        return startDate.add(const Duration(days: 1));
+      case RecurrenceFrequency.weekly:
+        return startDate.add(const Duration(days: 7));
+      case RecurrenceFrequency.monthly:
+        return DateTime(startDate.year, startDate.month + 1, startDate.day);
+      case RecurrenceFrequency.yearly:
+        return DateTime(startDate.year + 1, startDate.month, startDate.day);
+      case RecurrenceFrequency.custom:
+        return startDate
+            .add(const Duration(days: 1)); // Default to daily for custom
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = LedgerifyColors.of(context);
@@ -421,6 +498,11 @@ class _AddIncomeSheetState extends State<AddIncomeSheet> {
                       LedgerifySpacing.verticalXl,
                       // Amount field
                       _buildAmountField(colors),
+                      // Show recurring source info if this income was generated from a template
+                      if (_isFromRecurring && _recurringTemplate != null) ...[
+                        LedgerifySpacing.verticalLg,
+                        _buildRecurringSourceCard(colors),
+                      ],
                       LedgerifySpacing.verticalXl,
                       // Source dropdown
                       _buildSourceDropdown(colors),
@@ -430,6 +512,22 @@ class _AddIncomeSheetState extends State<AddIncomeSheet> {
                       LedgerifySpacing.verticalXl,
                       // Date picker
                       _buildDatePicker(colors),
+                      // Recurring toggle (only if not already from recurring AND service is available)
+                      if (!_isFromRecurring &&
+                          widget.recurringIncomeService != null) ...[
+                        LedgerifySpacing.verticalXl,
+                        RecurringToggleSection(
+                          isEnabled: _recurringSettings != null,
+                          onChanged: (settings) {
+                            setState(() {
+                              _recurringSettings = settings;
+                            });
+                          },
+                          transactionDate: _selectedDate,
+                          title: _descriptionController.text,
+                          isExpense: false,
+                        ),
+                      ],
                       // Goal allocations (only if there are active goals)
                       if (_activeGoals.isNotEmpty) ...[
                         LedgerifySpacing.verticalXl,
@@ -572,6 +670,66 @@ class _AddIncomeSheetState extends State<AddIncomeSheet> {
           autofocus: !_isEditing,
         ),
       ],
+    );
+  }
+
+  /// Builds the recurring source info card.
+  /// Shows when editing an income that was generated from a recurring template.
+  Widget _buildRecurringSourceCard(LedgerifyColorScheme colors) {
+    // Template was deleted - don't show anything
+    if (_recurringTemplate == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(LedgerifySpacing.md),
+      decoration: BoxDecoration(
+        color: colors.surfaceHighlight,
+        borderRadius: LedgerifyRadius.borderRadiusMd,
+      ),
+      child: Row(
+        children: [
+          // Recurring icon
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: colors.accent.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.repeat_rounded,
+              size: 16,
+              color: colors.accent,
+            ),
+          ),
+          LedgerifySpacing.horizontalMd,
+          // Template info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'From recurring',
+                  style: LedgerifyTypography.bodySmall.copyWith(
+                    color: colors.textTertiary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _recurringTemplate!.description ??
+                      _recurringTemplate!.source.displayName,
+                  style: LedgerifyTypography.bodyMedium.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

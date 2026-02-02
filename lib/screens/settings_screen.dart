@@ -1,42 +1,39 @@
 import 'package:flutter/material.dart';
 import '../services/custom_category_service.dart';
-import '../services/goal_service.dart';
-import '../services/income_service.dart';
 import '../services/notification_preferences_service.dart';
 import '../services/notification_service.dart';
-import '../services/recurring_income_service.dart';
+import '../services/sms_permission_service.dart';
+import '../services/sms_transaction_service.dart';
 import '../services/tag_service.dart';
 import '../services/theme_service.dart';
 import '../theme/ledgerify_theme.dart';
 import 'category_management_screen.dart';
 import 'notification_settings_screen.dart';
-import 'recurring_income_screen.dart';
+import 'sms_import_screen.dart';
 import 'tag_management_screen.dart';
 
 /// Settings Screen - Ledgerify Design Language
 ///
 /// Allows users to configure app preferences including theme and notifications.
-/// Note: Recurring expenses are now accessed via bottom navigation tab.
+/// Note: Recurring expenses and income are now accessed via bottom navigation tab.
 class SettingsScreen extends StatelessWidget {
   final ThemeService themeService;
   final TagService tagService;
   final CustomCategoryService customCategoryService;
-  final RecurringIncomeService recurringIncomeService;
-  final IncomeService incomeService;
-  final GoalService goalService;
   final NotificationService notificationService;
   final NotificationPreferencesService notificationPrefsService;
+  final SmsPermissionService smsPermissionService;
+  final SmsTransactionService smsTransactionService;
 
   const SettingsScreen({
     super.key,
     required this.themeService,
     required this.tagService,
     required this.customCategoryService,
-    required this.recurringIncomeService,
-    required this.incomeService,
-    required this.goalService,
     required this.notificationService,
     required this.notificationPrefsService,
+    required this.smsPermissionService,
+    required this.smsTransactionService,
   });
 
   @override
@@ -116,11 +113,10 @@ class SettingsScreen extends StatelessWidget {
                   endIndent: 16,
                   color: colors.surfaceHighlight,
                 ),
-                _RecurringIncomeTile(
+                _SmsImportTile(
                   colors: colors,
-                  recurringIncomeService: recurringIncomeService,
-                  incomeService: incomeService,
-                  goalService: goalService,
+                  smsPermissionService: smsPermissionService,
+                  smsTransactionService: smsTransactionService,
                 ),
               ],
             ),
@@ -471,18 +467,16 @@ class _TagsTile extends StatelessWidget {
   }
 }
 
-/// Recurring Income tile
-class _RecurringIncomeTile extends StatelessWidget {
+/// SMS Import tile
+class _SmsImportTile extends StatelessWidget {
   final LedgerifyColorScheme colors;
-  final RecurringIncomeService recurringIncomeService;
-  final IncomeService incomeService;
-  final GoalService goalService;
+  final SmsPermissionService smsPermissionService;
+  final SmsTransactionService smsTransactionService;
 
-  const _RecurringIncomeTile({
+  const _SmsImportTile({
     required this.colors,
-    required this.recurringIncomeService,
-    required this.incomeService,
-    required this.goalService,
+    required this.smsPermissionService,
+    required this.smsTransactionService,
   });
 
   @override
@@ -493,13 +487,19 @@ class _RecurringIncomeTile extends StatelessWidget {
         vertical: LedgerifySpacing.xs,
       ),
       leading: Icon(
-        Icons.account_balance_wallet_rounded,
+        Icons.sms_rounded,
         color: colors.textSecondary,
       ),
       title: Text(
-        'Recurring Income',
+        'SMS Import',
         style: LedgerifyTypography.bodyLarge.copyWith(
           color: colors.textPrimary,
+        ),
+      ),
+      subtitle: Text(
+        'Import transactions from bank SMS',
+        style: LedgerifyTypography.bodySmall.copyWith(
+          color: colors.textTertiary,
         ),
       ),
       trailing: Icon(
@@ -510,10 +510,9 @@ class _RecurringIncomeTile extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => RecurringIncomeScreen(
-              recurringIncomeService: recurringIncomeService,
-              incomeService: incomeService,
-              goalService: goalService,
+            builder: (context) => SmsImportScreen(
+              smsPermissionService: smsPermissionService,
+              smsTransactionService: smsTransactionService,
             ),
           ),
         );

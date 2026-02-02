@@ -11,6 +11,7 @@ import 'income_service.dart';
 /// and handles the automatic generation of actual income entries based on
 /// recurrence patterns.
 class RecurringIncomeService {
+  static const String _lastGenerationKey = 'last_recurring_income_generation';
   static const Uuid _uuid = Uuid();
 
   final Box<RecurringIncome> _box;
@@ -100,6 +101,28 @@ class RecurringIncomeService {
   // Generation Logic
   // ============================================
 
+  /// Generates incomes for all due recurring items if not already generated recently.
+  ///
+  /// This is the preferred method to call from main.dart. It will skip generation
+  /// if already run within the last hour to avoid redundant processing on app restarts.
+  ///
+  /// Returns the count of generated incomes, or 0 if skipped.
+  Future<int> generateDueIncomesIfNeeded(IncomeService incomeService) async {
+    final settingsBox = Hive.box('settings');
+    final lastGen = settingsBox.get(_lastGenerationKey) as DateTime?;
+    final now = DateTime.now();
+
+    // Skip if generated within last hour
+    if (lastGen != null && now.difference(lastGen).inHours < 1) {
+      return 0;
+    }
+
+    await generateDueIncomes(incomeService);
+    await settingsBox.put(_lastGenerationKey, now);
+    // Return count of due items that were processed
+    return getDueIncomes().length;
+  }
+
   /// Gets all recurring incomes that are due (nextDate <= today).
   List<RecurringIncome> getDueIncomes() {
     final now = DateTime.now();
@@ -162,6 +185,7 @@ class RecurringIncomeService {
           description: recurring.description,
           date: currentDueDate,
           goalAllocations: recurring.goalAllocations,
+          recurringIncomeId: recurring.id,
         );
 
         // Calculate the next due date

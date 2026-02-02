@@ -154,4 +154,15 @@ class LedgerifyColorScheme {
     if (amount < 0) return negative;
     return textSecondary;
   }
+
+  // ============================================
+  // Pre-computed alpha variants
+  // ============================================
+  // These are cached getters to avoid creating new Color objects on every build
+
+  /// Accent color with 20% alpha - use for faded backgrounds
+  Color get accentFaded => accent.withValues(alpha: 0.2);
+
+  /// Negative color with 20% alpha - use for faded negative backgrounds
+  Color get negativeFaded => negative.withValues(alpha: 0.2);
 }

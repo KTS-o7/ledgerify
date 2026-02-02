@@ -173,6 +173,11 @@ class Income extends HiveObject {
   @HiveField(6)
   final List<GoalAllocation> goalAllocations;
 
+  /// Optional reference to the recurring income template that generated this income.
+  /// If set, this income was auto-generated from a RecurringIncome.
+  @HiveField(7)
+  final String? recurringIncomeId;
+
   Income({
     required this.id,
     required this.amount,
@@ -181,6 +186,7 @@ class Income extends HiveObject {
     required this.date,
     DateTime? createdAt,
     List<GoalAllocation>? goalAllocations,
+    this.recurringIncomeId,
   })  : createdAt = createdAt ?? DateTime.now(),
         goalAllocations = goalAllocations ?? [];
 
@@ -200,6 +206,9 @@ class Income extends HiveObject {
   /// Whether this income has any goal allocations.
   bool get hasAllocations => goalAllocations.isNotEmpty;
 
+  /// Whether this income was generated from a recurring template.
+  bool get isFromRecurring => recurringIncomeId != null;
+
   /// Creates a copy of this income with optional field overrides.
   Income copyWith({
     String? id,
@@ -209,6 +218,8 @@ class Income extends HiveObject {
     DateTime? date,
     DateTime? createdAt,
     List<GoalAllocation>? goalAllocations,
+    String? recurringIncomeId,
+    bool clearRecurringIncomeId = false,
   }) {
     return Income(
       id: id ?? this.id,
@@ -218,6 +229,9 @@ class Income extends HiveObject {
       date: date ?? this.date,
       createdAt: createdAt ?? this.createdAt,
       goalAllocations: goalAllocations ?? this.goalAllocations,
+      recurringIncomeId: clearRecurringIncomeId
+          ? null
+          : (recurringIncomeId ?? this.recurringIncomeId),
     );
   }
 
@@ -232,6 +246,7 @@ class Income extends HiveObject {
       'date': date.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'goalAllocations': goalAllocations.map((a) => a.toJson()).toList(),
+      'recurringIncomeId': recurringIncomeId,
     };
   }
 
@@ -253,6 +268,7 @@ class Income extends HiveObject {
               ?.map((e) => GoalAllocation.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      recurringIncomeId: json['recurringIncomeId'] as String?,
     );
   }
 

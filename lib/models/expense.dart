@@ -143,6 +143,11 @@ class Expense extends HiveObject {
   @HiveField(9)
   final List<String> tagIds;
 
+  /// Optional reference to the recurring expense template that generated this expense.
+  /// If set, this expense was auto-generated from a RecurringExpense.
+  @HiveField(10)
+  final String? recurringExpenseId;
+
   Expense({
     required this.id,
     required this.amount,
@@ -154,6 +159,7 @@ class Expense extends HiveObject {
     DateTime? createdAt,
     this.customCategoryId,
     List<String>? tagIds,
+    this.recurringExpenseId,
   })  : createdAt = createdAt ?? DateTime.now(),
         tagIds = tagIds ?? [];
 
@@ -162,6 +168,9 @@ class Expense extends HiveObject {
 
   /// Whether this expense has any tags.
   bool get hasTags => tagIds.isNotEmpty;
+
+  /// Whether this expense was generated from a recurring template.
+  bool get isFromRecurring => recurringExpenseId != null;
 
   /// Creates a copy of this expense with optional field overrides.
   Expense copyWith({
@@ -175,7 +184,9 @@ class Expense extends HiveObject {
     DateTime? createdAt,
     String? customCategoryId,
     List<String>? tagIds,
+    String? recurringExpenseId,
     bool clearCustomCategory = false,
+    bool clearRecurringExpenseId = false,
   }) {
     return Expense(
       id: id ?? this.id,
@@ -190,6 +201,9 @@ class Expense extends HiveObject {
           ? null
           : (customCategoryId ?? this.customCategoryId),
       tagIds: tagIds ?? this.tagIds,
+      recurringExpenseId: clearRecurringExpenseId
+          ? null
+          : (recurringExpenseId ?? this.recurringExpenseId),
     );
   }
 
@@ -207,6 +221,7 @@ class Expense extends HiveObject {
       'createdAt': createdAt.toIso8601String(),
       'customCategoryId': customCategoryId,
       'tagIds': tagIds,
+      'recurringExpenseId': recurringExpenseId,
     };
   }
 
@@ -231,6 +246,7 @@ class Expense extends HiveObject {
           : null,
       customCategoryId: json['customCategoryId'] as String?,
       tagIds: (json['tagIds'] as List<dynamic>?)?.cast<String>() ?? [],
+      recurringExpenseId: json['recurringExpenseId'] as String?,
     );
   }
 

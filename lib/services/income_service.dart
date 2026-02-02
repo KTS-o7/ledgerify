@@ -63,6 +63,7 @@ class IncomeService {
     String? description,
     required DateTime date,
     List<GoalAllocation>? goalAllocations,
+    String? recurringIncomeId,
   }) async {
     final income = Income(
       id: generateId(),
@@ -71,6 +72,7 @@ class IncomeService {
       description: description,
       date: date,
       goalAllocations: goalAllocations ?? [],
+      recurringIncomeId: recurringIncomeId,
     );
 
     await _incomeBox.put(income.id, income);
@@ -171,6 +173,31 @@ class IncomeService {
   // Analytics
   // ============================================================================
 
+  /// Returns a complete month summary in a single pass.
+  /// This is more efficient than calling getIncomesForMonth and
+  /// getTotalIncomeForMonth separately.
+  IncomeSummary getMonthSummary(int year, int month) {
+    final incomes = <Income>[];
+    double total = 0;
+
+    // Single pass through the data
+    for (final income in _incomeBox.values) {
+      if (income.date.year == year && income.date.month == month) {
+        incomes.add(income);
+        total += income.amount;
+      }
+    }
+
+    // Sort incomes by date (newest first)
+    incomes.sort((a, b) => b.date.compareTo(a.date));
+
+    return IncomeSummary(
+      incomes: incomes,
+      total: total,
+      count: incomes.length,
+    );
+  }
+
   /// Returns the total income for a specific month.
   double getTotalIncomeForMonth(int year, int month) {
     double total = 0.0;
@@ -249,23 +276,70 @@ class IncomeService {
 
   /// Returns monthly income totals for the last N months.
   /// Returns a list of (year, month, total) records sorted chronologically.
+  /// Optimized: Single pass through all incomes instead of N iterations.
   List<MonthlyIncome> getMonthlyTotals(int months) {
+    // Guard clause for invalid input
+    if (months <= 0) return [];
+
     final now = DateTime.now();
-    final results = <MonthlyIncome>[];
 
-    for (int i = months - 1; i >= 0; i--) {
-      var year = now.year;
-      var month = now.month - i;
+    // Calculate the start month
+    var startYear = now.year;
+    var startMonth = now.month - (months - 1);
+    while (startMonth <= 0) {
+      startMonth += 12;
+      startYear--;
+    }
 
-      // Handle month underflow
-      while (month <= 0) {
-        month += 12;
-        year--;
+    // Pre-populate all N months with 0 total
+    final monthlyTotals = <String, double>{};
+    var year = startYear;
+    var month = startMonth;
+    for (var i = 0; i < months; i++) {
+      final key = '$year-$month';
+      monthlyTotals[key] = 0;
+      month++;
+      if (month > 12) {
+        month = 1;
+        year++;
+      }
+    }
+
+    // Single pass through all incomes
+    for (final income in _incomeBox.values) {
+      final incYear = income.date.year;
+      final incMonth = income.date.month;
+
+      // Check if income is within our date range
+      final isAfterOrEqualStart = incYear > startYear ||
+          (incYear == startYear && incMonth >= startMonth);
+      final isBeforeOrEqualEnd =
+          incYear < now.year || (incYear == now.year && incMonth <= now.month);
+
+      if (!isAfterOrEqualStart || !isBeforeOrEqualEnd) {
+        continue;
       }
 
-      final total = getTotalIncomeForMonth(year, month);
-      results.add(MonthlyIncome(year: year, month: month, total: total));
+      final key = '$incYear-$incMonth';
+      monthlyTotals[key] = (monthlyTotals[key] ?? 0) + income.amount;
     }
+
+    // Convert to list of MonthlyIncome and sort ascending
+    final results = monthlyTotals.entries.map((e) {
+      final parts = e.key.split('-');
+      return MonthlyIncome(
+        year: int.parse(parts[0]),
+        month: int.parse(parts[1]),
+        total: e.value,
+      );
+    }).toList();
+
+    // Sort by year then month (ascending)
+    results.sort((a, b) {
+      final yearCompare = a.year.compareTo(b.year);
+      if (yearCompare != 0) return yearCompare;
+      return a.month.compareTo(b.month);
+    });
 
     return results;
   }
@@ -281,5 +355,19 @@ class MonthlyIncome {
     required this.year,
     required this.month,
     required this.total,
+  });
+}
+
+/// Holds pre-computed summary data for a month's income.
+/// Used for efficient single-pass data retrieval.
+class IncomeSummary {
+  final List<Income> incomes;
+  final double total;
+  final int count;
+
+  const IncomeSummary({
+    required this.incomes,
+    required this.total,
+    required this.count,
   });
 }

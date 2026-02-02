@@ -1,14 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/expense.dart';
+import '../models/recurring_expense.dart';
+import '../services/category_default_service.dart';
 import '../services/expense_service.dart';
+import '../services/merchant_history_service.dart';
 import '../services/recurring_expense_service.dart';
 import '../services/tag_service.dart';
 import '../services/custom_category_service.dart';
 import '../theme/ledgerify_theme.dart';
-import '../utils/currency_formatter.dart';
+import '../widgets/merchant_autocomplete_field.dart';
 import '../widgets/tag_chip_input.dart';
 import '../widgets/category_picker_sheet.dart';
+import '../widgets/recurring_toggle_section.dart';
+import '../widgets/quick_date_picker.dart';
 import 'add_recurring_screen.dart';
 
 /// Add/Edit Expense Screen - Ledgerify Design Language
@@ -25,6 +32,8 @@ class AddExpenseScreen extends StatefulWidget {
   final RecurringExpenseService? recurringService;
   final TagService tagService;
   final CustomCategoryService customCategoryService;
+  final CategoryDefaultService? categoryDefaultService;
+  final MerchantHistoryService? merchantHistoryService;
   final Expense? expenseToEdit;
 
   const AddExpenseScreen({
@@ -33,6 +42,8 @@ class AddExpenseScreen extends StatefulWidget {
     this.recurringService,
     required this.tagService,
     required this.customCategoryService,
+    this.categoryDefaultService,
+    this.merchantHistoryService,
     this.expenseToEdit,
   });
 
@@ -56,7 +67,26 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   List<String> _selectedTagIds = [];
   String? _selectedCustomCategoryId;
 
+  // Recurring template info (for expenses generated from recurring)
+  RecurringExpense? _recurringTemplate;
+
+  // Recurring settings for new expenses
+  RecurringSettings? _recurringSettings;
+
+  // Debounce timer for title changes
+  Timer? _titleDebounceTimer;
+
+  // Tracks if user has manually changed the category (to avoid overriding their choice)
+  bool _userChangedCategory = false;
+
+  // The initial/default category before any merchant suggestion
+  late ExpenseCategory _initialCategory;
+
   bool get _isEditing => widget.expenseToEdit != null;
+
+  /// Whether this expense was generated from a recurring template.
+  bool get _isFromRecurring =>
+      _isEditing && widget.expenseToEdit!.isFromRecurring;
 
   @override
   void initState() {
@@ -70,24 +100,65 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       );
       _noteController = TextEditingController(text: expense.note ?? '');
       _selectedCategory = expense.category;
+      _initialCategory = expense.category;
       _selectedDate = expense.date;
       _selectedTagIds = List<String>.from(expense.tagIds);
       _selectedCustomCategoryId = expense.customCategoryId;
+      // In edit mode, consider category as already set by user
+      _userChangedCategory = true;
     } else {
       _titleController = TextEditingController();
       _amountController = TextEditingController();
       _noteController = TextEditingController();
-      _selectedCategory = ExpenseCategory.food;
+      // Use smart category default if service is available
+      _selectedCategory = _getSuggestedCategory();
+      _initialCategory = _selectedCategory;
       _selectedDate = DateTime.now();
       _selectedTagIds = [];
       _selectedCustomCategoryId = null;
+      _recurringSettings = null;
+      _userChangedCategory = false;
     }
 
     // Listen to amount changes for form validity
     _amountController.addListener(_checkFormValidity);
 
+    // Listen to title changes for recurring toggle smart suggestions
+    _titleController.addListener(_onTitleChanged);
+
     // Check initial validity (for edit mode)
     _checkFormValidity();
+
+    // Load the recurring template if this expense was generated from one
+    _loadRecurringTemplate();
+  }
+
+  /// Loads the recurring template if this expense was generated from one.
+  void _loadRecurringTemplate() {
+    if (_isFromRecurring && widget.recurringService != null) {
+      final recurringId = widget.expenseToEdit!.recurringExpenseId;
+      if (recurringId != null) {
+        _recurringTemplate = widget.recurringService!.get(recurringId);
+      }
+    }
+  }
+
+  /// Gets a smart category suggestion using CategoryDefaultService.
+  /// Falls back to food if service is not available.
+  ExpenseCategory _getSuggestedCategory() {
+    final service = widget.categoryDefaultService;
+    if (service == null) {
+      return ExpenseCategory.food;
+    }
+
+    // Get category frequencies from expense service for fallback
+    final allExpenses = widget.expenseService.getAllExpenses();
+    final frequencies = <ExpenseCategory, int>{};
+    for (final expense in allExpenses) {
+      frequencies[expense.category] = (frequencies[expense.category] ?? 0) + 1;
+    }
+
+    return service.getSuggestedCategory(categoryFrequencies: frequencies);
   }
 
   void _checkFormValidity() {
@@ -102,27 +173,75 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   @override
   void dispose() {
+    _titleDebounceTimer?.cancel();
     _amountController.removeListener(_checkFormValidity);
+    _titleController.removeListener(_onTitleChanged);
     _titleController.dispose();
     _amountController.dispose();
     _noteController.dispose();
     super.dispose();
   }
 
-  Future<void> _selectDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      helpText: 'Select expense date',
-    );
+  /// Called when title changes to trigger rebuild for recurring toggle smart suggestions
+  /// and to check for merchant-based category auto-suggestion.
+  void _onTitleChanged() {
+    _titleDebounceTimer?.cancel();
+    _titleDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        _checkMerchantCategorySuggestion();
+        setState(() {});
+      }
+    });
+  }
 
-    if (picked != null && picked != _selectedDate) {
+  /// Checks if we should auto-suggest a category based on the merchant name.
+  ///
+  /// Only suggests a category if:
+  /// - We're not in edit mode (creating new expense)
+  /// - User hasn't manually changed the category
+  /// - The merchant has a known default category
+  void _checkMerchantCategorySuggestion() {
+    // Don't auto-suggest in edit mode
+    if (_isEditing) return;
+
+    // Don't override if user manually changed the category
+    if (_userChangedCategory) return;
+
+    // Check if merchant history service is available
+    final service = widget.merchantHistoryService;
+    if (service == null) return;
+
+    final merchant = _titleController.text.trim();
+    if (merchant.isEmpty) {
+      // Reset to initial category when merchant is cleared
+      if (_selectedCategory != _initialCategory) {
+        setState(() {
+          _selectedCategory = _initialCategory;
+          _selectedCustomCategoryId = null;
+        });
+      }
+      return;
+    }
+
+    // Check if this merchant has a suggested category
+    final suggestedCategory = service.getSuggestedCategory(merchant);
+    if (suggestedCategory != null && suggestedCategory != _selectedCategory) {
       setState(() {
-        _selectedDate = picked;
+        _selectedCategory = suggestedCategory;
+        // Clear custom category when auto-suggesting built-in category
+        _selectedCustomCategoryId = null;
       });
     }
+  }
+
+  /// Called when a merchant is selected from the autocomplete dropdown.
+  /// Immediately checks for category suggestion without waiting for debounce.
+  void _onMerchantSelected(String merchant) {
+    // Cancel any pending debounced check
+    _titleDebounceTimer?.cancel();
+
+    // Immediately check for category suggestion
+    _checkMerchantCategorySuggestion();
   }
 
   Future<void> _saveExpense() async {
@@ -163,6 +282,23 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           tagIds: _selectedTagIds,
         );
         await widget.expenseService.updateExpense(expense);
+
+        // Create recurring template if recurring settings were configured
+        if (_recurringSettings != null && widget.recurringService != null) {
+          await _createRecurringFromExpense(expense);
+        }
+      }
+
+      // Update last used category for smart defaults
+      await widget.categoryDefaultService
+          ?.setLastUsedCategory(_selectedCategory);
+
+      // Record merchant with category for autocomplete and auto-mapping
+      if (title.isNotEmpty) {
+        await widget.merchantHistoryService?.recordMerchantWithCategory(
+          title,
+          _selectedCategory,
+        );
       }
 
       if (mounted) {
@@ -234,16 +370,49 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           _buildTitleField(colors),
                           LedgerifySpacing.verticalXl,
                           _buildAmountField(colors),
+                          // Show recurring source info if this expense was generated from a template
+                          if (_isFromRecurring &&
+                              _recurringTemplate != null) ...[
+                            LedgerifySpacing.verticalLg,
+                            _buildRecurringSourceCard(colors),
+                          ],
                           LedgerifySpacing.verticalXl,
                           _buildCategoryPicker(colors),
                           LedgerifySpacing.verticalXl,
                           _buildTagsSection(colors),
                           LedgerifySpacing.verticalXl,
-                          _buildDatePicker(colors),
+                          QuickDatePicker(
+                            selectedDate: _selectedDate,
+                            onDateChanged: (date) {
+                              setState(() {
+                                _selectedDate = date;
+                              });
+                            },
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                          ),
                           LedgerifySpacing.verticalXl,
                           _buildNoteField(colors),
-                          // "Make this recurring" button (edit mode only)
+                          // Recurring toggle section (only for new expenses, not from recurring)
+                          if (!_isEditing &&
+                              !_isFromRecurring &&
+                              widget.recurringService != null) ...[
+                            LedgerifySpacing.verticalXl,
+                            RecurringToggleSection(
+                              isEnabled: _recurringSettings != null,
+                              onChanged: (settings) {
+                                setState(() {
+                                  _recurringSettings = settings;
+                                });
+                              },
+                              transactionDate: _selectedDate,
+                              title: _titleController.text,
+                              isExpense: true,
+                            ),
+                          ],
+                          // "Make this recurring" button (edit mode only, not for recurring-generated expenses)
                           if (_isEditing &&
+                              !_isFromRecurring &&
                               widget.recurringService != null) ...[
                             LedgerifySpacing.verticalXxl,
                             _buildMakeRecurringButton(colors),
@@ -282,40 +451,49 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           ],
         ),
         LedgerifySpacing.verticalSm,
-        TextFormField(
-          controller: _titleController,
-          textCapitalization: TextCapitalization.words,
-          style: LedgerifyTypography.bodyLarge.copyWith(
-            color: colors.textPrimary,
-          ),
-          decoration: InputDecoration(
+        // Use MerchantAutocompleteField if service is available
+        if (widget.merchantHistoryService != null)
+          MerchantAutocompleteField(
+            merchantHistoryService: widget.merchantHistoryService!,
+            controller: _titleController,
             hintText: 'e.g., Starbucks, Amazon, Uber',
-            hintStyle: LedgerifyTypography.bodyLarge.copyWith(
-              color: colors.textTertiary,
+            onMerchantSelected: _onMerchantSelected,
+          )
+        else
+          TextFormField(
+            controller: _titleController,
+            textCapitalization: TextCapitalization.words,
+            style: LedgerifyTypography.bodyLarge.copyWith(
+              color: colors.textPrimary,
             ),
-            filled: true,
-            fillColor: colors.surfaceHighlight,
-            border: const OutlineInputBorder(
-              borderRadius: LedgerifyRadius.borderRadiusMd,
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: const OutlineInputBorder(
-              borderRadius: LedgerifyRadius.borderRadiusMd,
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: LedgerifyRadius.borderRadiusMd,
-              borderSide: BorderSide(
-                color: colors.accent,
-                width: 1,
+            decoration: InputDecoration(
+              hintText: 'e.g., Starbucks, Amazon, Uber',
+              hintStyle: LedgerifyTypography.bodyLarge.copyWith(
+                color: colors.textTertiary,
+              ),
+              filled: true,
+              fillColor: colors.surfaceHighlight,
+              border: const OutlineInputBorder(
+                borderRadius: LedgerifyRadius.borderRadiusMd,
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: const OutlineInputBorder(
+                borderRadius: LedgerifyRadius.borderRadiusMd,
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: LedgerifyRadius.borderRadiusMd,
+                borderSide: BorderSide(
+                  color: colors.accent,
+                  width: 1,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: LedgerifySpacing.lg,
+                vertical: LedgerifySpacing.lg,
               ),
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: LedgerifySpacing.lg,
-              vertical: LedgerifySpacing.lg,
-            ),
           ),
-        ),
       ],
     );
   }
@@ -411,6 +589,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
     if (result != null) {
       setState(() {
+        // Mark that user has manually changed the category
+        _userChangedCategory = true;
+
         if (result.isBuiltIn) {
           _selectedCategory = result.builtInCategory!;
           _selectedCustomCategoryId = null;
@@ -519,51 +700,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
-  Widget _buildDatePicker(LedgerifyColorScheme colors) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Date',
-          style: LedgerifyTypography.labelMedium.copyWith(
-            color: colors.textSecondary,
-          ),
-        ),
-        LedgerifySpacing.verticalSm,
-        InkWell(
-          onTap: _selectDate,
-          borderRadius: LedgerifyRadius.borderRadiusMd,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: LedgerifySpacing.lg,
-              vertical: LedgerifySpacing.lg,
-            ),
-            decoration: BoxDecoration(
-              color: colors.surfaceHighlight,
-              borderRadius: LedgerifyRadius.borderRadiusMd,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  DateFormatter.format(_selectedDate),
-                  style: LedgerifyTypography.bodyLarge.copyWith(
-                    color: colors.textPrimary,
-                  ),
-                ),
-                Icon(
-                  Icons.calendar_today_rounded,
-                  size: 20,
-                  color: colors.textTertiary,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildNoteField(LedgerifyColorScheme colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -656,6 +792,105 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
+  /// Builds the recurring source info card.
+  /// Shows when editing an expense that was generated from a recurring template.
+  Widget _buildRecurringSourceCard(LedgerifyColorScheme colors) {
+    // Template was deleted - don't show anything
+    if (_recurringTemplate == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(LedgerifySpacing.md),
+      decoration: BoxDecoration(
+        color: colors.surfaceHighlight,
+        borderRadius: LedgerifyRadius.borderRadiusMd,
+      ),
+      child: Row(
+        children: [
+          // Recurring icon
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: colors.accent.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.repeat_rounded,
+              size: 16,
+              color: colors.accent,
+            ),
+          ),
+          LedgerifySpacing.horizontalMd,
+          // Template info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'From recurring',
+                  style: LedgerifyTypography.bodySmall.copyWith(
+                    color: colors.textTertiary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _recurringTemplate!.title,
+                  style: LedgerifyTypography.bodyMedium.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          // View template button
+          TextButton(
+            onPressed: _navigateToViewRecurringTemplate,
+            style: TextButton.styleFrom(
+              foregroundColor: colors.accent,
+              padding: const EdgeInsets.symmetric(
+                horizontal: LedgerifySpacing.md,
+                vertical: LedgerifySpacing.sm,
+              ),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              'View template',
+              style: LedgerifyTypography.labelMedium.copyWith(
+                color: colors.accent,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Navigates to view/edit the recurring template.
+  void _navigateToViewRecurringTemplate() {
+    if (widget.recurringService == null || _recurringTemplate == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddRecurringScreen(
+          recurringService: widget.recurringService!,
+          recurringToEdit: _recurringTemplate,
+        ),
+      ),
+    ).then((_) {
+      // Reload the template in case it was modified
+      _loadRecurringTemplate();
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
   void _navigateToMakeRecurring() {
     if (widget.recurringService == null) return;
 
@@ -670,6 +905,26 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           prefillFromExpense: expense,
         ),
       ),
+    );
+  }
+
+  /// Creates a recurring expense template from the saved expense.
+  Future<void> _createRecurringFromExpense(Expense expense) async {
+    if (_recurringSettings == null || widget.recurringService == null) return;
+
+    final settings = _recurringSettings!;
+
+    await widget.recurringService!.add(
+      title: expense.merchant ?? expense.note ?? 'Unnamed Expense',
+      amount: expense.amount,
+      category: expense.category,
+      frequency: settings.frequency,
+      customIntervalDays: 1, // Default, could be from settings if needed
+      weekdays: settings.weekdays,
+      dayOfMonth: settings.dayOfMonth,
+      startDate: expense.date,
+      endDate: settings.endDate,
+      note: expense.note,
     );
   }
 

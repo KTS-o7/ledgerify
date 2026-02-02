@@ -147,7 +147,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
               // Spacing between sections
               if (activeGoals.isNotEmpty && completedGoals.isNotEmpty)
                 const SliverToBoxAdapter(
-                  child: LedgerifySpacing.verticalXl,
+                  child: SizedBox(height: LedgerifySpacing.xl),
                 ),
 
               // Completed Goals Section (Collapsible)

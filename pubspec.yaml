@@ -1,7 +1,7 @@
 name: ledgerify
 description: A personal expense tracker app - simple, fast, and offline-first.
 publish_to: 'none'
-version: 1.1.0+2
+version: 1.2.0+3
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -31,6 +31,12 @@ dependencies:
 
   # Cupertino icons for iOS-style icons (optional, for consistency)
   cupertino_icons: ^1.0.6
+
+  # SMS Reading
+  flutter_sms_inbox: ^1.0.4
+
+  # Permissions
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:

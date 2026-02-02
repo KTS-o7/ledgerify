@@ -4,20 +4,28 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'models/custom_category.dart';
 import 'models/goal.dart';
 import 'models/income.dart';
+import 'models/merchant_history.dart';
 import 'models/notification_preferences.dart';
 import 'models/recurring_income.dart';
+import 'models/sms_transaction.dart';
 import 'models/tag.dart';
 import 'services/budget_service.dart';
+import 'services/category_default_service.dart';
 import 'services/custom_category_service.dart';
 import 'services/expense_service.dart';
 import 'services/goal_service.dart';
 import 'services/income_service.dart';
+import 'services/merchant_history_service.dart';
 import 'services/notification_preferences_service.dart';
 import 'services/notification_service.dart';
 import 'services/recurring_expense_service.dart';
 import 'services/recurring_income_service.dart';
+import 'services/sms_permission_service.dart';
+import 'services/sms_service.dart';
+import 'services/sms_transaction_service.dart';
 import 'services/tag_service.dart';
 import 'services/theme_service.dart';
+import 'services/transaction_parsing_service.dart';
 import 'screens/main_shell.dart';
 import 'theme/ledgerify_theme.dart';
 
@@ -34,23 +42,11 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Initialize services
+  // Initialize ExpenseService first - it calls Hive.initFlutter and registers core adapters
   final expenseService = ExpenseService();
   await expenseService.init();
 
-  final themeService = ThemeService();
-  await themeService.init();
-
-  final recurringService = RecurringExpenseService();
-  await recurringService.init();
-
-  final budgetService = BudgetService();
-  await budgetService.init();
-
-  final notificationService = NotificationService();
-  await notificationService.init();
-
-  // Register Hive adapters for Tag, CustomCategory, Goal, and Income
+  // Register Hive adapters for remaining models (after Hive is initialized)
   if (!Hive.isAdapterRegistered(6)) {
     Hive.registerAdapter(TagAdapter());
   }
@@ -75,17 +71,60 @@ void main() async {
   if (!Hive.isAdapterRegistered(13)) {
     Hive.registerAdapter(NotificationPreferencesAdapter());
   }
+  if (!Hive.isAdapterRegistered(14)) {
+    Hive.registerAdapter(MerchantHistoryAdapter());
+  }
+  if (!Hive.isAdapterRegistered(15)) {
+    Hive.registerAdapter(SmsTransactionAdapter());
+  }
+  if (!Hive.isAdapterRegistered(16)) {
+    Hive.registerAdapter(SmsTransactionStatusAdapter());
+  }
 
-  // Open Tag, CustomCategory, Goal, Income, RecurringIncome, and NotificationPreferences boxes
-  final tagBox = await Hive.openBox<Tag>('tags');
-  final customCategoryBox =
-      await Hive.openBox<CustomCategory>('custom_categories');
-  final goalBox = await Hive.openBox<Goal>('goals');
-  final incomeBox = await Hive.openBox<Income>('incomes');
-  final recurringIncomeBox =
-      await Hive.openBox<RecurringIncome>('recurring_incomes');
+  // Initialize independent services in parallel
+  final themeService = ThemeService();
+  final recurringService = RecurringExpenseService();
+  final budgetService = BudgetService();
+  final notificationService = NotificationService();
+  final categoryDefaultService = CategoryDefaultService();
+  final merchantHistoryService = MerchantHistoryService();
+
+  final smsPermissionService = SmsPermissionService();
+  final transactionParsingService = TransactionParsingService();
+  final smsService = SmsService(
+    permissionService: smsPermissionService,
+    parsingService: transactionParsingService,
+  );
+
+  // Compaction strategy: compact when deleted entries exceed 20% of total
+  bool compactWhen(int entries, int deletedEntries) =>
+      deletedEntries > entries * 0.2;
+
+  // Parallel initialization of services and box opening
+  await Future.wait([
+    themeService.init(),
+    recurringService.init(),
+    budgetService.init(),
+    notificationService.init(),
+    categoryDefaultService.init(),
+    merchantHistoryService.init(),
+    // Open boxes in parallel
+    Hive.openBox<Tag>('tags'),
+    Hive.openBox<CustomCategory>('custom_categories'),
+    Hive.openBox<Goal>('goals'),
+    Hive.openBox<Income>('incomes', compactionStrategy: compactWhen),
+    Hive.openBox<RecurringIncome>('recurring_incomes'),
+    Hive.openBox<NotificationPreferences>('notification_preferences'),
+  ]);
+
+  // Retrieve opened boxes
+  final tagBox = Hive.box<Tag>('tags');
+  final customCategoryBox = Hive.box<CustomCategory>('custom_categories');
+  final goalBox = Hive.box<Goal>('goals');
+  final incomeBox = Hive.box<Income>('incomes');
+  final recurringIncomeBox = Hive.box<RecurringIncome>('recurring_incomes');
   final notificationPrefsBox =
-      await Hive.openBox<NotificationPreferences>('notification_preferences');
+      Hive.box<NotificationPreferences>('notification_preferences');
 
   // Create Tag, CustomCategory, Goal, Income, RecurringIncome, and NotificationPreferences services
   final tagService = TagService(tagBox);
@@ -95,6 +134,13 @@ void main() async {
   final recurringIncomeService = RecurringIncomeService(recurringIncomeBox);
   final notificationPrefsService =
       NotificationPreferencesService(notificationPrefsBox);
+
+  final smsTransactionService = SmsTransactionService(
+    smsService: smsService,
+    expenseService: expenseService,
+    incomeService: incomeService,
+  );
+  await smsTransactionService.init();
 
   // Wire up notification service with preferences
   notificationService.setPreferencesService(notificationPrefsService);
@@ -110,11 +156,15 @@ void main() async {
     budgetService: budgetService,
     tagService: tagService,
     customCategoryService: customCategoryService,
+    categoryDefaultService: categoryDefaultService,
+    merchantHistoryService: merchantHistoryService,
     goalService: goalService,
     incomeService: incomeService,
     recurringIncomeService: recurringIncomeService,
     notificationService: notificationService,
     notificationPrefsService: notificationPrefsService,
+    smsPermissionService: smsPermissionService,
+    smsTransactionService: smsTransactionService,
   ));
 
   // Handle notifications and recurring items after first frame renders
@@ -128,10 +178,10 @@ void main() async {
       debugPrint('Error setting up notifications: $e');
     }
 
-    // Generate due recurring expenses and incomes
+    // Generate due recurring expenses and incomes (skips if already done recently)
     try {
-      await recurringService.generateDueExpenses(expenseService);
-      await recurringIncomeService.generateDueIncomes(incomeService);
+      await recurringService.generateDueExpensesIfNeeded(expenseService);
+      await recurringIncomeService.generateDueIncomesIfNeeded(incomeService);
     } catch (e) {
       debugPrint('Error generating recurring items: $e');
     }
@@ -149,11 +199,15 @@ class LedgerifyApp extends StatelessWidget {
   final BudgetService budgetService;
   final TagService tagService;
   final CustomCategoryService customCategoryService;
+  final CategoryDefaultService categoryDefaultService;
+  final MerchantHistoryService merchantHistoryService;
   final GoalService goalService;
   final IncomeService incomeService;
   final RecurringIncomeService recurringIncomeService;
   final NotificationService notificationService;
   final NotificationPreferencesService notificationPrefsService;
+  final SmsPermissionService smsPermissionService;
+  final SmsTransactionService smsTransactionService;
 
   const LedgerifyApp({
     super.key,
@@ -163,11 +217,15 @@ class LedgerifyApp extends StatelessWidget {
     required this.budgetService,
     required this.tagService,
     required this.customCategoryService,
+    required this.categoryDefaultService,
+    required this.merchantHistoryService,
     required this.goalService,
     required this.incomeService,
     required this.recurringIncomeService,
     required this.notificationService,
     required this.notificationPrefsService,
+    required this.smsPermissionService,
+    required this.smsTransactionService,
   });
 
   @override
@@ -196,11 +254,15 @@ class LedgerifyApp extends StatelessWidget {
             budgetService: budgetService,
             tagService: tagService,
             customCategoryService: customCategoryService,
+            categoryDefaultService: categoryDefaultService,
+            merchantHistoryService: merchantHistoryService,
             goalService: goalService,
             incomeService: incomeService,
             recurringIncomeService: recurringIncomeService,
             notificationService: notificationService,
             notificationPrefsService: notificationPrefsService,
+            smsPermissionService: smsPermissionService,
+            smsTransactionService: smsTransactionService,
           ),
         );
       },

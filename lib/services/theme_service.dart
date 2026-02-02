@@ -34,9 +34,13 @@ extension AppThemeModeExtension on AppThemeMode {
   }
 }
 
-/// Service for managing theme preferences
+/// Service for managing theme preferences.
 ///
 /// Uses Hive for persistence and ValueNotifier for reactive updates.
+///
+/// **Lifecycle:** This service is an app-lifetime singleton created in `main()`
+/// and should never be disposed. The ValueNotifier is kept alive for the
+/// entire app session.
 class ThemeService {
   static const String _boxName = 'settings';
   static const String _themeKey = 'theme_mode';
@@ -80,9 +84,4 @@ class ThemeService {
 
   /// Get the current Flutter ThemeMode
   ThemeMode get currentThemeMode => themeMode.value.themeMode;
-
-  /// Dispose resources
-  void dispose() {
-    themeMode.dispose();
-  }
 }
