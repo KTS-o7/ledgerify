@@ -286,48 +286,87 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
               ),
               LedgerifySpacing.verticalMd,
               Text(
-                'Ready to scan your SMS for bank transactions.',
+                pendingCount > 0
+                    ? 'You have $pendingCount pending transaction${pendingCount == 1 ? '' : 's'} to review.'
+                    : 'Ready to scan your SMS for bank transactions.',
                 style: LedgerifyTypography.bodyMedium.copyWith(
                   color: colors.textSecondary,
                 ),
               ),
-              if (pendingCount > 0) ...[
-                LedgerifySpacing.verticalMd,
-                Text(
-                  '$pendingCount pending transactions to review',
-                  style: LedgerifyTypography.bodySmall.copyWith(
-                    color: colors.textTertiary,
-                  ),
-                ),
-              ],
             ],
           ),
         ),
 
         LedgerifySpacing.verticalXl,
 
+        // Review Pending button (if there are pending transactions)
+        if (pendingCount > 0) ...[
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SmsReviewScreen(
+                      smsTransactionService: widget.smsTransactionService,
+                      customCategoryService: widget.customCategoryService,
+                    ),
+                  ),
+                ).then((_) {
+                  // Refresh pending count when returning
+                  setState(() {});
+                });
+              },
+              icon: const Icon(Icons.rate_review_rounded),
+              label: Text('Review $pendingCount Pending'),
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.accent,
+                foregroundColor: colors.background,
+                padding:
+                    const EdgeInsets.symmetric(vertical: LedgerifySpacing.md),
+                shape: LedgerifyRadius.shapeMd,
+              ),
+            ),
+          ),
+          LedgerifySpacing.verticalMd,
+        ],
+
         // Import button
         SizedBox(
           width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: _startImport,
-            icon: const Icon(Icons.download_rounded),
-            label: const Text('Import from SMS'),
-            style: FilledButton.styleFrom(
-              backgroundColor: colors.accent,
-              foregroundColor: colors.background,
-              padding:
-                  const EdgeInsets.symmetric(vertical: LedgerifySpacing.md),
-              shape: LedgerifyRadius.shapeMd,
-            ),
-          ),
+          child: pendingCount > 0
+              ? OutlinedButton.icon(
+                  onPressed: _startImport,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Scan for New SMS'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: colors.textSecondary,
+                    side: BorderSide(color: colors.surfaceHighlight),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: LedgerifySpacing.md),
+                    shape: LedgerifyRadius.shapeMd,
+                  ),
+                )
+              : FilledButton.icon(
+                  onPressed: _startImport,
+                  icon: const Icon(Icons.download_rounded),
+                  label: const Text('Import from SMS'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.accent,
+                    foregroundColor: colors.background,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: LedgerifySpacing.md),
+                    shape: LedgerifyRadius.shapeMd,
+                  ),
+                ),
         ),
 
         LedgerifySpacing.verticalMd,
 
         // Info text
         Text(
-          'This will scan the last 30 days of SMS messages for bank transactions.',
+          'Scans the last 30 days of SMS messages for bank transactions.',
           style: LedgerifyTypography.bodySmall.copyWith(
             color: colors.textTertiary,
           ),
@@ -344,6 +383,8 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
     final totalAmount = transactions
         .where((t) => t.isDebit)
         .fold(0.0, (sum, t) => sum + t.amount);
+    final pendingCount = widget.smsTransactionService.pendingCount;
+    final hasNewTransactions = transactions.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,13 +403,19 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
               Row(
                 children: [
                   Icon(
-                    Icons.check_circle_rounded,
-                    color: colors.accent,
+                    hasNewTransactions
+                        ? Icons.check_circle_rounded
+                        : Icons.info_rounded,
+                    color: hasNewTransactions
+                        ? colors.accent
+                        : colors.textTertiary,
                     size: 24,
                   ),
                   LedgerifySpacing.horizontalSm,
                   Text(
-                    'Import Complete',
+                    hasNewTransactions
+                        ? 'Import Complete'
+                        : 'No New Transactions',
                     style: LedgerifyTypography.headlineSmall.copyWith(
                       color: colors.textPrimary,
                     ),
@@ -376,39 +423,79 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
                 ],
               ),
               LedgerifySpacing.verticalLg,
-              _ResultRow(
-                label: 'Transactions found',
-                value: '${transactions.length}',
-                colors: colors,
-              ),
-              LedgerifySpacing.verticalSm,
-              _ResultRow(
-                label: 'Expenses (debits)',
-                value: '$debitCount',
-                colors: colors,
-              ),
-              LedgerifySpacing.verticalSm,
-              _ResultRow(
-                label: 'Income (credits)',
-                value: '$creditCount',
-                colors: colors,
-              ),
-              LedgerifySpacing.verticalSm,
-              _ResultRow(
-                label: 'Total expense amount',
-                value: CurrencyFormatter.format(totalAmount),
-                colors: colors,
-                isHighlighted: true,
-              ),
+              if (hasNewTransactions) ...[
+                _ResultRow(
+                  label: 'New transactions found',
+                  value: '${transactions.length}',
+                  colors: colors,
+                ),
+                LedgerifySpacing.verticalSm,
+                _ResultRow(
+                  label: 'Expenses (debits)',
+                  value: '$debitCount',
+                  colors: colors,
+                ),
+                LedgerifySpacing.verticalSm,
+                _ResultRow(
+                  label: 'Income (credits)',
+                  value: '$creditCount',
+                  colors: colors,
+                ),
+                LedgerifySpacing.verticalSm,
+                _ResultRow(
+                  label: 'Total expense amount',
+                  value: CurrencyFormatter.format(totalAmount),
+                  colors: colors,
+                  isHighlighted: true,
+                ),
+              ] else ...[
+                Text(
+                  'All SMS from the last 30 days have already been imported.',
+                  style: LedgerifyTypography.bodyMedium.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
+              if (pendingCount > 0) ...[
+                LedgerifySpacing.verticalMd,
+                Container(
+                  padding: const EdgeInsets.all(LedgerifySpacing.md),
+                  decoration: BoxDecoration(
+                    color: colors.accent.withValues(alpha: 0.1),
+                    borderRadius: LedgerifyRadius.borderRadiusMd,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.pending_actions_rounded,
+                        color: colors.accent,
+                        size: 20,
+                      ),
+                      LedgerifySpacing.horizontalSm,
+                      Expanded(
+                        child: Text(
+                          '$pendingCount transaction${pendingCount == 1 ? '' : 's'} pending review',
+                          style: LedgerifyTypography.labelMedium.copyWith(
+                            color: colors.accent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
 
         LedgerifySpacing.verticalXl,
 
-        if (transactions.isNotEmpty) ...[
+        // Review button (show if there are pending transactions)
+        if (pendingCount > 0) ...[
           Text(
-            'Review your imported transactions to confirm or skip them.',
+            hasNewTransactions
+                ? 'Review your imported transactions to confirm or skip them.'
+                : 'You have pending transactions from previous imports.',
             style: LedgerifyTypography.bodyMedium.copyWith(
               color: colors.textSecondary,
             ),
@@ -426,7 +513,10 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
                       customCategoryService: widget.customCategoryService,
                     ),
                   ),
-                );
+                ).then((_) {
+                  // Refresh state when returning
+                  setState(() {});
+                });
               },
               style: FilledButton.styleFrom(
                 backgroundColor: colors.accent,
@@ -435,18 +525,19 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
                     const EdgeInsets.symmetric(vertical: LedgerifySpacing.md),
                 shape: LedgerifyRadius.shapeMd,
               ),
-              child: const Text('Review Transactions'),
+              child: Text(
+                  'Review $pendingCount Transaction${pendingCount == 1 ? '' : 's'}'),
             ),
           ),
+          LedgerifySpacing.verticalMd,
         ],
 
-        LedgerifySpacing.verticalMd,
-
-        // Import more button
+        // Scan again / Done button
         SizedBox(
           width: double.infinity,
           child: OutlinedButton(
-            onPressed: _startImport,
+            onPressed:
+                pendingCount > 0 ? _startImport : () => Navigator.pop(context),
             style: OutlinedButton.styleFrom(
               foregroundColor: colors.textSecondary,
               side: BorderSide(color: colors.surfaceHighlight),
@@ -454,7 +545,7 @@ class _SmsImportScreenState extends State<SmsImportScreen> {
                   const EdgeInsets.symmetric(vertical: LedgerifySpacing.md),
               shape: LedgerifyRadius.shapeMd,
             ),
-            child: const Text('Scan Again'),
+            child: Text(pendingCount > 0 ? 'Scan Again' : 'Done'),
           ),
         ),
       ],
