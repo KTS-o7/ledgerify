@@ -1,7 +1,7 @@
 name: ledgerify
 description: A personal expense tracker app - simple, fast, and offline-first.
 publish_to: 'none'
-version: 1.2.0+3
+version: 1.3.0+4
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
