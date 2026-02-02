@@ -1,6 +1,7 @@
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import '../models/parsed_transaction.dart';
 import 'sms_permission_service.dart';
+import 'sms_test_data.dart';
 import 'transaction_parsing_service.dart';
 
 /// Service for reading and filtering SMS messages.
@@ -11,6 +12,9 @@ class SmsService {
   final SmsQuery _query = SmsQuery();
   final SmsPermissionService _permissionService;
   final TransactionParsingService _parsingService;
+
+  /// Enable test mode to use sample SMS data instead of real inbox
+  bool useTestData = false;
 
   SmsService({
     required SmsPermissionService permissionService,
@@ -65,6 +69,11 @@ class SmsService {
     int count = 500,
     DateTime? since,
   }) async {
+    // Use test data if enabled (for emulator testing)
+    if (useTestData) {
+      return _parseTestData(since: since);
+    }
+
     final messages = await readInbox(count: count, since: since);
     final parsed = <ParsedTransaction>[];
 
@@ -96,8 +105,45 @@ class SmsService {
     return parsed;
   }
 
+  /// Parse test data for emulator testing
+  List<ParsedTransaction> _parseTestData({DateTime? since}) {
+    final testMessages = SmsTestData.getTestMessages();
+    final parsed = <ParsedTransaction>[];
+
+    for (final msg in testMessages) {
+      final senderId = msg['address'] as String;
+      final body = msg['body'] as String;
+      final smsId = msg['id'] as String;
+      final date = msg['date'] as DateTime;
+
+      // Filter by date if specified
+      if (since != null && date.isBefore(since)) continue;
+
+      // Quick check if this looks like a bank SMS
+      if (!_parsingService.isLikelyBankSms(senderId, body)) continue;
+
+      // Try to parse
+      final transaction = _parsingService.parse(
+        senderId: senderId,
+        body: body,
+        smsId: smsId,
+        date: date,
+      );
+
+      if (transaction != null) {
+        parsed.add(transaction);
+      }
+    }
+
+    return parsed;
+  }
+
   /// Get count of bank SMS in inbox (for UI display)
   Future<int> getBankSmsCount({int scanLimit = 500}) async {
+    if (useTestData) {
+      return SmsTestData.sampleMessages.length;
+    }
+
     final messages = await readInbox(count: scanLimit);
     int count = 0;
 

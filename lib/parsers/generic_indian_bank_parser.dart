@@ -14,10 +14,16 @@ class GenericIndianBankParser implements TransactionParser {
   String get name => 'Generic Indian Bank';
 
   /// Known bank sender ID patterns
+  /// Note: Indian sender IDs follow format: XX-BANKCODE or XX-BANKCODE-S
+  /// where -S suffix indicates service/promotional messages
   static const _bankSenderPatterns = [
+    // Major banks
     'HDFC',
     'ICICI',
     'SBI',
+    'SBIPSG', // SBI Payment Services Gateway
+    'SBIINB', // SBI Internet Banking
+    'SBIATM', // SBI ATM
     'AXIS',
     'KOTAK',
     'IDFC',
@@ -28,18 +34,30 @@ class GenericIndianBankParser implements TransactionParser {
     'CANARA',
     'UNION',
     'FEDERAL',
+    'FEDBK',
     'RBL',
+    // International banks
     'AMEX',
     'CITI',
     'HSBC',
     'SCB',
     'DBS',
+    // Fintech/Cards
     'ONECARD',
+    'SLICE',
+    'JUPITER',
+    'FI-', // Fi Money
+    'NIYO',
+    // Wallets/UPI
     'PAYTM',
     'GPAY',
     'PHONEPE',
     'AMAZONPAY',
     'MOBIKWIK',
+    'FREECHARGE',
+    // Credit cards
+    'AUBANK',
+    'AUCC', // AU Small Finance Bank Credit Card
   ];
 
   /// Keywords indicating a debit transaction
@@ -56,6 +74,8 @@ class GenericIndianBankParser implements TransactionParser {
     'amt sent',
     'transferred',
     'bill payment',
+    'transaction of rs', // Slice credit card pattern
+    'card transaction', // Credit card spend pattern
   ];
 
   /// Keywords indicating a credit transaction
@@ -92,6 +112,13 @@ class GenericIndianBankParser implements TransactionParser {
         caseSensitive: false),
     // "to MERCHANT NAME"
     RegExp(r'\bto\s+([A-Z][A-Z0-9\s\-\.]+?)(?:\s+on|\s+ref|\s*$)',
+        caseSensitive: false),
+    // "on MERCHANT is successful" (Slice credit card pattern)
+    RegExp(r'\bon\s+([A-Za-z][A-Za-z0-9\s\-\.]+?)\s+is\s+successful',
+        caseSensitive: false),
+    // "Rs.XXX on MERCHANT" (generic pattern)
+    RegExp(
+        r'Rs\.?\s*[\d,]+(?:\.\d+)?\s+on\s+([A-Za-z][A-Za-z0-9\s\-\.]+?)(?:\s+is|\s*$)',
         caseSensitive: false),
   ];
 
@@ -142,10 +169,33 @@ class GenericIndianBankParser implements TransactionParser {
 
     // Determine transaction type
     final upperBody = body.toUpperCase();
+
+    // Special case: "credit card" in message indicates a DEBIT (spend on credit card)
+    // Need to check this first to avoid false positive from "credit" keyword
+    final hasCreditCard = upperBody.contains('CREDIT CARD');
+
     final isDebit =
         _debitKeywords.any((kw) => upperBody.contains(kw.toUpperCase()));
-    final isCredit =
-        _creditKeywords.any((kw) => upperBody.contains(kw.toUpperCase()));
+
+    // For credit keywords, exclude "credit" if it's part of "credit card"
+    bool isCredit;
+    if (hasCreditCard) {
+      // Check if there's a standalone credit keyword (not "credit card")
+      isCredit = _creditKeywords.any((kw) {
+        if (kw.toLowerCase() == 'credit') {
+          // Check if "credit" appears outside of "credit card"
+          final creditIndex = upperBody.indexOf('CREDIT');
+          final creditCardIndex = upperBody.indexOf('CREDIT CARD');
+          // Only count as credit if "credit" appears separately from "credit card"
+          return creditIndex >= 0 &&
+              (creditCardIndex < 0 || creditIndex != creditCardIndex);
+        }
+        return upperBody.contains(kw.toUpperCase());
+      });
+    } else {
+      isCredit =
+          _creditKeywords.any((kw) => upperBody.contains(kw.toUpperCase()));
+    }
 
     // If both or neither, try to infer from context
     TransactionType type;
@@ -166,6 +216,9 @@ class GenericIndianBankParser implements TransactionParser {
       type = debitIndex < creditIndex
           ? TransactionType.debit
           : TransactionType.credit;
+    } else if (hasCreditCard) {
+      // Credit card message without other keywords - assume debit (spend)
+      type = TransactionType.debit;
     } else {
       return null; // No transaction keywords
     }
