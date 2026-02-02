@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/custom_category_service.dart';
 import '../services/notification_preferences_service.dart';
 import '../services/notification_service.dart';
@@ -130,7 +132,18 @@ class SettingsScreen extends StatelessWidget {
           LedgerifySpacing.verticalSm,
           _SettingsCard(
             colors: colors,
-            child: _AboutTile(colors: colors),
+            child: Column(
+              children: [
+                _AboutTile(colors: colors),
+                Divider(
+                  height: 1,
+                  indent: 56,
+                  endIndent: 16,
+                  color: colors.surfaceHighlight,
+                ),
+                _GitHubTile(colors: colors),
+              ],
+            ),
           ),
         ],
       ),
@@ -574,10 +587,32 @@ class _NotificationsTile extends StatelessWidget {
 }
 
 /// About tile with version info
-class _AboutTile extends StatelessWidget {
+class _AboutTile extends StatefulWidget {
   final LedgerifyColorScheme colors;
 
   const _AboutTile({required this.colors});
+
+  @override
+  State<_AboutTile> createState() => _AboutTileState();
+}
+
+class _AboutTileState extends State<_AboutTile> {
+  String _version = '...';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _version = '${info.version} (${info.buildNumber})';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -589,15 +624,61 @@ class _AboutTile extends StatelessWidget {
       title: Text(
         'Version',
         style: LedgerifyTypography.bodyLarge.copyWith(
-          color: colors.textPrimary,
+          color: widget.colors.textPrimary,
         ),
       ),
       trailing: Text(
-        '1.0.0',
+        _version,
         style: LedgerifyTypography.bodyMedium.copyWith(
+          color: widget.colors.textTertiary,
+        ),
+      ),
+    );
+  }
+}
+
+/// GitHub repository link tile
+class _GitHubTile extends StatelessWidget {
+  final LedgerifyColorScheme colors;
+
+  const _GitHubTile({required this.colors});
+
+  Future<void> _openGitHub() async {
+    final uri = Uri.parse('https://github.com/KTS-o7/ledgerify');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: LedgerifySpacing.lg,
+        vertical: LedgerifySpacing.xs,
+      ),
+      leading: Icon(
+        Icons.code_rounded,
+        color: colors.textSecondary,
+      ),
+      title: Text(
+        'Source Code',
+        style: LedgerifyTypography.bodyLarge.copyWith(
+          color: colors.textPrimary,
+        ),
+      ),
+      subtitle: Text(
+        'github.com/KTS-o7/ledgerify',
+        style: LedgerifyTypography.bodySmall.copyWith(
           color: colors.textTertiary,
         ),
       ),
+      trailing: Icon(
+        Icons.open_in_new_rounded,
+        color: colors.textTertiary,
+        size: 20,
+      ),
+      onTap: _openGitHub,
     );
   }
 }

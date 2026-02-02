@@ -38,6 +38,12 @@ dependencies:
   # Permissions
   permission_handler: ^11.3.1
 
+  # App info (version, build number)
+  package_info_plus: ^8.0.0
+
+  # URL launcher for opening links
+  url_launcher: ^6.2.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
