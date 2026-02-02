@@ -81,8 +81,13 @@ class ExpenseService {
       Hive.registerAdapter(ExpenseCategoryAdapter());
     }
 
-    // Open the expenses box
-    _expenseBox = await Hive.openBox<Expense>(_boxName);
+    // Open the expenses box with aggressive compaction for better performance
+    // Compacts when deleted entries exceed 20% of total
+    _expenseBox = await Hive.openBox<Expense>(
+      _boxName,
+      compactionStrategy: (entries, deletedEntries) =>
+          deletedEntries > entries * 0.2,
+    );
   }
 
   /// Generates a new unique ID for an expense.
@@ -151,6 +156,7 @@ class ExpenseService {
     String? note,
     ExpenseSource source = ExpenseSource.manual,
     String? merchant,
+    String? recurringExpenseId,
   }) async {
     final expense = Expense(
       id: generateId(),
@@ -160,6 +166,7 @@ class ExpenseService {
       note: note,
       source: source,
       merchant: merchant,
+      recurringExpenseId: recurringExpenseId,
     );
 
     await _expenseBox.put(expense.id, expense);

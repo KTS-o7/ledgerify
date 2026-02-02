@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/expense.dart';
+import '../models/recurring_expense.dart';
 import '../services/expense_service.dart';
 import '../services/recurring_expense_service.dart';
 import '../services/tag_service.dart';
@@ -9,6 +12,7 @@ import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
 import '../widgets/tag_chip_input.dart';
 import '../widgets/category_picker_sheet.dart';
+import '../widgets/recurring_toggle_section.dart';
 import 'add_recurring_screen.dart';
 
 /// Add/Edit Expense Screen - Ledgerify Design Language
@@ -56,7 +60,20 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   List<String> _selectedTagIds = [];
   String? _selectedCustomCategoryId;
 
+  // Recurring template info (for expenses generated from recurring)
+  RecurringExpense? _recurringTemplate;
+
+  // Recurring settings for new expenses
+  RecurringSettings? _recurringSettings;
+
+  // Debounce timer for title changes
+  Timer? _titleDebounceTimer;
+
   bool get _isEditing => widget.expenseToEdit != null;
+
+  /// Whether this expense was generated from a recurring template.
+  bool get _isFromRecurring =>
+      _isEditing && widget.expenseToEdit!.isFromRecurring;
 
   @override
   void initState() {
@@ -81,13 +98,30 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       _selectedDate = DateTime.now();
       _selectedTagIds = [];
       _selectedCustomCategoryId = null;
+      _recurringSettings = null;
     }
 
     // Listen to amount changes for form validity
     _amountController.addListener(_checkFormValidity);
 
+    // Listen to title changes for recurring toggle smart suggestions
+    _titleController.addListener(_onTitleChanged);
+
     // Check initial validity (for edit mode)
     _checkFormValidity();
+
+    // Load the recurring template if this expense was generated from one
+    _loadRecurringTemplate();
+  }
+
+  /// Loads the recurring template if this expense was generated from one.
+  void _loadRecurringTemplate() {
+    if (_isFromRecurring && widget.recurringService != null) {
+      final recurringId = widget.expenseToEdit!.recurringExpenseId;
+      if (recurringId != null) {
+        _recurringTemplate = widget.recurringService!.get(recurringId);
+      }
+    }
   }
 
   void _checkFormValidity() {
@@ -102,11 +136,23 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   @override
   void dispose() {
+    _titleDebounceTimer?.cancel();
     _amountController.removeListener(_checkFormValidity);
+    _titleController.removeListener(_onTitleChanged);
     _titleController.dispose();
     _amountController.dispose();
     _noteController.dispose();
     super.dispose();
+  }
+
+  /// Called when title changes to trigger rebuild for recurring toggle smart suggestions.
+  void _onTitleChanged() {
+    _titleDebounceTimer?.cancel();
+    _titleDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        setState(() {});
+      }
+    });
   }
 
   Future<void> _selectDate() async {
@@ -163,6 +209,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           tagIds: _selectedTagIds,
         );
         await widget.expenseService.updateExpense(expense);
+
+        // Create recurring template if recurring settings were configured
+        if (_recurringSettings != null && widget.recurringService != null) {
+          await _createRecurringFromExpense(expense);
+        }
       }
 
       if (mounted) {
@@ -234,6 +285,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           _buildTitleField(colors),
                           LedgerifySpacing.verticalXl,
                           _buildAmountField(colors),
+                          // Show recurring source info if this expense was generated from a template
+                          if (_isFromRecurring &&
+                              _recurringTemplate != null) ...[
+                            LedgerifySpacing.verticalLg,
+                            _buildRecurringSourceCard(colors),
+                          ],
                           LedgerifySpacing.verticalXl,
                           _buildCategoryPicker(colors),
                           LedgerifySpacing.verticalXl,
@@ -242,8 +299,26 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           _buildDatePicker(colors),
                           LedgerifySpacing.verticalXl,
                           _buildNoteField(colors),
-                          // "Make this recurring" button (edit mode only)
+                          // Recurring toggle section (only for new expenses, not from recurring)
+                          if (!_isEditing &&
+                              !_isFromRecurring &&
+                              widget.recurringService != null) ...[
+                            LedgerifySpacing.verticalXl,
+                            RecurringToggleSection(
+                              isEnabled: _recurringSettings != null,
+                              onChanged: (settings) {
+                                setState(() {
+                                  _recurringSettings = settings;
+                                });
+                              },
+                              transactionDate: _selectedDate,
+                              title: _titleController.text,
+                              isExpense: true,
+                            ),
+                          ],
+                          // "Make this recurring" button (edit mode only, not for recurring-generated expenses)
                           if (_isEditing &&
+                              !_isFromRecurring &&
                               widget.recurringService != null) ...[
                             LedgerifySpacing.verticalXxl,
                             _buildMakeRecurringButton(colors),
@@ -656,6 +731,105 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
+  /// Builds the recurring source info card.
+  /// Shows when editing an expense that was generated from a recurring template.
+  Widget _buildRecurringSourceCard(LedgerifyColorScheme colors) {
+    // Template was deleted - don't show anything
+    if (_recurringTemplate == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(LedgerifySpacing.md),
+      decoration: BoxDecoration(
+        color: colors.surfaceHighlight,
+        borderRadius: LedgerifyRadius.borderRadiusMd,
+      ),
+      child: Row(
+        children: [
+          // Recurring icon
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: colors.accent.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.repeat_rounded,
+              size: 16,
+              color: colors.accent,
+            ),
+          ),
+          LedgerifySpacing.horizontalMd,
+          // Template info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'From recurring',
+                  style: LedgerifyTypography.bodySmall.copyWith(
+                    color: colors.textTertiary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _recurringTemplate!.title,
+                  style: LedgerifyTypography.bodyMedium.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          // View template button
+          TextButton(
+            onPressed: _navigateToViewRecurringTemplate,
+            style: TextButton.styleFrom(
+              foregroundColor: colors.accent,
+              padding: const EdgeInsets.symmetric(
+                horizontal: LedgerifySpacing.md,
+                vertical: LedgerifySpacing.sm,
+              ),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              'View template',
+              style: LedgerifyTypography.labelMedium.copyWith(
+                color: colors.accent,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Navigates to view/edit the recurring template.
+  void _navigateToViewRecurringTemplate() {
+    if (widget.recurringService == null || _recurringTemplate == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddRecurringScreen(
+          recurringService: widget.recurringService!,
+          recurringToEdit: _recurringTemplate,
+        ),
+      ),
+    ).then((_) {
+      // Reload the template in case it was modified
+      _loadRecurringTemplate();
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
   void _navigateToMakeRecurring() {
     if (widget.recurringService == null) return;
 
@@ -670,6 +844,26 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           prefillFromExpense: expense,
         ),
       ),
+    );
+  }
+
+  /// Creates a recurring expense template from the saved expense.
+  Future<void> _createRecurringFromExpense(Expense expense) async {
+    if (_recurringSettings == null || widget.recurringService == null) return;
+
+    final settings = _recurringSettings!;
+
+    await widget.recurringService!.add(
+      title: expense.merchant ?? expense.note ?? 'Unnamed Expense',
+      amount: expense.amount,
+      category: expense.category,
+      frequency: settings.frequency,
+      customIntervalDays: 1, // Default, could be from settings if needed
+      weekdays: settings.weekdays,
+      dayOfMonth: settings.dayOfMonth,
+      startDate: expense.date,
+      endDate: settings.endDate,
+      note: expense.note,
     );
   }
 

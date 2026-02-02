@@ -24,6 +24,7 @@ class CategorizedRecurring {
 /// recurrence patterns.
 class RecurringExpenseService {
   static const String _boxName = 'recurring_expenses';
+  static const String _lastGenerationKey = 'last_recurring_expense_generation';
   static const Uuid _uuid = Uuid();
 
   late Box<RecurringExpense> _box;
@@ -285,6 +286,7 @@ class RecurringExpenseService {
       note: _buildExpenseNote(recurring),
       source: ExpenseSource.recurring,
       merchant: recurring.title,
+      recurringExpenseId: recurring.id,
     );
 
     // Calculate the next due date
@@ -302,6 +304,27 @@ class RecurringExpenseService {
   // ============================================
   // Generation
   // ============================================
+
+  /// Generates expenses for all due recurring items if not already generated recently.
+  ///
+  /// This is the preferred method to call from main.dart. It will skip generation
+  /// if already run within the last hour to avoid redundant processing on app restarts.
+  ///
+  /// Returns the count of generated expenses, or 0 if skipped.
+  Future<int> generateDueExpensesIfNeeded(ExpenseService expenseService) async {
+    final settingsBox = Hive.box('settings');
+    final lastGen = settingsBox.get(_lastGenerationKey) as DateTime?;
+    final now = DateTime.now();
+
+    // Skip if generated within last hour
+    if (lastGen != null && now.difference(lastGen).inHours < 1) {
+      return 0;
+    }
+
+    final expenses = await generateDueExpenses(expenseService);
+    await settingsBox.put(_lastGenerationKey, now);
+    return expenses.length;
+  }
 
   /// Generates expenses for all due recurring items.
   ///
@@ -356,6 +379,7 @@ class RecurringExpenseService {
           note: _buildExpenseNote(recurring),
           source: ExpenseSource.recurring,
           merchant: recurring.title,
+          recurringExpenseId: recurring.id,
         );
         generated.add(expense);
 

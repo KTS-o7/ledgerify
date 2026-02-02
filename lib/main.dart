@@ -34,23 +34,11 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Initialize services
+  // Initialize ExpenseService first - it calls Hive.initFlutter and registers core adapters
   final expenseService = ExpenseService();
   await expenseService.init();
 
-  final themeService = ThemeService();
-  await themeService.init();
-
-  final recurringService = RecurringExpenseService();
-  await recurringService.init();
-
-  final budgetService = BudgetService();
-  await budgetService.init();
-
-  final notificationService = NotificationService();
-  await notificationService.init();
-
-  // Register Hive adapters for Tag, CustomCategory, Goal, and Income
+  // Register Hive adapters for remaining models (after Hive is initialized)
   if (!Hive.isAdapterRegistered(6)) {
     Hive.registerAdapter(TagAdapter());
   }
@@ -76,16 +64,39 @@ void main() async {
     Hive.registerAdapter(NotificationPreferencesAdapter());
   }
 
-  // Open Tag, CustomCategory, Goal, Income, RecurringIncome, and NotificationPreferences boxes
-  final tagBox = await Hive.openBox<Tag>('tags');
-  final customCategoryBox =
-      await Hive.openBox<CustomCategory>('custom_categories');
-  final goalBox = await Hive.openBox<Goal>('goals');
-  final incomeBox = await Hive.openBox<Income>('incomes');
-  final recurringIncomeBox =
-      await Hive.openBox<RecurringIncome>('recurring_incomes');
+  // Initialize independent services in parallel
+  final themeService = ThemeService();
+  final recurringService = RecurringExpenseService();
+  final budgetService = BudgetService();
+  final notificationService = NotificationService();
+
+  // Compaction strategy: compact when deleted entries exceed 20% of total
+  bool compactWhen(int entries, int deletedEntries) =>
+      deletedEntries > entries * 0.2;
+
+  // Parallel initialization of services and box opening
+  await Future.wait([
+    themeService.init(),
+    recurringService.init(),
+    budgetService.init(),
+    notificationService.init(),
+    // Open boxes in parallel
+    Hive.openBox<Tag>('tags'),
+    Hive.openBox<CustomCategory>('custom_categories'),
+    Hive.openBox<Goal>('goals'),
+    Hive.openBox<Income>('incomes', compactionStrategy: compactWhen),
+    Hive.openBox<RecurringIncome>('recurring_incomes'),
+    Hive.openBox<NotificationPreferences>('notification_preferences'),
+  ]);
+
+  // Retrieve opened boxes
+  final tagBox = Hive.box<Tag>('tags');
+  final customCategoryBox = Hive.box<CustomCategory>('custom_categories');
+  final goalBox = Hive.box<Goal>('goals');
+  final incomeBox = Hive.box<Income>('incomes');
+  final recurringIncomeBox = Hive.box<RecurringIncome>('recurring_incomes');
   final notificationPrefsBox =
-      await Hive.openBox<NotificationPreferences>('notification_preferences');
+      Hive.box<NotificationPreferences>('notification_preferences');
 
   // Create Tag, CustomCategory, Goal, Income, RecurringIncome, and NotificationPreferences services
   final tagService = TagService(tagBox);
@@ -128,10 +139,10 @@ void main() async {
       debugPrint('Error setting up notifications: $e');
     }
 
-    // Generate due recurring expenses and incomes
+    // Generate due recurring expenses and incomes (skips if already done recently)
     try {
-      await recurringService.generateDueExpenses(expenseService);
-      await recurringIncomeService.generateDueIncomes(incomeService);
+      await recurringService.generateDueExpensesIfNeeded(expenseService);
+      await recurringIncomeService.generateDueIncomesIfNeeded(incomeService);
     } catch (e) {
       debugPrint('Error generating recurring items: $e');
     }

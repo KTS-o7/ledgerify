@@ -19,6 +19,11 @@ class RecurringExpenseListTile extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback? onPayNow;
 
+  /// Current date (normalized to midnight) for due date calculations.
+  /// Pass from parent to avoid redundant DateTime.now() calls when
+  /// rendering multiple tiles.
+  final DateTime? today;
+
   const RecurringExpenseListTile({
     super.key,
     required this.recurring,
@@ -26,6 +31,7 @@ class RecurringExpenseListTile extends StatelessWidget {
     required this.onTogglePause,
     required this.onDelete,
     this.onPayNow,
+    this.today,
   });
 
   void _showContextMenu(BuildContext context, LedgerifyColorScheme colors) {
@@ -140,8 +146,12 @@ class RecurringExpenseListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = LedgerifyColors.of(context);
 
+    // Use provided today or compute once per build
+    final now = DateTime.now();
+    final todayDate = today ?? DateTime(now.year, now.month, now.day);
+
     return Dismissible(
-      key: Key(recurring.id),
+      key: ValueKey(recurring.id),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
@@ -247,7 +257,7 @@ class RecurringExpenseListTile extends StatelessWidget {
                       ),
                     ),
                     LedgerifySpacing.verticalXs,
-                    _buildDueDateText(colors),
+                    _buildDueDateText(colors, todayDate),
                   ],
                 ),
 
@@ -296,7 +306,9 @@ class RecurringExpenseListTile extends StatelessWidget {
   }
 
   /// Builds the due date text widget with computed values.
-  Widget _buildDueDateText(LedgerifyColorScheme colors) {
+  ///
+  /// Uses [todayDate] for calculations to avoid redundant DateTime.now() calls.
+  Widget _buildDueDateText(LedgerifyColorScheme colors, DateTime todayDate) {
     if (!recurring.isActive) {
       return Text(
         'Paused',
@@ -306,15 +318,13 @@ class RecurringExpenseListTile extends StatelessWidget {
       );
     }
 
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
     final dueDate = DateTime(
       recurring.nextDueDate.year,
       recurring.nextDueDate.month,
       recurring.nextDueDate.day,
     );
 
-    final difference = dueDate.difference(today).inDays;
+    final difference = dueDate.difference(todayDate).inDays;
     final isDueSoon = difference <= 3;
 
     String text;
@@ -327,7 +337,7 @@ class RecurringExpenseListTile extends StatelessWidget {
     } else if (difference < 7) {
       text = 'Due in $difference days';
     } else {
-      text = 'Due ${_formatDate(dueDate, now.year)}';
+      text = 'Due ${_formatDate(dueDate, todayDate.year)}';
     }
 
     return Text(

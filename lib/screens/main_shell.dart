@@ -64,47 +64,73 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
+  // Swipe detection threshold
+  static const double _swipeThreshold = 50.0;
+  double _dragStartX = 0;
+
+  void _onHorizontalDragStart(DragStartDetails details) {
+    _dragStartX = details.globalPosition.dx;
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    final dragDistance = details.globalPosition.dx - _dragStartX;
+
+    if (dragDistance.abs() > _swipeThreshold) {
+      if (dragDistance > 0 && _currentIndex > 0) {
+        // Swipe right - go to previous tab
+        _switchTab(_currentIndex - 1);
+      } else if (dragDistance < 0 && _currentIndex < 4) {
+        // Swipe left - go to next tab
+        _switchTab(_currentIndex + 1);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = LedgerifyColors.of(context);
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          HomeScreen(
-            expenseService: widget.expenseService,
-            recurringService: widget.recurringService,
-            tagService: widget.tagService,
-            customCategoryService: widget.customCategoryService,
-            incomeService: widget.incomeService,
-            goalService: widget.goalService,
-            onNavigateToRecurring: () => _switchTab(1),
-          ),
-          RecurringListScreen(
-            recurringService: widget.recurringService,
-            expenseService: widget.expenseService,
-            isEmbedded: true, // No back button when embedded in tabs
-          ),
-          AnalyticsScreen(
-            expenseService: widget.expenseService,
-            budgetService: widget.budgetService,
-            incomeService: widget.incomeService,
-          ),
-          GoalsScreen(
-            goalService: widget.goalService,
-          ),
-          SettingsScreen(
-            themeService: widget.themeService,
-            tagService: widget.tagService,
-            customCategoryService: widget.customCategoryService,
-            recurringIncomeService: widget.recurringIncomeService,
-            incomeService: widget.incomeService,
-            goalService: widget.goalService,
-            notificationService: widget.notificationService,
-            notificationPrefsService: widget.notificationPrefsService,
-          ),
-        ],
+      body: GestureDetector(
+        onHorizontalDragStart: _onHorizontalDragStart,
+        onHorizontalDragEnd: _onHorizontalDragEnd,
+        child: IndexedStack(
+          index: _currentIndex,
+          children: [
+            HomeScreen(
+              expenseService: widget.expenseService,
+              recurringService: widget.recurringService,
+              recurringIncomeService: widget.recurringIncomeService,
+              tagService: widget.tagService,
+              customCategoryService: widget.customCategoryService,
+              incomeService: widget.incomeService,
+              goalService: widget.goalService,
+              onNavigateToRecurring: () => _switchTab(1),
+            ),
+            RecurringListScreen(
+              recurringExpenseService: widget.recurringService,
+              recurringIncomeService: widget.recurringIncomeService,
+              expenseService: widget.expenseService,
+              incomeService: widget.incomeService,
+              isEmbedded: true,
+            ),
+            AnalyticsScreen(
+              expenseService: widget.expenseService,
+              budgetService: widget.budgetService,
+              incomeService: widget.incomeService,
+            ),
+            GoalsScreen(
+              goalService: widget.goalService,
+            ),
+            SettingsScreen(
+              themeService: widget.themeService,
+              tagService: widget.tagService,
+              customCategoryService: widget.customCategoryService,
+              notificationService: widget.notificationService,
+              notificationPrefsService: widget.notificationPrefsService,
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: _buildBottomNav(colors),
     );
@@ -130,47 +156,57 @@ class _MainShellState extends State<MainShell> {
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: LedgerifySpacing.lg,
+            horizontal: LedgerifySpacing.sm,
             vertical: LedgerifySpacing.sm,
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _NavItem(
-                icon: Icons.home_rounded,
-                label: 'Home',
-                isSelected: _currentIndex == 0,
-                onTap: () => _switchTab(0),
-                colors: colors,
+              Expanded(
+                child: _NavItem(
+                  icon: Icons.home_rounded,
+                  label: 'Home',
+                  isSelected: _currentIndex == 0,
+                  onTap: () => _switchTab(0),
+                  colors: colors,
+                ),
               ),
-              _NavItemWithBadge(
-                icon: Icons.repeat_rounded,
-                label: 'Recurring',
-                isSelected: _currentIndex == 1,
-                onTap: () => _switchTab(1),
-                colors: colors,
-                recurringService: widget.recurringService,
+              Expanded(
+                child: _NavItemWithBadge(
+                  icon: Icons.repeat_rounded,
+                  label: 'Recurring',
+                  isSelected: _currentIndex == 1,
+                  onTap: () => _switchTab(1),
+                  colors: colors,
+                  recurringExpenseService: widget.recurringService,
+                  recurringIncomeService: widget.recurringIncomeService,
+                ),
               ),
-              _NavItem(
-                icon: Icons.analytics_rounded,
-                label: 'Analytics',
-                isSelected: _currentIndex == 2,
-                onTap: () => _switchTab(2),
-                colors: colors,
+              Expanded(
+                child: _NavItem(
+                  icon: Icons.analytics_rounded,
+                  label: 'Analytics',
+                  isSelected: _currentIndex == 2,
+                  onTap: () => _switchTab(2),
+                  colors: colors,
+                ),
               ),
-              _NavItem(
-                icon: Icons.flag_rounded,
-                label: 'Goals',
-                isSelected: _currentIndex == 3,
-                onTap: () => _switchTab(3),
-                colors: colors,
+              Expanded(
+                child: _NavItem(
+                  icon: Icons.flag_rounded,
+                  label: 'Goals',
+                  isSelected: _currentIndex == 3,
+                  onTap: () => _switchTab(3),
+                  colors: colors,
+                ),
               ),
-              _NavItem(
-                icon: Icons.settings_rounded,
-                label: 'Settings',
-                isSelected: _currentIndex == 4,
-                onTap: () => _switchTab(4),
-                colors: colors,
+              Expanded(
+                child: _NavItem(
+                  icon: Icons.settings_rounded,
+                  label: 'Settings',
+                  isSelected: _currentIndex == 4,
+                  onTap: () => _switchTab(4),
+                  colors: colors,
+                ),
               ),
             ],
           ),
@@ -180,7 +216,7 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
-/// Single navigation item
+/// Single navigation item - icon only, equal width
 class _NavItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -201,34 +237,40 @@ class _NavItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+      child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: LedgerifySpacing.lg,
           vertical: LedgerifySpacing.sm,
         ),
-        decoration: BoxDecoration(
-          color: isSelected ? colors.accentMuted : Colors.transparent,
-          borderRadius: LedgerifyRadius.borderRadiusFull,
-        ),
-        child: Row(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 24,
-              color: isSelected ? colors.accent : colors.textTertiary,
-            ),
-            if (isSelected) ...[
-              LedgerifySpacing.horizontalSm,
-              Text(
-                label,
-                style: LedgerifyTypography.labelMedium.copyWith(
-                  color: colors.accent,
-                  fontWeight: FontWeight.w600,
-                ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(
+                horizontal: LedgerifySpacing.lg,
+                vertical: LedgerifySpacing.xs,
               ),
-            ],
+              decoration: BoxDecoration(
+                color: isSelected ? colors.accentMuted : Colors.transparent,
+                borderRadius: LedgerifyRadius.borderRadiusFull,
+              ),
+              child: Icon(
+                icon,
+                size: 24,
+                color: isSelected ? colors.accent : colors.textTertiary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: LedgerifyTypography.labelSmall.copyWith(
+                color: isSelected ? colors.accent : colors.textTertiary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 10,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
       ),
@@ -237,13 +279,17 @@ class _NavItem extends StatelessWidget {
 }
 
 /// Navigation item with badge for recurring count
+///
+/// Optimized to only rebuild the badge when recurring data changes.
+/// The static icon and label are preserved via ValueListenableBuilder's child parameter.
 class _NavItemWithBadge extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
   final LedgerifyColorScheme colors;
-  final RecurringExpenseService recurringService;
+  final RecurringExpenseService recurringExpenseService;
+  final RecurringIncomeService recurringIncomeService;
 
   const _NavItemWithBadge({
     required this.icon,
@@ -251,83 +297,109 @@ class _NavItemWithBadge extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     required this.colors,
-    required this.recurringService,
+    required this.recurringExpenseService,
+    required this.recurringIncomeService,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder(
-      valueListenable: recurringService.box.listenable(),
-      builder: (context, Box<RecurringExpense> box, _) {
-        // Count items due within 7 days (efficient - no list allocation)
-        final dueCount = recurringService.getUpcomingCount(days: 7);
+    // Static icon that doesn't depend on dueCount
+    final staticIcon = Icon(
+      icon,
+      size: 24,
+      color: isSelected ? colors.accent : colors.textTertiary,
+    );
 
-        return GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.opaque,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(
-              horizontal: LedgerifySpacing.lg,
-              vertical: LedgerifySpacing.sm,
-            ),
-            decoration: BoxDecoration(
-              color: isSelected ? colors.accentMuted : Colors.transparent,
-              borderRadius: LedgerifyRadius.borderRadiusFull,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Icon(
-                      icon,
-                      size: 24,
-                      color: isSelected ? colors.accent : colors.textTertiary,
-                    ),
-                    if (dueCount > 0 && !isSelected)
-                      Positioned(
-                        right: -6,
-                        top: -4,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: colors.accent,
-                            shape: BoxShape.circle,
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Text(
-                            dueCount > 9 ? '9+' : dueCount.toString(),
-                            style: LedgerifyTypography.labelSmall.copyWith(
-                              color: colors.background,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          vertical: LedgerifySpacing.sm,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(
+                horizontal: LedgerifySpacing.lg,
+                vertical: LedgerifySpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: isSelected ? colors.accentMuted : Colors.transparent,
+                borderRadius: LedgerifyRadius.borderRadiusFull,
+              ),
+              // Only the Stack with badge rebuilds when recurring data changes
+              // Listen to both expense and income boxes
+              child: ValueListenableBuilder(
+                valueListenable: recurringExpenseService.box.listenable(),
+                builder: (context, Box<RecurringExpense> expenseBox, child) {
+                  return ValueListenableBuilder(
+                    valueListenable: recurringIncomeService.box.listenable(),
+                    builder: (context, incomeBox, child) {
+                      // Count both recurring expenses and recurring income
+                      final dueCount =
+                          recurringExpenseService.getUpcomingCount(days: 7) +
+                              recurringIncomeService.getUpcomingCount(days: 7);
+                      final showBadge = dueCount > 0 && !isSelected;
+
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          // Static icon passed through child parameter
+                          child!,
+                          if (showBadge)
+                            Positioned(
+                              right: -6,
+                              top: -4,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: colors.accent,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 16,
+                                  minHeight: 16,
+                                ),
+                                child: Text(
+                                  dueCount > 9 ? '9+' : dueCount.toString(),
+                                  style:
+                                      LedgerifyTypography.labelSmall.copyWith(
+                                    color: colors.background,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                if (isSelected) ...[
-                  LedgerifySpacing.horizontalSm,
-                  Text(
-                    label,
-                    style: LedgerifyTypography.labelMedium.copyWith(
-                      color: colors.accent,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ],
+                        ],
+                      );
+                    },
+                    // Static icon preserved across rebuilds
+                    child: child,
+                  );
+                },
+                // Static icon preserved across rebuilds
+                child: staticIcon,
+              ),
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: LedgerifyTypography.labelSmall.copyWith(
+                color: isSelected ? colors.accent : colors.textTertiary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 10,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

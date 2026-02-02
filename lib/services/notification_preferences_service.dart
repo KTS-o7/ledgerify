@@ -6,6 +6,10 @@ import '../models/notification_preferences.dart';
 ///
 /// Stores preferences as a singleton in Hive box with key 'preferences'.
 /// Provides reactive updates via ValueNotifier.
+///
+/// **Lifecycle:** This service is an app-lifetime singleton created in `main()`
+/// and should never be disposed. The ValueNotifier is kept alive for the
+/// entire app session.
 class NotificationPreferencesService {
   static const String _preferencesKey = 'preferences';
 
@@ -251,9 +255,4 @@ class NotificationPreferencesService {
 
   /// Gets goal milestones.
   List<int> get goalMilestones => current.goalMilestones;
-
-  /// Disposes the ValueNotifier.
-  void dispose() {
-    preferences.dispose();
-  }
 }

@@ -64,13 +64,14 @@ class IncomeAdapter extends TypeAdapter<Income> {
       date: fields[4] as DateTime,
       createdAt: fields[5] as DateTime?,
       goalAllocations: (fields[6] as List?)?.cast<GoalAllocation>(),
+      recurringIncomeId: fields[7] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Income obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -84,7 +85,9 @@ class IncomeAdapter extends TypeAdapter<Income> {
       ..writeByte(5)
       ..write(obj.createdAt)
       ..writeByte(6)
-      ..write(obj.goalAllocations);
+      ..write(obj.goalAllocations)
+      ..writeByte(7)
+      ..write(obj.recurringIncomeId);
   }
 
   @override

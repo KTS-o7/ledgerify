@@ -73,23 +73,43 @@ class RecurringIncomeScreen extends StatelessWidget {
             return _buildEmptyState(context, colors);
           }
 
-          return ListView(
-            padding: const EdgeInsets.only(bottom: 24),
-            children: [
+          return CustomScrollView(
+            slivers: [
               // Active section
               if (activeItems.isNotEmpty) ...[
-                _buildSectionHeader(
-                    context, colors, 'Active', activeItems.length),
-                ...activeItems.map((item) => _buildListTile(context, item)),
+                SliverToBoxAdapter(
+                  child: _buildSectionHeader(
+                      context, colors, 'Active', activeItems.length),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) =>
+                        _buildListTile(context, activeItems[index]),
+                    childCount: activeItems.length,
+                  ),
+                ),
               ],
 
               // Paused section
               if (pausedItems.isNotEmpty) ...[
-                LedgerifySpacing.verticalLg,
-                _buildSectionHeader(
-                    context, colors, 'Paused', pausedItems.length),
-                ...pausedItems.map((item) => _buildListTile(context, item)),
+                const SliverToBoxAdapter(child: LedgerifySpacing.verticalLg),
+                SliverToBoxAdapter(
+                  child: _buildSectionHeader(
+                      context, colors, 'Paused', pausedItems.length),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) =>
+                        _buildListTile(context, pausedItems[index]),
+                    childCount: pausedItems.length,
+                  ),
+                ),
               ],
+
+              // Bottom padding
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 88),
+              ),
             ],
           );
         },
