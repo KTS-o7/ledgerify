@@ -12,7 +12,6 @@ import '../theme/ledgerify_theme.dart';
 import 'category_management_screen.dart';
 import 'notification_settings_screen.dart';
 import 'sms_import_screen.dart';
-import 'ui_gallery_screen.dart';
 import 'tag_management_screen.dart';
 
 /// Settings Screen - Ledgerify Design Language
@@ -153,13 +152,6 @@ class SettingsScreen extends StatelessWidget {
                   color: colors.surfaceHighlight,
                 ),
                 _GitHubTile(colors: colors),
-                Divider(
-                  height: 1,
-                  indent: 56,
-                  endIndent: 16,
-                  color: colors.surfaceHighlight,
-                ),
-                _UiGalleryTile(colors: colors),
               ],
             ),
           ),
@@ -745,50 +737,6 @@ class _GitHubTile extends StatelessWidget {
         size: 20,
       ),
       onTap: _openGitHub,
-    );
-  }
-}
-
-class _UiGalleryTile extends StatelessWidget {
-  final LedgerifyColorScheme colors;
-
-  const _UiGalleryTile({
-    required this.colors,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: LedgerifySpacing.lg,
-        vertical: LedgerifySpacing.xs,
-      ),
-      leading: Icon(
-        Icons.view_quilt_rounded,
-        color: colors.textSecondary,
-      ),
-      title: Text(
-        'UI Gallery',
-        style: LedgerifyTypography.bodyLarge.copyWith(
-          color: colors.textPrimary,
-        ),
-      ),
-      subtitle: Text(
-        'Preview new components',
-        style: LedgerifyTypography.bodySmall.copyWith(
-          color: colors.textTertiary,
-        ),
-      ),
-      trailing: Icon(
-        Icons.chevron_right_rounded,
-        color: colors.textTertiary,
-      ),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const UiGalleryScreen()),
-        );
-      },
     );
   }
 }
