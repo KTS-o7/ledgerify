@@ -1,20 +1,21 @@
 # Release Guide for Ledgerify
 
-## Quick Release (Unsigned APK)
+## Quick Release (GitHub Release with APK/AAB)
 
 ### Option 1: GitHub Actions (Recommended)
 
 1. **Go to Actions tab** on GitHub
-2. **Select "Build Release"** workflow
+2. **Select "Release (APK/AAB)"** workflow
 3. **Click "Run workflow"**
-4. **Enter version** (e.g., `1.0.0`)
-5. **Optionally enable iOS build** (uses more CI minutes)
-6. **Download artifacts** from the completed workflow run
+4. **Enter version (semver)** (e.g., `1.3.2`) — must match `pubspec.yaml`'s semver
+5. **(First time only)** Add Android signing secrets (see “Signed Release” below)
+   - Optional: protect releases via GitHub **Environments** by adding required reviewers to the `release` environment
+6. The workflow creates a **GitHub Release** (tagged `vX.Y.Z`) and uploads the APK/AAB assets automatically
 
-Artifacts will be named:
-- `ledgerify-v1.0.0-apk` - Android APK
-- `ledgerify-v1.0.0-aab` - Android App Bundle (for Play Store)
-- `ledgerify-v1.0.0-ios` - Unsigned iOS IPA (if enabled)
+Release assets will include:
+- `ledgerify-vX.Y.Z.apk` - Android APK
+- `ledgerify-vX.Y.Z.aab` - Android App Bundle (for Play Store)
+- `ledgerify-vX.Y.Z-sha256sums.txt` - Checksums
 
 ### Option 2: Local Build
 
@@ -29,19 +30,6 @@ flutter build appbundle --release
 # APK: build/app/outputs/flutter-apk/app-release.apk
 # AAB: build/app/outputs/bundle/release/app-release.aab
 ```
-
----
-
-## Creating a GitHub Release (Manual)
-
-After building via GitHub Actions:
-
-1. Go to **Releases** → **Draft a new release**
-2. Create a tag (e.g., `v1.0.0`)
-3. Add release title and notes
-4. Download artifacts from the workflow run
-5. Upload the APK/AAB files to the release
-6. Publish
 
 ---
 
@@ -96,7 +84,7 @@ keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA \
    | `KEY_PASSWORD` | Key password |
 
 3. **Run workflow:**
-   - Go to Actions → "Build Signed Release"
+   - Go to Actions → "Release (APK/AAB)"
    - Click "Run workflow"
    - Enter version number
 
