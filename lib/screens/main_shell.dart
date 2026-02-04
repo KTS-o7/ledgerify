@@ -148,6 +148,8 @@ class _MainShellState extends State<MainShell> {
             ),
             SettingsScreen(
               themeService: widget.themeService,
+              expenseService: widget.expenseService,
+              incomeService: widget.incomeService,
               tagService: widget.tagService,
               customCategoryService: widget.customCategoryService,
               notificationService: widget.notificationService,

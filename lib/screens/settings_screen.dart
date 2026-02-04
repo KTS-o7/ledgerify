@@ -1,15 +1,25 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/custom_category_service.dart';
+import '../services/expense_service.dart';
+import '../services/income_service.dart';
 import '../services/notification_preferences_service.dart';
 import '../services/notification_service.dart';
 import '../services/sms_permission_service.dart';
 import '../services/sms_transaction_service.dart';
 import '../services/tag_service.dart';
 import '../services/theme_service.dart';
+import '../services/transaction_csv_service.dart';
 import '../theme/ledgerify_theme.dart';
 import 'category_management_screen.dart';
+import 'csv_import_preview_screen.dart';
 import 'notification_settings_screen.dart';
 import 'sms_import_screen.dart';
 import 'tag_management_screen.dart';
@@ -20,6 +30,8 @@ import 'tag_management_screen.dart';
 /// Note: Recurring expenses and income are now accessed via bottom navigation tab.
 class SettingsScreen extends StatelessWidget {
   final ThemeService themeService;
+  final ExpenseService expenseService;
+  final IncomeService incomeService;
   final TagService tagService;
   final CustomCategoryService customCategoryService;
   final NotificationService notificationService;
@@ -30,6 +42,8 @@ class SettingsScreen extends StatelessWidget {
   const SettingsScreen({
     super.key,
     required this.themeService,
+    required this.expenseService,
+    required this.incomeService,
     required this.tagService,
     required this.customCategoryService,
     required this.notificationService,
@@ -41,6 +55,12 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = LedgerifyColors.of(context);
+    final csvService = TransactionCsvService(
+      expenseService: expenseService,
+      incomeService: incomeService,
+      tagService: tagService,
+      customCategoryService: customCategoryService,
+    );
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -105,6 +125,26 @@ class SettingsScreen extends StatelessWidget {
             colors: colors,
             child: Column(
               children: [
+                _ExportCsvTile(
+                  colors: colors,
+                  csvService: csvService,
+                ),
+                Divider(
+                  height: 1,
+                  indent: 56,
+                  endIndent: 16,
+                  color: colors.surfaceHighlight,
+                ),
+                _ImportCsvTile(
+                  colors: colors,
+                  csvService: csvService,
+                ),
+                Divider(
+                  height: 1,
+                  indent: 56,
+                  endIndent: 16,
+                  color: colors.surfaceHighlight,
+                ),
                 _CustomCategoriesTile(
                   colors: colors,
                   customCategoryService: customCategoryService,
@@ -445,6 +485,244 @@ class _DynamicColorTile extends StatelessWidget {
           onTap: () => themeService.setUseDynamicColor(!enabled),
         );
       },
+    );
+  }
+}
+
+/// CSV export tile
+class _ExportCsvTile extends StatelessWidget {
+  final LedgerifyColorScheme colors;
+  final TransactionCsvService csvService;
+
+  const _ExportCsvTile({
+    required this.colors,
+    required this.csvService,
+  });
+
+  Future<T?> _runWithLoadingDialog<T>(
+    BuildContext context, {
+    required String message,
+    required Future<T> Function() action,
+  }) async {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: colors.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: LedgerifyRadius.borderRadiusLg,
+        ),
+        content: Row(
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(colors.accent),
+              ),
+            ),
+            LedgerifySpacing.horizontalMd,
+            Expanded(
+              child: Text(
+                message,
+                style: LedgerifyTypography.bodyMedium.copyWith(
+                  color: colors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final result = await action();
+      if (context.mounted) Navigator.pop(context);
+      return result;
+    } catch (_) {
+      if (context.mounted) Navigator.pop(context);
+      rethrow;
+    }
+  }
+
+  String _two(int n) => n.toString().padLeft(2, '0');
+
+  Future<void> _export(BuildContext context) async {
+    try {
+      final csv = await _runWithLoadingDialog<String>(
+        context,
+        message: 'Preparing CSV…',
+        action: csvService.exportCsv,
+      );
+      if (csv == null || !context.mounted) return;
+
+      final now = DateTime.now();
+      final fileName =
+          'ledgerify-transactions-${now.year}${_two(now.month)}${_two(now.day)}-${_two(now.hour)}${_two(now.minute)}.csv';
+
+      final dir = await getTemporaryDirectory();
+      final path = '${dir.path}/$fileName';
+      final file = File(path);
+      await file.writeAsString(csv, flush: true);
+
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(path, mimeType: 'text/csv')],
+          fileNameOverrides: [fileName],
+          subject: 'Ledgerify transactions CSV',
+        ),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Export failed',
+            style: LedgerifyTypography.bodyMedium.copyWith(
+              color: colors.textPrimary,
+            ),
+          ),
+          backgroundColor: colors.surface,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: LedgerifySpacing.lg,
+        vertical: LedgerifySpacing.xs,
+      ),
+      leading: Icon(
+        Icons.upload_file_rounded,
+        color: colors.textSecondary,
+      ),
+      title: Text(
+        'Export CSV',
+        style: LedgerifyTypography.bodyLarge.copyWith(
+          color: colors.textPrimary,
+        ),
+      ),
+      subtitle: Text(
+        'Share a CSV of transactions',
+        style: LedgerifyTypography.bodySmall.copyWith(
+          color: colors.textTertiary,
+        ),
+      ),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: colors.textTertiary,
+      ),
+      onTap: () => _export(context),
+    );
+  }
+}
+
+/// CSV import tile
+class _ImportCsvTile extends StatelessWidget {
+  final LedgerifyColorScheme colors;
+  final TransactionCsvService csvService;
+
+  const _ImportCsvTile({
+    required this.colors,
+    required this.csvService,
+  });
+
+  Future<void> _import(BuildContext context) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['csv'],
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.single;
+      final bytes = file.bytes ??
+          (file.path != null ? await File(file.path!).readAsBytes() : null);
+      if (bytes == null) return;
+
+      final content = utf8.decode(bytes, allowMalformed: true);
+      final preview = csvService.previewImportCsv(content);
+
+      if (!context.mounted) return;
+      final importResult = await Navigator.push<CsvImportResult>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CsvImportPreviewScreen(
+            csvService: csvService,
+            preview: preview,
+            sourceLabel: file.name,
+          ),
+        ),
+      );
+
+      if (importResult == null || !context.mounted) return;
+
+      final imported =
+          importResult.importedExpenses + importResult.importedIncomes;
+      final message = imported == 0
+          ? 'No transactions imported'
+          : 'Imported $imported (${importResult.importedExpenses} expenses, ${importResult.importedIncomes} income)';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: LedgerifyTypography.bodyMedium.copyWith(
+              color: colors.textPrimary,
+            ),
+          ),
+          backgroundColor: colors.surface,
+        ),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Import failed',
+            style: LedgerifyTypography.bodyMedium.copyWith(
+              color: colors.textPrimary,
+            ),
+          ),
+          backgroundColor: colors.surface,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: LedgerifySpacing.lg,
+        vertical: LedgerifySpacing.xs,
+      ),
+      leading: Icon(
+        Icons.download_rounded,
+        color: colors.textSecondary,
+      ),
+      title: Text(
+        'Import CSV',
+        style: LedgerifyTypography.bodyLarge.copyWith(
+          color: colors.textPrimary,
+        ),
+      ),
+      subtitle: Text(
+        'Import transactions from a CSV',
+        style: LedgerifyTypography.bodySmall.copyWith(
+          color: colors.textTertiary,
+        ),
+      ),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: colors.textTertiary,
+      ),
+      onTap: () => _import(context),
     );
   }
 }

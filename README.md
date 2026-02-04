@@ -80,7 +80,20 @@ Most expense tracking apps feel over-engineered or cluttered with features you d
 - **Offline-first** - Works without internet
 - **Local storage** - All data stays on your device
 - **No account required** - No sign-up, no cloud sync
-- **Export support** - CSV/JSON export (planned)
+- **CSV export/import** - Export/share or import transactions via Settings → Data
+
+## CSV Format (v1)
+
+Ledgerify exports a single transactions CSV with a versioned header comment:
+
+- First line: `# ledgerify_transactions_csv_v1`
+- Required columns for import: `type,amount,date`
+- `type`: `expense` or `income`
+- `amount`: positive decimal (import will accept negative and use absolute value)
+- `date`: ISO-8601 (`YYYY-MM-DD` or timestamp)
+- Optional columns: `id,created_at,currency,...` plus expense/income-specific fields
+
+For best results, re-import files exported by Ledgerify (they include the full header set).
 
 ## Screenshots
 
