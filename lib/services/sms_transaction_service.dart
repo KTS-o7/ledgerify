@@ -54,10 +54,12 @@ class SmsTransactionService {
     );
 
     final imported = <SmsTransaction>[];
+    final existingIds = _box.keys.cast<String>().toSet();
+    final toPut = <String, SmsTransaction>{};
 
     for (final transaction in parsed) {
       // Skip if already processed
-      if (_isAlreadyProcessed(transaction.smsId)) continue;
+      if (existingIds.contains(transaction.smsId)) continue;
 
       // Create SmsTransaction record
       final smsTransaction = SmsTransaction(
@@ -73,17 +75,17 @@ class SmsTransactionService {
         confidence: transaction.confidence,
       );
 
-      // Save to box
-      await _box.put(smsTransaction.smsId, smsTransaction);
+      // Save to box (batch at end for performance)
+      existingIds.add(smsTransaction.smsId);
+      toPut[smsTransaction.smsId] = smsTransaction;
       imported.add(smsTransaction);
     }
 
-    return imported;
-  }
+    if (toPut.isNotEmpty) {
+      await _box.putAll(toPut);
+    }
 
-  /// Check if an SMS has already been processed
-  bool _isAlreadyProcessed(String smsId) {
-    return _box.containsKey(smsId);
+    return imported;
   }
 
   /// Get all pending transactions (awaiting user review)
