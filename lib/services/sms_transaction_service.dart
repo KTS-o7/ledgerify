@@ -107,7 +107,8 @@ class SmsTransactionService {
   }
 
   /// Get count of pending transactions
-  int get pendingCount => getPendingTransactions().length;
+  int get pendingCount =>
+      _box.values.where((t) => t.status == SmsTransactionStatus.pending).length;
 
   /// Confirm a transaction as an expense.
   ///
