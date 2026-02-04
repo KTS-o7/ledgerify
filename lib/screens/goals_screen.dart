@@ -17,10 +17,12 @@ import 'goal_detail_screen.dart';
 /// - Add button in AppBar
 class GoalsScreen extends StatefulWidget {
   final GoalService goalService;
+  final bool isEmbedded;
 
   const GoalsScreen({
     super.key,
     required this.goalService,
+    this.isEmbedded = false,
   });
 
   @override
@@ -61,40 +63,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   Widget build(BuildContext context) {
     final colors = LedgerifyColors.of(context);
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text(
-          'Goals',
-          style: LedgerifyTypography.headlineMedium.copyWith(
-            color: colors.textPrimary,
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: LedgerifySpacing.sm),
-            child: IconButton(
-              onPressed: _openAddGoalSheet,
-              icon: Container(
-                padding: const EdgeInsets.all(LedgerifySpacing.sm),
-                decoration: BoxDecoration(
-                  color: colors.accent,
-                  borderRadius: LedgerifyRadius.borderRadiusSm,
-                ),
-                child: Icon(
-                  Icons.add_rounded,
-                  size: 20,
-                  color: colors.background,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: ValueListenableBuilder(
+    final body = ValueListenableBuilder(
         valueListenable: widget.goalService.box.listenable(),
         builder: (context, Box<Goal> box, _) {
           final activeGoals = widget.goalService.getActiveGoals();
@@ -192,7 +161,49 @@ class _GoalsScreenState extends State<GoalsScreen> {
             ],
           );
         },
+      );
+
+    if (widget.isEmbedded) {
+      return Container(
+        color: colors.background,
+        child: body,
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: colors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          'Goals',
+          style: LedgerifyTypography.headlineMedium.copyWith(
+            color: colors.textPrimary,
+          ),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: LedgerifySpacing.sm),
+            child: IconButton(
+              onPressed: _openAddGoalSheet,
+              icon: Container(
+                padding: const EdgeInsets.all(LedgerifySpacing.sm),
+                decoration: BoxDecoration(
+                  color: colors.accent,
+                  borderRadius: LedgerifyRadius.borderRadiusSm,
+                ),
+                child: Icon(
+                  Icons.add_rounded,
+                  size: 20,
+                  color: colors.background,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
+      body: body,
     );
   }
 
