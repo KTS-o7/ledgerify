@@ -1,0 +1,197 @@
+name: Release (APK/AAB)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semver (e.g., 1.3.2)"
+        required: true
+        type: string
+      draft:
+        description: "Create as draft release"
+        required: false
+        type: boolean
+        default: false
+      prerelease:
+        description: "Mark as pre-release"
+        required: false
+        type: boolean
+        default: false
+      signed:
+        description: "Build signed artifacts (recommended)"
+        required: false
+        type: boolean
+        default: true
+
+concurrency:
+  group: release-${{ inputs.version }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    name: Build + publish GitHub Release
+    runs-on: ubuntu-latest
+    environment: release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+
+      - name: Validate version input
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ inputs.version }}"
+
+          if [[ "$VERSION" == v* ]]; then
+            echo "Input version must be semver only (no leading 'v'): $VERSION" >&2
+            exit 1
+          fi
+
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([\-][0-9A-Za-z\.-]+)?$ ]]; then
+            echo "Invalid semver: $VERSION" >&2
+            exit 1
+          fi
+
+          PUB_VERSION="$(grep -E '^version:' pubspec.yaml | head -1 | sed -E 's/^version:[[:space:]]*//')"
+          PUB_SEMVER="${PUB_VERSION%%+*}"
+          if [[ "$PUB_SEMVER" != "$VERSION" ]]; then
+            echo "pubspec.yaml semver ($PUB_SEMVER) must match input ($VERSION)." >&2
+            echo "Update pubspec.yaml 'version:' first, then rerun the workflow." >&2
+            exit 1
+          fi
+
+          TAG="v${VERSION}"
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "Tag already exists: ${TAG}" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Compute build number
+        id: build
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUILD_NUMBER=$(( GITHUB_RUN_NUMBER * 10 + GITHUB_RUN_ATTEMPT ))
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate code (build_runner)
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+
+      - name: Ensure generated files are committed
+        run: git diff --exit-code
+
+      - name: Analyze
+        run: flutter analyze lib/
+
+      - name: Test
+        run: flutter test
+
+      - name: Validate signing secrets
+        if: ${{ inputs.signed }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ -n "${{ secrets.KEYSTORE_BASE64 }}" ] || (echo "Missing secret: KEYSTORE_BASE64" >&2; exit 1)
+          [ -n "${{ secrets.KEYSTORE_PASSWORD }}" ] || (echo "Missing secret: KEYSTORE_PASSWORD" >&2; exit 1)
+          [ -n "${{ secrets.KEY_ALIAS }}" ] || (echo "Missing secret: KEY_ALIAS" >&2; exit 1)
+          [ -n "${{ secrets.KEY_PASSWORD }}" ] || (echo "Missing secret: KEY_PASSWORD" >&2; exit 1)
+
+      - name: Decode keystore
+        if: ${{ inputs.signed }}
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+
+      - name: Create key.properties
+        if: ${{ inputs.signed }}
+        run: |
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=upload-keystore.jks" >> android/key.properties
+
+      - name: Build APK (Release)
+        run: |
+          flutter build apk --release \
+            --build-name="${{ steps.version.outputs.version }}" \
+            --build-number="${{ steps.build.outputs.build_number }}" \
+            --no-tree-shake-icons
+
+      - name: Build App Bundle (Release)
+        run: |
+          flutter build appbundle --release \
+            --build-name="${{ steps.version.outputs.version }}" \
+            --build-number="${{ steps.build.outputs.build_number }}" \
+            --no-tree-shake-icons
+
+      - name: Rename artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mv build/app/outputs/flutter-apk/app-release.apk "build/app/outputs/flutter-apk/ledgerify-${{ steps.version.outputs.tag }}.apk"
+          mv build/app/outputs/bundle/release/app-release.aab "build/app/outputs/bundle/release/ledgerify-${{ steps.version.outputs.tag }}.aab"
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd build/app/outputs
+            sha256sum "flutter-apk/ledgerify-${{ steps.version.outputs.tag }}.apk" \
+              "bundle/release/ledgerify-${{ steps.version.outputs.tag }}.aab" \
+              > "ledgerify-${{ steps.version.outputs.tag }}-sha256sums.txt"
+          )
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ledgerify-${{ steps.version.outputs.tag }}-artifacts
+          path: |
+            build/app/outputs/flutter-apk/ledgerify-${{ steps.version.outputs.tag }}.apk
+            build/app/outputs/bundle/release/ledgerify-${{ steps.version.outputs.tag }}.aab
+            build/app/outputs/ledgerify-${{ steps.version.outputs.tag }}-sha256sums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Ledgerify ${{ steps.version.outputs.tag }}
+          target_commitish: main
+          generate_release_notes: true
+          draft: ${{ inputs.draft }}
+          prerelease: ${{ inputs.prerelease }}
+          fail_on_unmatched_files: true
+          files: |
+            build/app/outputs/flutter-apk/ledgerify-${{ steps.version.outputs.tag }}.apk
+            build/app/outputs/bundle/release/ledgerify-${{ steps.version.outputs.tag }}.aab
+            build/app/outputs/ledgerify-${{ steps.version.outputs.tag }}-sha256sums.txt
+
+      - name: Cleanup signing files
+        if: always()
+        run: |
+          rm -f android/app/upload-keystore.jks
+          rm -f android/key.properties
