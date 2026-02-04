@@ -382,6 +382,9 @@ class UnifiedTransactionTile extends StatelessWidget {
         // Amount
         Text(
           '$prefix${CurrencyFormatter.format(transaction.amount)}',
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
           style: LedgerifyTypography.amountMedium.copyWith(
             color: amountColor,
           ),

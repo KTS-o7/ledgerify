@@ -5,11 +5,13 @@ import '../../utils/currency_formatter.dart';
 class AmountText extends StatelessWidget {
   final double amount;
   final TextStyle? style;
+  final AlignmentGeometry alignment;
 
   const AmountText({
     super.key,
     required this.amount,
     this.style,
+    this.alignment = Alignment.centerLeft,
   });
 
   @override
@@ -18,9 +20,17 @@ class AmountText extends StatelessWidget {
     final color = colors.amountColor(amount);
     final value = CurrencyFormatter.format(amount.abs());
 
-    return Text(
-      value,
-      style: (style ?? LedgerifyTypography.amountMedium).copyWith(color: color),
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: alignment,
+      child: Text(
+        value,
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.visible,
+        style:
+            (style ?? LedgerifyTypography.amountMedium).copyWith(color: color),
+      ),
     );
   }
 }
