@@ -465,25 +465,26 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     return CustomScrollView(
       slivers: [
         if (hasAnyData)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: LedgerifySpacing.lg,
-              ),
-              child: TransactionFilterChips(
-                selectedFilter: _transactionFilter,
-                onFilterChanged: (filter) {
-                  setState(() {
-                    _transactionFilter = filter;
-                    _resetPagination();
-                  });
-                },
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _PinnedHeaderDelegate(
+              height: 64,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: LedgerifySpacing.lg,
+                  vertical: LedgerifySpacing.sm,
+                ),
+                child: TransactionFilterChips(
+                  selectedFilter: _transactionFilter,
+                  onFilterChanged: (filter) {
+                    setState(() {
+                      _transactionFilter = filter;
+                      _resetPagination();
+                    });
+                  },
+                ),
               ),
             ),
-          ),
-        if (hasAnyData)
-          const SliverToBoxAdapter(
-            child: LedgerifySpacing.verticalMd,
           ),
         if (hasSearchOrFilter && displayTransactions.isNotEmpty)
           SliverToBoxAdapter(
@@ -825,5 +826,46 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             .where((t) => t.type == TransactionType.expense)
             .toList();
     }
+  }
+}
+
+class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final double height;
+  final Widget child;
+
+  _PinnedHeaderDelegate({
+    required this.height,
+    required this.child,
+  });
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final colors = LedgerifyColors.of(context);
+    return Container(
+      color: colors.background,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: colors.divider),
+          ),
+        ),
+        child: child,
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _PinnedHeaderDelegate oldDelegate) {
+    return height != oldDelegate.height || child != oldDelegate.child;
   }
 }
