@@ -123,6 +123,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  Future<void> _pickMonth() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedMonth,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(now.year, now.month + 1, 0),
+      helpText: 'Pick a date in the month',
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _selectedMonth = DateTime(picked.year, picked.month);
+      _updateCachedData();
+    });
+  }
+
   Future<void> _showQuickAddSheet() async {
     final action = await QuickAddSheet.show(
       context,
@@ -292,6 +308,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               child: SectionCard(
                 title: DateFormatter.formatMonthYear(_selectedMonth),
+                onHeaderTap: _pickMonth,
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

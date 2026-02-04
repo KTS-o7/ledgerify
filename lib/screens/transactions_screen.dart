@@ -478,6 +478,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               ),
               child: SectionCard(
                 title: 'This month',
+                onHeaderTap: _pickMonth,
                 trailing: Text(
                   DateFormatter.formatMonthYear(_selectedMonth),
                   style: LedgerifyTypography.labelMedium.copyWith(

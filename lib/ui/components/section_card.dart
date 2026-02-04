@@ -5,6 +5,7 @@ class SectionCard extends StatelessWidget {
   final String? title;
   final Widget child;
   final Widget? trailing;
+  final VoidCallback? onHeaderTap;
   final EdgeInsetsGeometry padding;
 
   const SectionCard({
@@ -12,6 +13,7 @@ class SectionCard extends StatelessWidget {
     required this.child,
     this.title,
     this.trailing,
+    this.onHeaderTap,
     this.padding = const EdgeInsets.all(LedgerifySpacing.lg),
   });
 
@@ -26,18 +28,30 @@ class SectionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (title != null) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title!,
-                      style: LedgerifyTypography.headlineSmall.copyWith(
-                        color: colors.textPrimary,
-                      ),
+              Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: onHeaderTap,
+                  borderRadius: LedgerifyRadius.borderRadiusMd,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: LedgerifySpacing.xs,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title!,
+                            style: LedgerifyTypography.headlineSmall.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (trailing != null) trailing!,
+                      ],
                     ),
                   ),
-                  if (trailing != null) trailing!,
-                ],
+                ),
               ),
               LedgerifySpacing.verticalMd,
             ],
