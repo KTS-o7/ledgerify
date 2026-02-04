@@ -260,7 +260,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final incomeCount = incomeSummary.count;
 
     final hasAnyData = monthExpenses.isNotEmpty || monthIncomes.isNotEmpty;
-    final recentTransactions = _cachedTransactions.take(8).toList();
+    final recentTransactions = _cachedTransactions.take(3).toList();
 
     return Scaffold(
       backgroundColor: colors.background,
