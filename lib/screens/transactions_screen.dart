@@ -819,13 +819,15 @@ class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
     final colors = LedgerifyColors.of(context);
     return Container(
       color: colors.background,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: colors.divider),
+      child: SizedBox.expand(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: colors.divider),
+            ),
           ),
+          child: child,
         ),
-        child: child,
       ),
     );
   }
