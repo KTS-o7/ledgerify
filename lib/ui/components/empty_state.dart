@@ -30,7 +30,7 @@ class EmptyState extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: LedgerifyTypography.titleLarge.copyWith(
+                style: LedgerifyTypography.headlineSmall.copyWith(
                   color: colors.textPrimary,
                 ),
               ),
@@ -58,4 +58,3 @@ class EmptyState extends StatelessWidget {
     );
   }
 }
-

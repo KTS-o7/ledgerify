@@ -448,7 +448,7 @@ class _DynamicColorTile extends StatelessWidget {
           trailing: Switch(
             value: enabled,
             onChanged: themeService.setUseDynamicColor,
-            activeColor: colors.accent,
+            activeThumbColor: colors.accent,
           ),
           onTap: () => themeService.setUseDynamicColor(!enabled),
         );

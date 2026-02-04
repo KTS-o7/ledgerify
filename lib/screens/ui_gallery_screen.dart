@@ -21,20 +21,20 @@ class UiGalleryScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(LedgerifySpacing.lg),
         children: [
-          SectionCard(
+          const SectionCard(
             title: 'Metrics',
             child: MetricRow(
-              left: const MetricItem(
+              left: MetricItem(
                 label: 'Income',
                 amount: 3200,
                 icon: Icons.arrow_downward_rounded,
               ),
-              middle: const MetricItem(
+              middle: MetricItem(
                 label: 'Spend',
                 amount: -1842.5,
                 icon: Icons.arrow_upward_rounded,
               ),
-              right: const MetricItem(
+              right: MetricItem(
                 label: 'Net',
                 amount: 1357.5,
                 icon: Icons.savings_rounded,
@@ -47,15 +47,15 @@ class UiGalleryScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AmountText(
+                const AmountText(
                   amount: 123.45,
                   showPlusForIncome: true,
                 ),
                 LedgerifySpacing.verticalSm,
-                AmountText(amount: -67.89),
+                const AmountText(amount: -67.89),
                 LedgerifySpacing.verticalSm,
                 Text(
-                  'Token accent: ${colors.accent.value.toRadixString(16)}',
+                  'Token accent: ${colors.accent.toARGB32().toRadixString(16)}',
                   style: LedgerifyTypography.bodySmall.copyWith(
                     color: colors.textTertiary,
                   ),
@@ -122,4 +122,3 @@ class UiGalleryScreen extends StatelessWidget {
     );
   }
 }
-

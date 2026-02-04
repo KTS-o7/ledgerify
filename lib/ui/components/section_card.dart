@@ -31,7 +31,7 @@ class SectionCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       title!,
-                      style: LedgerifyTypography.titleMedium.copyWith(
+                      style: LedgerifyTypography.headlineSmall.copyWith(
                         color: colors.textPrimary,
                       ),
                     ),
@@ -48,4 +48,3 @@ class SectionCard extends StatelessWidget {
     );
   }
 }
-

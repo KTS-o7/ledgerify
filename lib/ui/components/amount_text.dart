@@ -22,8 +22,7 @@ class AmountText extends StatelessWidget {
 
     return Text(
       value,
-      style: (style ?? LedgerifyTypography.titleLarge).copyWith(color: color),
+      style: (style ?? LedgerifyTypography.amountMedium).copyWith(color: color),
     );
   }
 }
-

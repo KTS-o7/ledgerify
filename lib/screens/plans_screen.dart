@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../models/budget.dart';
 import '../services/budget_service.dart';
 import '../services/expense_service.dart';
@@ -273,7 +274,7 @@ class _MonthHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: LedgerifyTypography.titleLarge.copyWith(
+            style: LedgerifyTypography.headlineSmall.copyWith(
               color: colors.textPrimary,
               fontWeight: FontWeight.w700,
             ),
@@ -289,4 +290,3 @@ class _MonthHeader extends StatelessWidget {
     );
   }
 }
-

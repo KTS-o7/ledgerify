@@ -164,29 +164,31 @@ class LedgerifyColorScheme extends ThemeExtension<LedgerifyColorScheme> {
 
     final background = scheme.surface;
     final surface = scheme.surface;
-    final surfaceElevated = scheme.surfaceVariant;
-    final surfaceHighlight = scheme.surfaceVariant;
+    final surfaceElevated = scheme.surfaceContainerHighest;
+    final surfaceHighlight = scheme.surfaceContainerHigh;
 
     final textPrimary = scheme.onSurface;
     final textSecondary =
-        (scheme.onSurfaceVariant).withOpacity(isDark ? 0.78 : 0.72);
-    final textTertiary = scheme.onSurfaceVariant.withOpacity(0.6);
-    final textDisabled = scheme.onSurface.withOpacity(0.38);
+        (scheme.onSurfaceVariant).withValues(alpha: isDark ? 0.78 : 0.72);
+    final textTertiary = scheme.onSurfaceVariant.withValues(alpha: 0.6);
+    final textDisabled = scheme.onSurface.withValues(alpha: 0.38);
 
     final accent = scheme.primary;
-    final accentMuted = scheme.primary.withOpacity(isDark ? 0.18 : 0.12);
+    final accentMuted = scheme.primary.withValues(alpha: isDark ? 0.18 : 0.12);
     final accentPressed =
         (isDark ? scheme.primaryContainer : scheme.primaryContainer);
 
     final negative = scheme.error;
-    final negativeMuted = scheme.error.withOpacity(isDark ? 0.18 : 0.12);
+    final negativeMuted = scheme.error.withValues(alpha: isDark ? 0.18 : 0.12);
 
     final warning = scheme.tertiary;
-    final warningMuted = scheme.tertiary.withOpacity(isDark ? 0.18 : 0.12);
+    final warningMuted =
+        scheme.tertiary.withValues(alpha: isDark ? 0.18 : 0.12);
 
-    final divider = scheme.outlineVariant.withOpacity(isDark ? 0.4 : 0.6);
+    final divider =
+        scheme.outlineVariant.withValues(alpha: isDark ? 0.4 : 0.6);
     final shadow = scheme.shadow;
-    final overlay = scheme.scrim.withOpacity(0.5);
+    final overlay = scheme.scrim.withValues(alpha: 0.5);
 
     return LedgerifyColorScheme(
       brightness: scheme.brightness,

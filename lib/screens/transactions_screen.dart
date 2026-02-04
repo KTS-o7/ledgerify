@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../models/expense.dart';
 import '../models/income.dart';
 import '../services/category_default_service.dart';

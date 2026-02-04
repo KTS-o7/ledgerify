@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../models/expense.dart';
 import '../models/income.dart';
 import '../models/unified_recurring_item.dart';
@@ -379,7 +380,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Expanded(
                     child: Text(
                       'Recent',
-                      style: LedgerifyTypography.titleLarge.copyWith(
+                      style: LedgerifyTypography.headlineSmall.copyWith(
                         color: colors.textPrimary,
                         fontWeight: FontWeight.w700,
                       ),

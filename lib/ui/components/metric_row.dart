@@ -79,7 +79,7 @@ class _MetricTile extends StatelessWidget {
           LedgerifySpacing.verticalSm,
           AmountText(
             amount: item.amount,
-            style: LedgerifyTypography.titleMedium.copyWith(
+            style: LedgerifyTypography.amountMedium.copyWith(
               fontWeight: FontWeight.w700,
               color: colors.textPrimary,
             ),
@@ -89,4 +89,3 @@ class _MetricTile extends StatelessWidget {
     );
   }
 }
-
