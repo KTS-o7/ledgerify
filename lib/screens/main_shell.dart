@@ -18,7 +18,7 @@ import '../services/tag_service.dart';
 import '../services/theme_service.dart';
 import '../theme/ledgerify_theme.dart';
 import 'analytics_screen.dart';
-import 'home_screen.dart';
+import 'dashboard_screen.dart';
 import 'plans_screen.dart';
 import 'settings_screen.dart';
 import 'transactions_screen.dart';
@@ -109,7 +109,7 @@ class _MainShellState extends State<MainShell> {
         child: IndexedStack(
           index: _currentIndex,
           children: [
-            HomeScreen(
+            DashboardScreen(
               expenseService: widget.expenseService,
               recurringService: widget.recurringService,
               recurringIncomeService: widget.recurringIncomeService,
@@ -119,7 +119,8 @@ class _MainShellState extends State<MainShell> {
               merchantHistoryService: widget.merchantHistoryService,
               incomeService: widget.incomeService,
               goalService: widget.goalService,
-              onNavigateToRecurring: () => _switchTab(2),
+              onNavigateToPlans: () => _switchTab(2),
+              onNavigateToTransactions: () => _switchTab(1),
             ),
             TransactionsScreen(
               expenseService: widget.expenseService,
