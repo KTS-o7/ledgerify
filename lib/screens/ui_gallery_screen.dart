@@ -111,10 +111,11 @@ class UiGalleryScreen extends StatelessWidget {
                 color: colors.surfaceHighlight,
                 borderRadius: LedgerifyRadius.borderRadiusMd,
               ),
-              child: const EmptyState(
+              child: EmptyState(
                 title: 'No transactions yet',
                 subtitle: 'Add your first expense to start tracking.',
                 ctaLabel: 'Add expense',
+                onCtaTap: () {},
               ),
             ),
           ),

@@ -22,6 +22,7 @@ import '../widgets/quick_add_sheet.dart';
 import '../widgets/search_filter_bar.dart';
 import '../widgets/transaction_filter_chips.dart';
 import '../widgets/unified_transaction_tile.dart';
+import '../ui/components/empty_state.dart';
 import 'add_expense_screen.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -514,66 +515,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Widget _buildEmptyState(LedgerifyColorScheme colors) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(LedgerifySpacing.xxl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.account_balance_wallet_outlined,
-              size: 80,
-              color: colors.textTertiary,
-            ),
-            LedgerifySpacing.verticalLg,
-            Text(
-              'No transactions this month',
-              style: LedgerifyTypography.headlineSmall.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-            LedgerifySpacing.verticalSm,
-            Text(
-              'Add income or expenses to start tracking',
-              textAlign: TextAlign.center,
-              style: LedgerifyTypography.bodyMedium.copyWith(
-                color: colors.textTertiary,
-              ),
-            ),
-            LedgerifySpacing.verticalXl,
-            SizedBox(
-              width: 200,
-              child: ElevatedButton.icon(
-                onPressed: _showQuickAddSheet,
-                icon: Icon(
-                  Icons.add_rounded,
-                  color: colors.background,
-                  size: 20,
-                ),
-                label: Text(
-                  'Add Transaction',
-                  style: LedgerifyTypography.labelMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colors.background,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colors.accent,
-                  foregroundColor: colors.background,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: LedgerifySpacing.lg,
-                    vertical: LedgerifySpacing.md,
-                  ),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: LedgerifyRadius.borderRadiusMd,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return EmptyState(
+      title: 'No transactions this month',
+      subtitle: 'Add income or expenses to start tracking',
+      ctaLabel: 'Add transaction',
+      onCtaTap: _showQuickAddSheet,
     );
   }
 
@@ -603,45 +549,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       message = "No $typeLabel match '$_searchQuery' with current filters";
     }
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(LedgerifySpacing.xxl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search_off_rounded,
-              size: 80,
-              color: colors.textTertiary,
-            ),
-            LedgerifySpacing.verticalLg,
-            Text(
-              'No results',
-              style: LedgerifyTypography.headlineSmall.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-            LedgerifySpacing.verticalSm,
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: LedgerifyTypography.bodyMedium.copyWith(
-                color: colors.textTertiary,
-              ),
-            ),
-            LedgerifySpacing.verticalXl,
-            TextButton(
-              onPressed: _clearFilters,
-              child: Text(
-                'Clear filters',
-                style: LedgerifyTypography.labelLarge.copyWith(
-                  color: colors.accent,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return EmptyState(
+      title: 'No results',
+      subtitle: message,
+      ctaLabel: 'Clear filters',
+      onCtaTap: _clearFilters,
     );
   }
 

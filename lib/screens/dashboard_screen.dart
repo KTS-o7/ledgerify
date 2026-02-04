@@ -23,6 +23,7 @@ import '../widgets/unified_transaction_tile.dart';
 import '../widgets/upcoming_recurring_card.dart';
 import '../ui/components/metric_row.dart';
 import '../ui/components/section_card.dart';
+import '../ui/components/empty_state.dart';
 import 'add_expense_screen.dart';
 import 'add_recurring_screen.dart';
 
@@ -451,7 +452,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           if (!hasAnyData)
             SliverFillRemaining(
               hasScrollBody: false,
-              child: _EmptyDashboardState(onAdd: _showQuickAddSheet),
+              child: EmptyState(
+                title: 'Start tracking',
+                subtitle: 'Add your first expense or income to see insights here.',
+                ctaLabel: 'Add transaction',
+                onCtaTap: _showQuickAddSheet,
+              ),
             )
           else
             SliverList(
@@ -518,80 +524,5 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
     transactions.sort((a, b) => b.date.compareTo(a.date));
     return transactions;
-  }
-}
-
-class _EmptyDashboardState extends StatelessWidget {
-  final VoidCallback onAdd;
-
-  const _EmptyDashboardState({
-    required this.onAdd,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = LedgerifyColors.of(context);
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(LedgerifySpacing.xxl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.account_balance_wallet_outlined,
-              size: 80,
-              color: colors.textTertiary,
-            ),
-            LedgerifySpacing.verticalLg,
-            Text(
-              'Start tracking',
-              style: LedgerifyTypography.headlineSmall.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-            LedgerifySpacing.verticalSm,
-            Text(
-              'Add your first expense or income to see insights here.',
-              textAlign: TextAlign.center,
-              style: LedgerifyTypography.bodyMedium.copyWith(
-                color: colors.textTertiary,
-              ),
-            ),
-            LedgerifySpacing.verticalXl,
-            SizedBox(
-              width: 200,
-              child: ElevatedButton.icon(
-                onPressed: onAdd,
-                icon: Icon(
-                  Icons.add_rounded,
-                  color: colors.background,
-                  size: 20,
-                ),
-                label: Text(
-                  'Add Transaction',
-                  style: LedgerifyTypography.labelMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colors.background,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colors.accent,
-                  foregroundColor: colors.background,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: LedgerifySpacing.lg,
-                    vertical: LedgerifySpacing.md,
-                  ),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: LedgerifyRadius.borderRadiusMd,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
