@@ -44,6 +44,7 @@ extension AppThemeModeExtension on AppThemeMode {
 class ThemeService {
   static const String _boxName = 'settings';
   static const String _themeKey = 'theme_mode';
+  static const String _dynamicColorKey = 'use_dynamic_color';
 
   late Box _settingsBox;
 
@@ -51,10 +52,14 @@ class ThemeService {
   final ValueNotifier<AppThemeMode> themeMode =
       ValueNotifier(AppThemeMode.system);
 
+  /// Notifier for Material You / dynamic color preference (Android 12+)
+  final ValueNotifier<bool> useDynamicColor = ValueNotifier(true);
+
   /// Initialize the service - must be called before use
   Future<void> init() async {
     _settingsBox = await Hive.openBox(_boxName);
     _loadThemePreference();
+    _loadDynamicColorPreference();
   }
 
   /// Load saved theme preference from storage
@@ -63,10 +68,20 @@ class ThemeService {
     themeMode.value = _stringToThemeMode(savedValue);
   }
 
+  void _loadDynamicColorPreference() {
+    final savedValue = _settingsBox.get(_dynamicColorKey, defaultValue: true);
+    useDynamicColor.value = savedValue == true;
+  }
+
   /// Set and persist theme preference
   Future<void> setThemeMode(AppThemeMode mode) async {
     themeMode.value = mode;
     await _settingsBox.put(_themeKey, mode.name);
+  }
+
+  Future<void> setUseDynamicColor(bool enabled) async {
+    useDynamicColor.value = enabled;
+    await _settingsBox.put(_dynamicColorKey, enabled);
   }
 
   /// Convert string to AppThemeMode

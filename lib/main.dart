@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import 'models/custom_category.dart';
 import 'models/goal.dart';
 import 'models/income.dart';
@@ -234,57 +235,95 @@ class LedgerifyApp extends StatelessWidget {
     return ValueListenableBuilder<AppThemeMode>(
       valueListenable: themeService.themeMode,
       builder: (context, appThemeMode, _) {
-        // Update system UI overlay based on theme
-        _updateSystemUI(appThemeMode, context);
+        return ValueListenableBuilder<bool>(
+          valueListenable: themeService.useDynamicColor,
+          builder: (context, useDynamicColor, _) {
+            return DynamicColorBuilder(
+              builder: (lightDynamic, darkDynamic) {
+                final platformBrightness = WidgetsBinding
+                    .instance.platformDispatcher.platformBrightness;
 
-        return MaterialApp(
-          title: 'Ledgerify',
-          debugShowCheckedModeBanner: false,
+                final resolvedBrightness = switch (appThemeMode) {
+                  AppThemeMode.light => Brightness.light,
+                  AppThemeMode.dark => Brightness.dark,
+                  AppThemeMode.system => platformBrightness,
+                };
 
-          // Apply Ledgerify themes
-          theme: LedgerifyTheme.lightTheme,
-          darkTheme: LedgerifyTheme.darkTheme,
-          themeMode: appThemeMode.themeMode,
+                final isDark = resolvedBrightness == Brightness.dark;
 
-          // Main shell with bottom navigation
-          home: MainShell(
-            expenseService: expenseService,
-            themeService: themeService,
-            recurringService: recurringService,
-            budgetService: budgetService,
-            tagService: tagService,
-            customCategoryService: customCategoryService,
-            categoryDefaultService: categoryDefaultService,
-            merchantHistoryService: merchantHistoryService,
-            goalService: goalService,
-            incomeService: incomeService,
-            recurringIncomeService: recurringIncomeService,
-            notificationService: notificationService,
-            notificationPrefsService: notificationPrefsService,
-            smsPermissionService: smsPermissionService,
-            smsTransactionService: smsTransactionService,
-          ),
+                final lightTokens = useDynamicColor && lightDynamic != null
+                    ? LedgerifyColorScheme.fromMaterialColorScheme(lightDynamic)
+                    : LedgerifyColors.light;
+                final darkTokens = useDynamicColor && darkDynamic != null
+                    ? LedgerifyColorScheme.fromMaterialColorScheme(darkDynamic)
+                    : LedgerifyColors.dark;
+
+                final activeTokens = isDark ? darkTokens : lightTokens;
+                final activeDynamicScheme = useDynamicColor
+                    ? (isDark ? darkDynamic : lightDynamic)
+                    : null;
+
+                // Update system UI overlay based on theme
+                _updateSystemUI(
+                  isDark: isDark,
+                  navigationBarColor:
+                      activeDynamicScheme?.surface ?? activeTokens.background,
+                );
+
+                return MaterialApp(
+                  title: 'Ledgerify',
+                  debugShowCheckedModeBanner: false,
+
+                  // Apply Ledgerify themes
+                  theme: LedgerifyTheme.buildTheme(
+                    tokens: lightTokens,
+                    materialColorScheme:
+                        useDynamicColor ? lightDynamic : null,
+                  ),
+                  darkTheme: LedgerifyTheme.buildTheme(
+                    tokens: darkTokens,
+                    materialColorScheme: useDynamicColor ? darkDynamic : null,
+                  ),
+                  themeMode: appThemeMode.themeMode,
+
+                  // Main shell with bottom navigation
+                  home: MainShell(
+                    expenseService: expenseService,
+                    themeService: themeService,
+                    recurringService: recurringService,
+                    budgetService: budgetService,
+                    tagService: tagService,
+                    customCategoryService: customCategoryService,
+                    categoryDefaultService: categoryDefaultService,
+                    merchantHistoryService: merchantHistoryService,
+                    goalService: goalService,
+                    incomeService: incomeService,
+                    recurringIncomeService: recurringIncomeService,
+                    notificationService: notificationService,
+                    notificationPrefsService: notificationPrefsService,
+                    smsPermissionService: smsPermissionService,
+                    smsTransactionService: smsTransactionService,
+                  ),
+                );
+              },
+            );
+          },
         );
       },
     );
   }
 
   /// Update system UI overlay style based on current theme
-  void _updateSystemUI(AppThemeMode appThemeMode, BuildContext context) {
-    // Determine if we're in dark mode
-    final isDark = appThemeMode == AppThemeMode.dark ||
-        (appThemeMode == AppThemeMode.system &&
-            WidgetsBinding.instance.platformDispatcher.platformBrightness ==
-                Brightness.dark);
-
-    final colors = isDark ? LedgerifyColors.dark : LedgerifyColors.light;
-
+  void _updateSystemUI({
+    required bool isDark,
+    required Color navigationBarColor,
+  }) {
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
         statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-        systemNavigationBarColor: colors.background,
+        systemNavigationBarColor: navigationBarColor,
         systemNavigationBarIconBrightness:
             isDark ? Brightness.light : Brightness.dark,
       ),

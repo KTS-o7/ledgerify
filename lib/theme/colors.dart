@@ -72,6 +72,8 @@ class LedgerifyColors {
 
   /// Get the color scheme for the current theme
   static LedgerifyColorScheme of(BuildContext context) {
+    final extension = Theme.of(context).extension<LedgerifyColorScheme>();
+    if (extension != null) return extension;
     return Theme.of(context).brightness == Brightness.dark ? dark : light;
   }
 
@@ -101,7 +103,7 @@ class LedgerifyColors {
 }
 
 /// Color scheme data class for Ledgerify themes
-class LedgerifyColorScheme {
+class LedgerifyColorScheme extends ThemeExtension<LedgerifyColorScheme> {
   final Brightness brightness;
   // Base
   final Color background;
@@ -155,6 +157,60 @@ class LedgerifyColorScheme {
     return textSecondary;
   }
 
+  /// Map a Material 3 [ColorScheme] (e.g., Material You dynamic colors)
+  /// into Ledgerify design tokens.
+  static LedgerifyColorScheme fromMaterialColorScheme(ColorScheme scheme) {
+    final isDark = scheme.brightness == Brightness.dark;
+
+    final background = scheme.surface;
+    final surface = scheme.surface;
+    final surfaceElevated = scheme.surfaceVariant;
+    final surfaceHighlight = scheme.surfaceVariant;
+
+    final textPrimary = scheme.onSurface;
+    final textSecondary =
+        (scheme.onSurfaceVariant).withOpacity(isDark ? 0.78 : 0.72);
+    final textTertiary = scheme.onSurfaceVariant.withOpacity(0.6);
+    final textDisabled = scheme.onSurface.withOpacity(0.38);
+
+    final accent = scheme.primary;
+    final accentMuted = scheme.primary.withOpacity(isDark ? 0.18 : 0.12);
+    final accentPressed =
+        (isDark ? scheme.primaryContainer : scheme.primaryContainer);
+
+    final negative = scheme.error;
+    final negativeMuted = scheme.error.withOpacity(isDark ? 0.18 : 0.12);
+
+    final warning = scheme.tertiary;
+    final warningMuted = scheme.tertiary.withOpacity(isDark ? 0.18 : 0.12);
+
+    final divider = scheme.outlineVariant.withOpacity(isDark ? 0.4 : 0.6);
+    final shadow = scheme.shadow;
+    final overlay = scheme.scrim.withOpacity(0.5);
+
+    return LedgerifyColorScheme(
+      brightness: scheme.brightness,
+      background: background,
+      surface: surface,
+      surfaceElevated: surfaceElevated,
+      surfaceHighlight: surfaceHighlight,
+      textPrimary: textPrimary,
+      textSecondary: textSecondary,
+      textTertiary: textTertiary,
+      textDisabled: textDisabled,
+      accent: accent,
+      accentMuted: accentMuted,
+      accentPressed: accentPressed,
+      negative: negative,
+      negativeMuted: negativeMuted,
+      warning: warning,
+      warningMuted: warningMuted,
+      divider: divider,
+      shadow: shadow,
+      overlay: overlay,
+    );
+  }
+
   // ============================================
   // Pre-computed alpha variants
   // ============================================
@@ -165,4 +221,78 @@ class LedgerifyColorScheme {
 
   /// Negative color with 20% alpha - use for faded negative backgrounds
   Color get negativeFaded => negative.withValues(alpha: 0.2);
+
+  @override
+  LedgerifyColorScheme copyWith({
+    Brightness? brightness,
+    Color? background,
+    Color? surface,
+    Color? surfaceElevated,
+    Color? surfaceHighlight,
+    Color? textPrimary,
+    Color? textSecondary,
+    Color? textTertiary,
+    Color? textDisabled,
+    Color? accent,
+    Color? accentMuted,
+    Color? accentPressed,
+    Color? negative,
+    Color? negativeMuted,
+    Color? warning,
+    Color? warningMuted,
+    Color? divider,
+    Color? shadow,
+    Color? overlay,
+  }) {
+    return LedgerifyColorScheme(
+      brightness: brightness ?? this.brightness,
+      background: background ?? this.background,
+      surface: surface ?? this.surface,
+      surfaceElevated: surfaceElevated ?? this.surfaceElevated,
+      surfaceHighlight: surfaceHighlight ?? this.surfaceHighlight,
+      textPrimary: textPrimary ?? this.textPrimary,
+      textSecondary: textSecondary ?? this.textSecondary,
+      textTertiary: textTertiary ?? this.textTertiary,
+      textDisabled: textDisabled ?? this.textDisabled,
+      accent: accent ?? this.accent,
+      accentMuted: accentMuted ?? this.accentMuted,
+      accentPressed: accentPressed ?? this.accentPressed,
+      negative: negative ?? this.negative,
+      negativeMuted: negativeMuted ?? this.negativeMuted,
+      warning: warning ?? this.warning,
+      warningMuted: warningMuted ?? this.warningMuted,
+      divider: divider ?? this.divider,
+      shadow: shadow ?? this.shadow,
+      overlay: overlay ?? this.overlay,
+    );
+  }
+
+  @override
+  LedgerifyColorScheme lerp(
+    ThemeExtension<LedgerifyColorScheme>? other,
+    double t,
+  ) {
+    if (other is! LedgerifyColorScheme) return this;
+    return LedgerifyColorScheme(
+      brightness: t < 0.5 ? brightness : other.brightness,
+      background: Color.lerp(background, other.background, t)!,
+      surface: Color.lerp(surface, other.surface, t)!,
+      surfaceElevated: Color.lerp(surfaceElevated, other.surfaceElevated, t)!,
+      surfaceHighlight: Color.lerp(surfaceHighlight, other.surfaceHighlight, t)!,
+      textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
+      textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
+      textTertiary: Color.lerp(textTertiary, other.textTertiary, t)!,
+      textDisabled: Color.lerp(textDisabled, other.textDisabled, t)!,
+      accent: Color.lerp(accent, other.accent, t)!,
+      accentMuted: Color.lerp(accentMuted, other.accentMuted, t)!,
+      accentPressed: Color.lerp(accentPressed, other.accentPressed, t)!,
+      negative: Color.lerp(negative, other.negative, t)!,
+      negativeMuted: Color.lerp(negativeMuted, other.negativeMuted, t)!,
+      warning: Color.lerp(warning, other.warning, t)!,
+      warningMuted: Color.lerp(warningMuted, other.warningMuted, t)!,
+      divider: Color.lerp(divider, other.divider, t)!,
+      shadow: Color.lerp(shadow, other.shadow, t)!,
+      overlay: Color.lerp(overlay, other.overlay, t)!,
+    );
+  }
 }

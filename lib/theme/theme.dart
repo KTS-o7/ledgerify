@@ -19,28 +19,42 @@ class LedgerifyTheme {
   /// Light theme for Ledgerify
   static ThemeData get lightTheme => _buildTheme(LedgerifyColors.light);
 
+  static ThemeData buildTheme({
+    required LedgerifyColorScheme tokens,
+    ColorScheme? materialColorScheme,
+  }) {
+    return _buildTheme(tokens, materialColorScheme: materialColorScheme);
+  }
+
   /// Build theme from color scheme
-  static ThemeData _buildTheme(LedgerifyColorScheme colors) {
+  static ThemeData _buildTheme(
+    LedgerifyColorScheme colors, {
+    ColorScheme? materialColorScheme,
+  }) {
     final isDark = colors.brightness == Brightness.dark;
+
+    final colorScheme = materialColorScheme ??
+        ColorScheme(
+          brightness: colors.brightness,
+          primary: colors.accent,
+          onPrimary: isDark ? colors.background : Colors.white,
+          secondary: colors.accent,
+          onSecondary: isDark ? colors.background : Colors.white,
+          surface: colors.surface,
+          onSurface: colors.textPrimary,
+          error: colors.negative,
+          onError: Colors.white,
+        );
 
     return ThemeData(
       useMaterial3: true,
       brightness: colors.brightness,
+      extensions: <ThemeExtension<dynamic>>[colors],
 
       // ========================================
       // COLOR SCHEME
       // ========================================
-      colorScheme: ColorScheme(
-        brightness: colors.brightness,
-        primary: colors.accent,
-        onPrimary: isDark ? colors.background : Colors.white,
-        secondary: colors.accent,
-        onSecondary: isDark ? colors.background : Colors.white,
-        surface: colors.surface,
-        onSurface: colors.textPrimary,
-        error: colors.negative,
-        onError: Colors.white,
-      ),
+      colorScheme: colorScheme,
 
       // ========================================
       // SCAFFOLD

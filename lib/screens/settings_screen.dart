@@ -77,6 +77,16 @@ class SettingsScreen extends StatelessWidget {
                   endIndent: 16,
                   color: colors.surfaceHighlight,
                 ),
+                _DynamicColorTile(
+                  themeService: themeService,
+                  colors: colors,
+                ),
+                Divider(
+                  height: 1,
+                  indent: 56,
+                  endIndent: 16,
+                  color: colors.surfaceHighlight,
+                ),
                 _NotificationsTile(
                   colors: colors,
                   notificationService: notificationService,
@@ -387,6 +397,54 @@ class _ThemeOption extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Material You / dynamic color toggle
+class _DynamicColorTile extends StatelessWidget {
+  final ThemeService themeService;
+  final LedgerifyColorScheme colors;
+
+  const _DynamicColorTile({
+    required this.themeService,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: themeService.useDynamicColor,
+      builder: (context, enabled, _) {
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: LedgerifySpacing.lg,
+            vertical: LedgerifySpacing.xs,
+          ),
+          leading: Icon(
+            Icons.palette_rounded,
+            color: colors.textSecondary,
+          ),
+          title: Text(
+            'Material You colors',
+            style: LedgerifyTypography.bodyLarge.copyWith(
+              color: colors.textPrimary,
+            ),
+          ),
+          subtitle: Text(
+            'Android 12+',
+            style: LedgerifyTypography.bodySmall.copyWith(
+              color: colors.textTertiary,
+            ),
+          ),
+          trailing: Switch(
+            value: enabled,
+            onChanged: themeService.setUseDynamicColor,
+            activeColor: colors.accent,
+          ),
+          onTap: () => themeService.setUseDynamicColor(!enabled),
+        );
+      },
     );
   }
 }

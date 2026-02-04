@@ -44,6 +44,9 @@ dependencies:
   # URL launcher for opening links
   url_launcher: ^6.2.5
 
+  # Material You (dynamic color) on Android 12+
+  dynamic_color: ^1.6.9
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
