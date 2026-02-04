@@ -493,7 +493,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                         label: 'Income',
                         amount: totalIncome,
                         icon: Icons.arrow_downward_rounded,
-                        showPlus: true,
                       ),
                       middle: MetricItem(
                         label: 'Spend',
@@ -504,7 +503,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                         label: 'Net',
                         amount: totalIncome - totalExpenses,
                         icon: Icons.savings_rounded,
-                        showPlus: true,
                       ),
                     ),
                     LedgerifySpacing.verticalMd,

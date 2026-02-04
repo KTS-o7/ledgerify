@@ -439,10 +439,7 @@ class UnifiedRecurringTile extends StatelessWidget {
 
   /// Builds the amount column with frequency badge.
   Widget _buildAmountColumn(LedgerifyColorScheme colors) {
-    // Format amount with prefix
-    final amountText = item.isIncome
-        ? '+${CurrencyFormatter.format(item.amount)}'
-        : CurrencyFormatter.format(item.amount);
+    final amountText = CurrencyFormatter.format(item.amount);
 
     // Amount color: income = accent, expense = textPrimary
     final amountColor = item.isIncome ? colors.accent : colors.textPrimary;

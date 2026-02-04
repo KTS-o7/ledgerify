@@ -93,7 +93,6 @@ class HeroMetricCard extends StatelessWidget {
     // Determine display properties based on net amount
     final isPositive = netAmount > 0;
     final isNeutral = netAmount == 0;
-    final prefix = isPositive ? '+' : (netAmount < 0 ? '-' : '');
     final displayAmount = netAmount.abs();
     final amountColor = isNeutral
         ? colors.textSecondary
@@ -105,7 +104,7 @@ class HeroMetricCard extends StatelessWidget {
     return Column(
       children: [
         Text(
-          '$prefix${CurrencyFormatter.format(displayAmount)}',
+          CurrencyFormatter.format(displayAmount),
           style: LedgerifyTypography.amountHero.copyWith(
             color: amountColor,
           ),

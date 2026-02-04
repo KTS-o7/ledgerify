@@ -308,13 +308,13 @@ class NotificationService {
 
     final incomeStr = CurrencyFormatter.format(totalIncome);
     final expenseStr = CurrencyFormatter.format(totalExpenses);
-    final sign = netSavings >= 0 ? '+' : '';
-    final savingsStr = '$sign${CurrencyFormatter.format(netSavings)}';
+    final netStr = CurrencyFormatter.format(netSavings.abs());
+    final netLabel = netSavings >= 0 ? 'Saved: $netStr' : 'Overspent: $netStr';
 
     await _showNotification(
       id: _weeklySummaryId,
       title: 'Weekly Summary',
-      body: 'Income: $incomeStr | Expenses: $expenseStr | Net: $savingsStr',
+      body: 'Income: $incomeStr | Expenses: $expenseStr | $netLabel',
       channelId: 'weekly_summary',
       channelName: 'Weekly Summary',
       channelDesc: 'Weekly spending and savings summaries',

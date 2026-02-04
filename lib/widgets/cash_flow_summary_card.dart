@@ -105,10 +105,9 @@ class CashFlowSummaryCard extends StatelessWidget {
   Widget _buildNetAmount(LedgerifyColorScheme colors) {
     final isPositive = _netAmount >= 0;
     final amountColor = isPositive ? colors.accent : colors.negative;
-    final prefix = isPositive ? '+' : '';
 
     return Text(
-      '$prefix${CurrencyFormatter.format(_netAmount.abs())}',
+      CurrencyFormatter.format(_netAmount.abs()),
       style: LedgerifyTypography.amountHero.copyWith(
         color: amountColor,
       ),
@@ -156,7 +155,6 @@ class CashFlowSummaryCard extends StatelessWidget {
     // Expense tile uses surface highlight
     final backgroundColor =
         isIncome ? colors.accentMuted : colors.surfaceHighlight;
-    final amountPrefix = isIncome ? '+' : '';
 
     return Container(
       padding: const EdgeInsets.all(LedgerifySpacing.lg),
@@ -177,7 +175,7 @@ class CashFlowSummaryCard extends StatelessWidget {
           LedgerifySpacing.verticalSm,
           // Amount
           Text(
-            '$amountPrefix${CurrencyFormatter.format(amount)}',
+            CurrencyFormatter.format(amount),
             style: LedgerifyTypography.amountMedium.copyWith(
               color: colors.textPrimary,
             ),

@@ -218,9 +218,8 @@ class UnifiedTransactionTile extends StatelessWidget {
     final iconColor = transaction.iconBackgroundColor ??
         (isIncome ? colors.accent : colors.textSecondary);
 
-    // Determine amount color and prefix
+    // Determine amount color
     final amountColor = isIncome ? colors.accent : colors.textPrimary;
-    final amountPrefix = isIncome ? '+ ' : '';
 
     final Widget content = InkWell(
       onTap: onTap,
@@ -245,7 +244,7 @@ class UnifiedTransactionTile extends StatelessWidget {
             LedgerifySpacing.horizontalMd,
 
             // Amount and date
-            _buildAmountSection(colors, amountColor, amountPrefix),
+            _buildAmountSection(colors, amountColor, ''),
           ],
         ),
       ),

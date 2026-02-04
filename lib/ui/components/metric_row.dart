@@ -32,13 +32,11 @@ class MetricItem {
   final String label;
   final double amount;
   final IconData icon;
-  final bool showPlus;
 
   const MetricItem({
     required this.label,
     required this.amount,
     required this.icon,
-    this.showPlus = false,
   });
 }
 
@@ -81,7 +79,6 @@ class _MetricTile extends StatelessWidget {
           LedgerifySpacing.verticalSm,
           AmountText(
             amount: item.amount,
-            showPlusForIncome: item.showPlus,
             style: LedgerifyTypography.amountMedium.copyWith(
               fontWeight: FontWeight.w700,
               color: colors.textPrimary,

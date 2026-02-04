@@ -28,7 +28,6 @@ class UiGalleryScreen extends StatelessWidget {
                 label: 'Income',
                 amount: 3200,
                 icon: Icons.arrow_downward_rounded,
-                showPlus: true,
               ),
               middle: MetricItem(
                 label: 'Spend',
@@ -50,7 +49,6 @@ class UiGalleryScreen extends StatelessWidget {
               children: [
                 const AmountText(
                   amount: 123.45,
-                  showPlusForIncome: true,
                 ),
                 LedgerifySpacing.verticalSm,
                 const AmountText(amount: -67.89),

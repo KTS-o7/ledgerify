@@ -284,7 +284,7 @@ class _NetIncomeTile extends StatelessWidget {
             LedgerifySpacing.horizontalXs,
             Expanded(
               child: Text(
-                '${isPositive ? '+' : ''}${CurrencyFormatter.format(netIncome)}',
+                CurrencyFormatter.format(netIncome),
                 style: LedgerifyTypography.amountMedium.copyWith(
                   color: isPositive ? colors.accent : colors.negative,
                 ),
