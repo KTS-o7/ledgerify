@@ -24,6 +24,7 @@ import '../widgets/upcoming_recurring_card.dart';
 import '../ui/components/metric_row.dart';
 import '../ui/components/section_card.dart';
 import '../ui/components/empty_state.dart';
+import '../ui/components/section_list_card.dart';
 import 'add_expense_screen.dart';
 import 'add_recurring_screen.dart';
 
@@ -439,33 +440,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SliverToBoxAdapter(
             child: LedgerifySpacing.verticalXl,
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: LedgerifySpacing.lg),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Recent',
-                      style: LedgerifyTypography.headlineSmall.copyWith(
-                        color: colors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: widget.onNavigateToTransactions,
-                    child: Text(
-                      'See all',
-                      style: LedgerifyTypography.labelLarge.copyWith(
-                        color: colors.accent,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
           if (!hasAnyData)
             SliverFillRemaining(
               hasScrollBody: false,
@@ -477,43 +451,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             )
           else
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final transaction = recentTransactions[index];
-                  final showDateHeader = index == 0 ||
-                      !_isSameDay(
-                        transaction.date,
-                        recentTransactions[index - 1].date,
-                      );
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (showDateHeader)
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            left: LedgerifySpacing.lg,
-                            right: LedgerifySpacing.lg,
-                            top: LedgerifySpacing.lg,
-                            bottom: LedgerifySpacing.sm,
-                          ),
-                          child: Text(
-                            DateFormatter.formatRelative(transaction.date),
-                            style: LedgerifyTypography.labelMedium.copyWith(
-                              color: colors.textTertiary,
-                            ),
-                          ),
-                        ),
-                      UnifiedTransactionTile(
-                        transaction: transaction,
-                        onTap: () => _onTransactionTap(transaction),
-                        onDelete: null,
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: LedgerifySpacing.lg),
+                child: SectionListCard(
+                  title: 'Recent',
+                  trailing: TextButton(
+                    onPressed: widget.onNavigateToTransactions,
+                    child: Text(
+                      'See all',
+                      style: LedgerifyTypography.labelLarge.copyWith(
+                        color: colors.accent,
                       ),
-                    ],
-                  );
-                },
-                childCount: recentTransactions.length,
+                    ),
+                  ),
+                  children: recentTransactions
+                      .map(
+                        (transaction) => UnifiedTransactionTile(
+                          transaction: transaction,
+                          onTap: () => _onTransactionTap(transaction),
+                          onDelete: null,
+                        ),
+                      )
+                      .toList(),
+                ),
               ),
             ),
           const SliverToBoxAdapter(
@@ -522,10 +483,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
-  }
-
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   List<UnifiedTransaction> _buildUnifiedTransactions(
