@@ -28,6 +28,7 @@ class UiGalleryScreen extends StatelessWidget {
                 label: 'Income',
                 amount: 3200,
                 icon: Icons.arrow_downward_rounded,
+                showPlus: true,
               ),
               middle: MetricItem(
                 label: 'Spend',

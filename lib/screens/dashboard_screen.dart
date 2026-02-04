@@ -16,12 +16,13 @@ import '../theme/ledgerify_theme.dart';
 import '../utils/currency_formatter.dart';
 import '../widgets/add_edit_goal_sheet.dart';
 import '../widgets/add_income_sheet.dart';
-import '../widgets/cash_flow_summary_card.dart';
 import '../widgets/charts/category_donut_chart.dart';
 import '../widgets/quick_add_sheet.dart';
 import '../widgets/spending_pace_card.dart';
 import '../widgets/unified_transaction_tile.dart';
 import '../widgets/upcoming_recurring_card.dart';
+import '../ui/components/metric_row.dart';
+import '../ui/components/section_card.dart';
 import 'add_expense_screen.dart';
 import 'add_recurring_screen.dart';
 
@@ -288,14 +289,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.symmetric(
                 horizontal: LedgerifySpacing.lg,
               ),
-              child: CashFlowSummaryCard(
-                selectedMonth: _selectedMonth,
-                totalIncome: totalIncome,
-                totalExpenses: totalExpenses,
-                incomeCount: incomeCount,
-                expenseCount: monthExpenses.length,
-                onPreviousMonth: _previousMonth,
-                onNextMonth: _nextMonth,
+              child: SectionCard(
+                title: DateFormatter.formatMonthYear(_selectedMonth),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      onPressed: _previousMonth,
+                      icon: Icon(
+                        Icons.chevron_left_rounded,
+                        color: colors.textSecondary,
+                      ),
+                      tooltip: 'Previous month',
+                    ),
+                    IconButton(
+                      onPressed: _isCurrentMonth ? null : _nextMonth,
+                      icon: Icon(
+                        Icons.chevron_right_rounded,
+                        color: _isCurrentMonth
+                            ? colors.textDisabled
+                            : colors.textSecondary,
+                      ),
+                      tooltip: 'Next month',
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    MetricRow(
+                      left: MetricItem(
+                        label: 'Income',
+                        amount: totalIncome,
+                        icon: Icons.arrow_downward_rounded,
+                        showPlus: true,
+                      ),
+                      middle: MetricItem(
+                        label: 'Spend',
+                        amount: -totalExpenses,
+                        icon: Icons.arrow_upward_rounded,
+                      ),
+                      right: MetricItem(
+                        label: 'Net',
+                        amount: totalIncome - totalExpenses,
+                        icon: Icons.savings_rounded,
+                        showPlus: true,
+                      ),
+                    ),
+                    LedgerifySpacing.verticalMd,
+                    Text(
+                      '${monthExpenses.length} expenses • $incomeCount incomes',
+                      style: LedgerifyTypography.bodySmall.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

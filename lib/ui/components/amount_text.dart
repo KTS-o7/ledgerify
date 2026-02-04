@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/ledgerify_theme.dart';
+import '../../utils/currency_formatter.dart';
 
 class AmountText extends StatelessWidget {
   final double amount;
@@ -17,8 +18,12 @@ class AmountText extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = LedgerifyColors.of(context);
     final color = colors.amountColor(amount);
-    final prefix = (amount > 0 && showPlusForIncome) ? '+' : '';
-    final value = '$prefix${amount.toStringAsFixed(2)}';
+    final prefix = amount < 0
+        ? '−'
+        : (amount > 0 && showPlusForIncome)
+            ? '+'
+            : '';
+    final value = '$prefix${CurrencyFormatter.format(amount.abs())}';
 
     return Text(
       value,
