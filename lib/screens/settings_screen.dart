@@ -644,6 +644,21 @@ class _ImportCsvTile extends StatelessWidget {
       final bytes = file.bytes ??
           (file.path != null ? await File(file.path!).readAsBytes() : null);
       if (bytes == null) return;
+      if (bytes.length > 10 * 1024 * 1024) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'CSV file is too large (max 10MB)',
+              style: LedgerifyTypography.bodyMedium.copyWith(
+                color: colors.textPrimary,
+              ),
+            ),
+            backgroundColor: colors.surface,
+          ),
+        );
+        return;
+      }
 
       final content = utf8.decode(bytes, allowMalformed: true);
       final preview = csvService.previewImportCsv(content);

@@ -34,7 +34,7 @@ class TransactionCsvCodec {
   };
 
   static String normalizeHeader(String header) {
-    return header.trim().toLowerCase();
+    return header.replaceAll('\uFEFF', '').trim().toLowerCase();
   }
 
   static String stripLeadingCommentLines(String input) {

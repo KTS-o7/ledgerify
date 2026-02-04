@@ -168,6 +168,21 @@ class TransactionCsvService {
 
   CsvImportPreview previewImportCsv(String csvContent) {
     final issues = <CsvImportIssue>[];
+    final normalizedInput = csvContent
+        .replaceAll('\r\n', '\n')
+        .replaceAll('\r', '\n')
+        .trimLeft();
+    if (!normalizedInput.startsWith(TransactionCsvCodec.commentLine)) {
+      issues.add(
+        const CsvImportIssue(
+          rowNumber: 1,
+          severity: CsvIssueSeverity.warning,
+          message:
+              'Missing format header (# ledgerify_transactions_csv_v1). Import will assume Ledgerify CSV v1 columns.',
+        ),
+      );
+    }
+
     final rows = TransactionCsvCodec.decode(csvContent);
     if (rows.isEmpty) {
       return const CsvImportPreview(
