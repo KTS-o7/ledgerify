@@ -159,8 +159,17 @@ class LedgerifyColorScheme extends ThemeExtension<LedgerifyColorScheme> {
 
   /// Map a Material 3 [ColorScheme] (e.g., Material You dynamic colors)
   /// into Ledgerify design tokens.
-  static LedgerifyColorScheme fromMaterialColorScheme(ColorScheme scheme) {
+  ///
+  /// Note: we intentionally keep Ledgerify semantic finance colors (positive,
+  /// negative, warning) stable by default so "good = green" and "bad = red"
+  /// remain consistent even when Material You changes the primary palette.
+  static LedgerifyColorScheme fromMaterialColorScheme(
+    ColorScheme scheme, {
+    LedgerifyColorScheme? semanticBase,
+  }) {
     final isDark = scheme.brightness == Brightness.dark;
+    final base =
+        semanticBase ?? (isDark ? LedgerifyColors.dark : LedgerifyColors.light);
 
     final background = scheme.surface;
     final surface = scheme.surface;
@@ -173,17 +182,15 @@ class LedgerifyColorScheme extends ThemeExtension<LedgerifyColorScheme> {
     final textTertiary = scheme.onSurfaceVariant.withValues(alpha: 0.6);
     final textDisabled = scheme.onSurface.withValues(alpha: 0.38);
 
-    final accent = scheme.primary;
-    final accentMuted = scheme.primary.withValues(alpha: isDark ? 0.18 : 0.12);
-    final accentPressed =
-        (isDark ? scheme.primaryContainer : scheme.primaryContainer);
+    final accent = base.accent;
+    final accentMuted = base.accentMuted;
+    final accentPressed = base.accentPressed;
 
-    final negative = scheme.error;
-    final negativeMuted = scheme.error.withValues(alpha: isDark ? 0.18 : 0.12);
+    final negative = base.negative;
+    final negativeMuted = base.negativeMuted;
 
-    final warning = scheme.tertiary;
-    final warningMuted =
-        scheme.tertiary.withValues(alpha: isDark ? 0.18 : 0.12);
+    final warning = base.warning;
+    final warningMuted = base.warningMuted;
 
     final divider =
         scheme.outlineVariant.withValues(alpha: isDark ? 0.4 : 0.6);

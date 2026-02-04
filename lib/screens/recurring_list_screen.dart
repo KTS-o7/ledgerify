@@ -368,6 +368,12 @@ class _RecurringListScreenState extends State<RecurringListScreen> {
           item.isIncome ? 'In $daysUntil days' : 'Due in $daysUntil days';
     }
 
+    final dueDateColor = daysUntil < 0
+        ? (item.isIncome ? colors.warning : colors.negative)
+        : (daysUntil <= 1
+            ? (item.isIncome ? colors.accent : colors.warning)
+            : colors.textTertiary);
+
     return Container(
       decoration: isLast
           ? null
@@ -415,11 +421,9 @@ class _RecurringListScreenState extends State<RecurringListScreen> {
               LedgerifySpacing.horizontalMd,
               // Amount
               Text(
-                item.isIncome
-                    ? '+${CurrencyFormatter.format(item.amount)}'
-                    : '-${CurrencyFormatter.format(item.amount)}',
+                CurrencyFormatter.format(item.amount),
                 style: LedgerifyTypography.amountMedium.copyWith(
-                  color: item.isIncome ? colors.accent : colors.textPrimary,
+                  color: item.isIncome ? colors.accent : colors.negative,
                 ),
               ),
               LedgerifySpacing.horizontalMd,
@@ -429,7 +433,7 @@ class _RecurringListScreenState extends State<RecurringListScreen> {
                 child: Text(
                   dueDateText,
                   style: LedgerifyTypography.bodySmall.copyWith(
-                    color: daysUntil <= 1 ? colors.accent : colors.textTertiary,
+                    color: dueDateColor,
                   ),
                   textAlign: TextAlign.right,
                 ),

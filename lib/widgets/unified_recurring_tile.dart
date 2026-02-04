@@ -406,10 +406,16 @@ class UnifiedRecurringTile extends StatelessWidget {
       text = 'Next: ${_formatDate(nextDate, todayDate.year)}';
     }
 
+    final statusColor = isOverdue
+        ? (item.isIncome ? colors.warning : colors.negative)
+        : (isDueSoon
+            ? (item.isIncome ? colors.accent : colors.warning)
+            : colors.textTertiary);
+
     return Text(
       text,
       style: LedgerifyTypography.bodySmall.copyWith(
-        color: isDueSoon || isOverdue ? colors.accent : colors.textTertiary,
+        color: statusColor,
       ),
     );
   }
@@ -441,8 +447,8 @@ class UnifiedRecurringTile extends StatelessWidget {
   Widget _buildAmountColumn(LedgerifyColorScheme colors) {
     final amountText = CurrencyFormatter.format(item.amount);
 
-    // Amount color: income = accent, expense = textPrimary
-    final amountColor = item.isIncome ? colors.accent : colors.textPrimary;
+    // Amount color: income = accent (positive), expense = negative (outgoing)
+    final amountColor = item.isIncome ? colors.accent : colors.negative;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,

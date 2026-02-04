@@ -33,18 +33,27 @@ class LedgerifyTheme {
   }) {
     final isDark = colors.brightness == Brightness.dark;
 
-    final colorScheme = materialColorScheme ??
-        ColorScheme(
-          brightness: colors.brightness,
-          primary: colors.accent,
-          onPrimary: isDark ? colors.background : Colors.white,
-          secondary: colors.accent,
-          onSecondary: isDark ? colors.background : Colors.white,
-          surface: colors.surface,
-          onSurface: colors.textPrimary,
-          error: colors.negative,
-          onError: Colors.white,
-        );
+    final colorScheme = materialColorScheme != null
+        ? materialColorScheme.copyWith(
+            // Keep Ledgerify finance semantics stable even with Material You.
+            primary: colors.accent,
+            onPrimary: isDark ? colors.background : Colors.white,
+            secondary: colors.accent,
+            onSecondary: isDark ? colors.background : Colors.white,
+            error: colors.negative,
+            onError: Colors.white,
+          )
+        : ColorScheme(
+            brightness: colors.brightness,
+            primary: colors.accent,
+            onPrimary: isDark ? colors.background : Colors.white,
+            secondary: colors.accent,
+            onSecondary: isDark ? colors.background : Colors.white,
+            surface: colors.surface,
+            onSurface: colors.textPrimary,
+            error: colors.negative,
+            onError: Colors.white,
+          );
 
     return ThemeData(
       useMaterial3: true,

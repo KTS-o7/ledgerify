@@ -219,7 +219,7 @@ class UnifiedTransactionTile extends StatelessWidget {
         (isIncome ? colors.accent : colors.textSecondary);
 
     // Determine amount color
-    final amountColor = isIncome ? colors.accent : colors.textPrimary;
+    final amountColor = isIncome ? colors.accent : colors.negative;
 
     final Widget content = InkWell(
       onTap: onTap,

@@ -393,7 +393,7 @@ class _UnifiedUpcomingTile extends StatelessWidget {
                 Text(
                   _formatAmount(),
                   style: LedgerifyTypography.amountSmall.copyWith(
-                    color: item.isIncome ? colors.accent : colors.textPrimary,
+                    color: item.isIncome ? colors.accent : colors.negative,
                   ),
                 ),
 
@@ -498,11 +498,7 @@ class _UnifiedUpcomingTile extends StatelessWidget {
 
   /// Formats the amount with appropriate prefix
   String _formatAmount() {
-    if (item.isIncome) {
-      return '+${CurrencyFormatter.format(item.amount)}';
-    } else {
-      return CurrencyFormatter.format(item.amount);
-    }
+    return CurrencyFormatter.format(item.amount);
   }
 
   /// Formats the due date in a user-friendly way
@@ -544,11 +540,11 @@ class _UnifiedUpcomingTile extends StatelessWidget {
     final difference = dueDate.difference(today).inDays;
 
     if (difference < 0) {
-      // Overdue - use negative/warning color
-      return colors.negative;
+      // Overdue: expense = negative, income = warning
+      return item.isIncome ? colors.warning : colors.negative;
     } else if (difference <= 1) {
-      // Today or tomorrow - accent color for attention
-      return colors.accent;
+      // Today or tomorrow: income = accent, expense = warning
+      return item.isIncome ? colors.accent : colors.warning;
     } else {
       return colors.textTertiary;
     }
