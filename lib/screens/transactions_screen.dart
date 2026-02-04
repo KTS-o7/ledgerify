@@ -23,6 +23,8 @@ import '../widgets/search_filter_bar.dart';
 import '../widgets/transaction_filter_chips.dart';
 import '../widgets/unified_transaction_tile.dart';
 import '../ui/components/empty_state.dart';
+import '../ui/components/metric_row.dart';
+import '../ui/components/section_card.dart';
 import 'add_expense_screen.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -424,6 +426,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     final monthExpenses = expenseSummary.expenses;
     final monthIncomes = incomeSummary.incomes;
+    final totalExpenses = expenseSummary.total;
+    final totalIncome = incomeSummary.total;
 
     final hasSearchOrFilter =
         _searchQuery.isNotEmpty || _filter.hasActiveFilters;
@@ -465,6 +469,55 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     return CustomScrollView(
       slivers: [
+        if (hasAnyData)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: LedgerifySpacing.lg,
+                vertical: LedgerifySpacing.lg,
+              ),
+              child: SectionCard(
+                title: 'This month',
+                trailing: Text(
+                  DateFormatter.formatMonthYear(_selectedMonth),
+                  style: LedgerifyTypography.labelMedium.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    MetricRow(
+                      left: MetricItem(
+                        label: 'Income',
+                        amount: totalIncome,
+                        icon: Icons.arrow_downward_rounded,
+                        showPlus: true,
+                      ),
+                      middle: MetricItem(
+                        label: 'Spend',
+                        amount: -totalExpenses,
+                        icon: Icons.arrow_upward_rounded,
+                      ),
+                      right: MetricItem(
+                        label: 'Net',
+                        amount: totalIncome - totalExpenses,
+                        icon: Icons.savings_rounded,
+                        showPlus: true,
+                      ),
+                    ),
+                    LedgerifySpacing.verticalMd,
+                    Text(
+                      '${monthExpenses.length} expenses • ${monthIncomes.length} incomes',
+                      style: LedgerifyTypography.bodySmall.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         if (hasAnyData)
           SliverPersistentHeader(
             pinned: true,
