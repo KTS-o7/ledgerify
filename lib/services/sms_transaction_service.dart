@@ -28,6 +28,13 @@ class SmsTransactionService {
         _expenseService = expenseService,
         _incomeService = incomeService;
 
+  static String _redactSmsBody(String body) {
+    final collapsed = body.replaceAll(RegExp(r'\\s+'), ' ').trim();
+    final masked = collapsed.replaceAll(RegExp(r'\\d'), '•');
+    if (masked.length <= 200) return masked;
+    return '${masked.substring(0, 200)}…';
+  }
+
   /// Initialize the service and open Hive box
   Future<void> init() async {
     _box = await Hive.openBox<SmsTransaction>(
@@ -64,7 +71,7 @@ class SmsTransactionService {
       // Create SmsTransaction record
       final smsTransaction = SmsTransaction(
         smsId: transaction.smsId,
-        rawMessage: transaction.rawMessage,
+        rawMessage: _redactSmsBody(transaction.rawMessage),
         senderId: transaction.senderId,
         smsDate: transaction.date,
         amount: transaction.amount,
