@@ -399,6 +399,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         centerTitle: false,
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_transactions',
         onPressed: _showQuickAddSheet,
         backgroundColor: colors.accent,
         foregroundColor: colors.background,

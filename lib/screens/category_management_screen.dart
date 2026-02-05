@@ -113,6 +113,7 @@ class CategoryManagementScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_custom_categories',
         onPressed: () => _showAddBottomSheet(context),
         backgroundColor: colors.accent,
         foregroundColor: colors.background,

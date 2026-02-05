@@ -166,6 +166,7 @@ class _RecurringListScreenState extends State<RecurringListScreen> {
       ),
       body: _buildContent(context, colors),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_recurring',
         onPressed: () => _showAddTypeSheet(context, colors),
         backgroundColor: colors.accent,
         foregroundColor: colors.background,

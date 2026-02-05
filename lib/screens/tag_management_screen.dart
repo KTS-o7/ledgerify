@@ -61,6 +61,7 @@ class TagManagementScreen extends StatelessWidget {
         centerTitle: false,
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_tags',
         onPressed: () => _showAddEditBottomSheet(context, null),
         backgroundColor: colors.accent,
         foregroundColor: colors.background,

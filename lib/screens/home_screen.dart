@@ -463,6 +463,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       // FAB for quick expense access
       floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_home',
         onPressed: _showQuickAddSheet,
         backgroundColor: colors.accent,
         foregroundColor: colors.background,

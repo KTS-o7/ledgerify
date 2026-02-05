@@ -286,6 +286,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_dashboard',
         onPressed: _showQuickAddSheet,
         backgroundColor: colors.accent,
         foregroundColor: colors.background,
@@ -443,7 +444,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               hasScrollBody: false,
               child: EmptyState(
                 title: 'Start tracking',
-                subtitle: 'Add your first expense or income to see insights here.',
+                subtitle:
+                    'Add your first expense or income to see insights here.',
                 ctaLabel: 'Add transaction',
                 onCtaTap: _showQuickAddSheet,
               ),
@@ -451,7 +453,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           else
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: LedgerifySpacing.lg),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: LedgerifySpacing.lg),
                 child: SectionListCard(
                   title: 'Recent',
                   trailing: TextButton(
