@@ -28,7 +28,7 @@ class SmsTransaction extends HiveObject {
   @HiveField(0)
   final String smsId;
 
-  /// Redacted SMS body (digits masked, truncated).
+  /// Raw SMS body (stored as received).
   @HiveField(1)
   final String rawMessage;
 
