@@ -1,27 +1,29 @@
-// Quick test to verify parser handles SMS samples correctly
+// Verifies parser handles SMS samples correctly.
+//
+// This is intentionally lightweight: it asserts that for messages where
+// `canParse` is true, `parse` returns a non-null result with a positive amount.
 import 'package:ledgerify/parsers/generic_indian_bank_parser.dart';
 import 'package:ledgerify/services/sms_test_data.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  final parser = GenericIndianBankParser();
-  final testMessages = SmsTestData.getTestMessages();
+  test('GenericIndianBankParser parses known samples', () {
+    final parser = GenericIndianBankParser();
+    final testMessages = SmsTestData.getTestMessages();
 
-  print('Testing ${testMessages.length} SMS samples:\n');
+    expect(testMessages, isNotEmpty);
 
-  for (final msg in testMessages) {
-    final senderId = msg['address'] as String;
-    final body = msg['body'] as String;
-    final smsId = msg['id'] as String;
-    final date = msg['date'] as DateTime;
+    var parsedCount = 0;
 
-    print('--- $smsId ---');
-    print('Sender: $senderId');
-    print('Body: ${body.substring(0, body.length > 80 ? 80 : body.length)}...');
+    for (final msg in testMessages) {
+      final senderId = msg['address'] as String;
+      final body = msg['body'] as String;
+      final smsId = msg['id'] as String;
+      final date = msg['date'] as DateTime;
 
-    final canParse = parser.canParse(senderId, body);
-    print('Can parse: $canParse');
+      final canParse = parser.canParse(senderId, body);
+      if (!canParse) continue;
 
-    if (canParse) {
       final result = parser.parse(
         senderId: senderId,
         body: body,
@@ -29,17 +31,15 @@ void main() {
         date: date,
       );
 
-      if (result != null) {
-        print('Type: ${result.type}');
-        print('Amount: ${result.amount}');
-        print('Merchant: ${result.merchant ?? "N/A"}');
-        print('Account: ${result.accountNumber ?? "N/A"}');
-        print('Balance: ${result.balance ?? "N/A"}');
-        print('Confidence: ${(result.confidence * 100).toStringAsFixed(0)}%');
-      } else {
-        print('PARSE FAILED - returned null');
-      }
+      expect(result, isNotNull, reason: 'Expected parse() for $smsId');
+
+      parsedCount += 1;
+      expect(result!.smsId, smsId);
+      expect(result.date, date);
+      expect(result.senderId, senderId);
+      expect(result.amount, greaterThan(0));
     }
-    print('');
-  }
+
+    expect(parsedCount, greaterThan(0));
+  });
 }
