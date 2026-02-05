@@ -22,6 +22,7 @@ import '../services/transaction_csv_service.dart';
 import '../theme/ledgerify_theme.dart';
 import 'category_management_screen.dart';
 import 'csv_import_preview_screen.dart';
+import 'nerd_stats_screen.dart';
 import 'notification_settings_screen.dart';
 import 'sms_import_screen.dart';
 import 'tag_management_screen.dart';
@@ -187,6 +188,21 @@ class SettingsScreen extends StatelessWidget {
             child: Column(
               children: [
                 _AboutTile(colors: colors),
+                Divider(
+                  height: 1,
+                  indent: 56,
+                  endIndent: 16,
+                  color: colors.surfaceHighlight,
+                ),
+                _NerdStatsTile(
+                  colors: colors,
+                  themeService: themeService,
+                  expenseService: expenseService,
+                  incomeService: incomeService,
+                  tagService: tagService,
+                  customCategoryService: customCategoryService,
+                  smsTransactionService: smsTransactionService,
+                ),
                 Divider(
                   height: 1,
                   indent: 56,
@@ -1158,6 +1174,71 @@ class _GitHubTile extends StatelessWidget {
         size: 20,
       ),
       onTap: _openGitHub,
+    );
+  }
+}
+
+class _NerdStatsTile extends StatelessWidget {
+  final LedgerifyColorScheme colors;
+  final ThemeService themeService;
+  final ExpenseService expenseService;
+  final IncomeService incomeService;
+  final TagService tagService;
+  final CustomCategoryService customCategoryService;
+  final SmsTransactionService smsTransactionService;
+
+  const _NerdStatsTile({
+    required this.colors,
+    required this.themeService,
+    required this.expenseService,
+    required this.incomeService,
+    required this.tagService,
+    required this.customCategoryService,
+    required this.smsTransactionService,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: LedgerifySpacing.lg,
+        vertical: LedgerifySpacing.xs,
+      ),
+      leading: Icon(
+        Icons.insights_rounded,
+        color: colors.textSecondary,
+      ),
+      title: Text(
+        'Stats for nerds',
+        style: LedgerifyTypography.bodyLarge.copyWith(
+          color: colors.textPrimary,
+        ),
+      ),
+      subtitle: Text(
+        'Storage + internal counts',
+        style: LedgerifyTypography.bodySmall.copyWith(
+          color: colors.textTertiary,
+        ),
+      ),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: colors.textTertiary,
+      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NerdStatsScreen(
+              themeService: themeService,
+              expenseService: expenseService,
+              incomeService: incomeService,
+              tagService: tagService,
+              customCategoryService: customCategoryService,
+              smsTransactionService: smsTransactionService,
+            ),
+          ),
+        );
+      },
     );
   }
 }
