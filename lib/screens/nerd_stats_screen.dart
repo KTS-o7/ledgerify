@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../models/sms_transaction.dart';
 import '../services/custom_category_service.dart';
 import '../services/expense_service.dart';
 import '../services/income_service.dart';
@@ -46,36 +47,70 @@ class _NerdStatsScreenState extends State<NerdStatsScreen> {
   Future<_NerdStatsData> _load() async {
     final boxStats = <_BoxStat>[];
 
-    Future<void> addBoxIfOpen(String name) async {
-      if (!Hive.isBoxOpen(name)) return;
-      final box = Hive.box(name);
+    Future<Box<E>?> openBoxIfNeeded<E>(String name) async {
+      try {
+        if (Hive.isBoxOpen(name)) return Hive.box<E>(name);
+        return await Hive.openBox<E>(name);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    Future<_BoxStat?> boxStat(String name) async {
+      final box = await openBoxIfNeeded(name);
+      if (box == null) return null;
       final path = box.path;
       final bytes = path == null ? null : await _safeFileSize(path);
-      boxStats.add(
-        _BoxStat(
-          name: name,
-          entries: box.length,
-          bytes: bytes,
-        ),
+      return _BoxStat(
+        name: name,
+        entries: box.length,
+        bytes: bytes,
       );
     }
 
-    // Core boxes
-    await addBoxIfOpen('expenses');
-    await addBoxIfOpen('incomes');
-    await addBoxIfOpen('tags');
-    await addBoxIfOpen('custom_categories');
-    await addBoxIfOpen('sms_transactions');
-    await addBoxIfOpen('settings');
+    Future<int> boxLength(String name) async {
+      final box = await openBoxIfNeeded(name);
+      return box?.length ?? 0;
+    }
 
-    // Common additional boxes (opened during app startup)
-    await addBoxIfOpen('budgets');
-    await addBoxIfOpen('goals');
-    await addBoxIfOpen('recurring_expenses');
-    await addBoxIfOpen('recurring_incomes');
-    await addBoxIfOpen('merchant_history');
-    await addBoxIfOpen('notification_preferences');
-    await addBoxIfOpen('category_defaults');
+    Future<(int, int)> smsCounts() async {
+      final smsBox = await openBoxIfNeeded<SmsTransaction>('sms_transactions');
+      if (smsBox == null) return (0, 0);
+      var pending = 0;
+      for (final t in smsBox.values) {
+        if (t.status == SmsTransactionStatus.pending) pending += 1;
+      }
+      return (smsBox.length, pending);
+    }
+
+    // Core boxes (open if needed for accurate stats)
+    final expenseCount = await boxLength('expenses');
+    final incomeCount = await boxLength('incomes');
+    final tagCount = await boxLength('tags');
+    final customCategoryCount = await boxLength('custom_categories');
+    final (smsTotalCount, smsPendingCount) = await smsCounts();
+
+    // Include storage stats for known boxes
+    const knownBoxes = <String>[
+      'expenses',
+      'incomes',
+      'tags',
+      'custom_categories',
+      'sms_transactions',
+      'settings',
+      'budgets',
+      'goals',
+      'recurring_expenses',
+      'recurring_incomes',
+      'merchant_history',
+      'notification_preferences',
+      'category_defaults',
+    ];
+
+    for (final name in knownBoxes) {
+      final stat = await boxStat(name);
+      if (stat != null) boxStats.add(stat);
+    }
 
     boxStats.sort((a, b) => a.name.compareTo(b.name));
 
@@ -86,12 +121,12 @@ class _NerdStatsScreenState extends State<NerdStatsScreen> {
 
     return _NerdStatsData(
       generatedAt: DateTime.now(),
-      expenseCount: widget.expenseService.box.length,
-      incomeCount: widget.incomeService.box.length,
-      tagCount: widget.tagService.box.length,
-      customCategoryCount: widget.customCategoryService.box.length,
-      smsPendingCount: widget.smsTransactionService.pendingCount,
-      smsTotalCount: widget.smsTransactionService.totalCount,
+      expenseCount: expenseCount,
+      incomeCount: incomeCount,
+      tagCount: tagCount,
+      customCategoryCount: customCategoryCount,
+      smsPendingCount: smsPendingCount,
+      smsTotalCount: smsTotalCount,
       themeMode: widget.themeService.themeMode.value,
       useDynamicColor: widget.themeService.useDynamicColor.value,
       boxes: boxStats,
@@ -134,6 +169,42 @@ class _NerdStatsScreenState extends State<NerdStatsScreen> {
               child: CircularProgressIndicator(
                 color: colors.accent,
                 strokeWidth: 2,
+              ),
+            );
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(LedgerifySpacing.lg),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Could not load stats',
+                      style: LedgerifyTypography.bodyMedium.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    LedgerifySpacing.verticalSm,
+                    Text(
+                      snapshot.error.toString(),
+                      style: LedgerifyTypography.bodySmall.copyWith(
+                        color: colors.textTertiary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    LedgerifySpacing.verticalMd,
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _future = _load();
+                        });
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
               ),
             );
           }
