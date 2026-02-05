@@ -81,3 +81,8 @@ class TransactionCsvCodec {
     return index;
   }
 }
+
+/// Top-level wrapper for isolate parsing via `compute`.
+List<List<String>> decodeTransactionCsvRows(String input) {
+  return TransactionCsvCodec.decode(input);
+}

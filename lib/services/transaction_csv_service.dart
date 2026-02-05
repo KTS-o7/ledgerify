@@ -101,7 +101,22 @@ class TransactionCsvService {
     required this.customCategoryService,
   });
 
-  Future<String> exportCsv() async {
+  Future<String> exportCsv({
+    DateTime? start,
+    DateTime? end,
+  }) async {
+    final startDate =
+        start == null ? null : DateTime(start.year, start.month, start.day);
+    final endDate = end == null
+        ? null
+        : DateTime(end.year, end.month, end.day, 23, 59, 59, 999);
+
+    bool shouldInclude(DateTime date) {
+      if (startDate != null && date.isBefore(startDate)) return false;
+      if (endDate != null && date.isAfter(endDate)) return false;
+      return true;
+    }
+
     final tagsById = <String, Tag>{
       for (final t in tagService.box.values) t.id: t,
     };
@@ -109,7 +124,8 @@ class TransactionCsvService {
       for (final c in customCategoryService.box.values) c.id: c,
     };
 
-    final expenseRows = expenseService.getAllExpenses().map((e) {
+    final expenses = expenseService.getAllExpenses();
+    final expenseRows = expenses.where((e) => shouldInclude(e.date)).map((e) {
       final tagNames = e.tagIds
           .map((id) => tagsById[id]?.name)
           .whereType<String>()
@@ -139,7 +155,8 @@ class TransactionCsvService {
       };
     }).toList();
 
-    final incomeRows = incomeService.getAllIncomes().map((i) {
+    final incomes = incomeService.getAllIncomes();
+    final incomeRows = incomes.where((i) => shouldInclude(i.date)).map((i) {
       return <String, String>{
         'id': i.id,
         'type': 'income',
@@ -167,12 +184,23 @@ class TransactionCsvService {
   }
 
   CsvImportPreview previewImportCsv(String csvContent) {
+    final rows = TransactionCsvCodec.decode(csvContent);
+    final normalizedInput =
+        csvContent.replaceAll('\r\n', '\n').replaceAll('\r', '\n').trimLeft();
+    final hasFormatHeader =
+        normalizedInput.startsWith(TransactionCsvCodec.commentLine);
+    return previewImportRows(
+      rows,
+      hasFormatHeader: hasFormatHeader,
+    );
+  }
+
+  CsvImportPreview previewImportRows(
+    List<List<String>> rows, {
+    required bool hasFormatHeader,
+  }) {
     final issues = <CsvImportIssue>[];
-    final normalizedInput = csvContent
-        .replaceAll('\r\n', '\n')
-        .replaceAll('\r', '\n')
-        .trimLeft();
-    if (!normalizedInput.startsWith(TransactionCsvCodec.commentLine)) {
+    if (!hasFormatHeader) {
       issues.add(
         const CsvImportIssue(
           rowNumber: 1,
@@ -183,7 +211,6 @@ class TransactionCsvService {
       );
     }
 
-    final rows = TransactionCsvCodec.decode(csvContent);
     if (rows.isEmpty) {
       return const CsvImportPreview(
         totalDataRows: 0,

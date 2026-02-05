@@ -55,6 +55,7 @@ class _CsvImportPreviewScreenState extends State<CsvImportPreviewScreen> {
 
     final importCount = preview.toImport.length;
     final hasErrors = preview.errorCount > 0;
+    final canImport = !_isImporting && importCount > 0 && !hasErrors;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -95,7 +96,7 @@ class _CsvImportPreviewScreenState extends State<CsvImportPreviewScreen> {
           child: SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: _isImporting || importCount == 0 ? null : _import,
+              onPressed: canImport ? _import : null,
               style: FilledButton.styleFrom(
                 backgroundColor: colors.accent,
                 foregroundColor: colors.background,
@@ -116,7 +117,7 @@ class _CsvImportPreviewScreenState extends State<CsvImportPreviewScreen> {
                     )
                   : Text(
                       hasErrors
-                          ? 'Import $importCount (some rows skipped)'
+                          ? 'Fix errors to import'
                           : 'Import $importCount transaction${importCount == 1 ? '' : 's'}',
                       style: LedgerifyTypography.labelLarge.copyWith(
                         color: colors.background,

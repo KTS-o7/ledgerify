@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -16,6 +17,7 @@ import '../services/sms_permission_service.dart';
 import '../services/sms_transaction_service.dart';
 import '../services/tag_service.dart';
 import '../services/theme_service.dart';
+import '../services/transaction_csv_codec.dart';
 import '../services/transaction_csv_service.dart';
 import '../theme/ledgerify_theme.dart';
 import 'category_management_screen.dart';
@@ -550,16 +552,22 @@ class _ExportCsvTile extends StatelessWidget {
 
   Future<void> _export(BuildContext context) async {
     try {
+      final range = await _pickExportRange(context);
+      if (range == null || !context.mounted) return;
+
       final csv = await _runWithLoadingDialog<String>(
         context,
         message: 'Preparing CSV…',
-        action: csvService.exportCsv,
+        action: () => csvService.exportCsv(
+          start: range.start,
+          end: range.end,
+        ),
       );
       if (csv == null || !context.mounted) return;
 
-      final now = DateTime.now();
-      final fileName =
-          'ledgerify-transactions-${now.year}${_two(now.month)}${_two(now.day)}-${_two(now.hour)}${_two(now.minute)}.csv';
+      final fileName = range.isAllTime
+          ? _buildAllTimeFileName()
+          : _buildRangeFileName(range.start!, range.end!);
 
       final dir = await getTemporaryDirectory();
       final path = '${dir.path}/$fileName';
@@ -587,6 +595,94 @@ class _ExportCsvTile extends StatelessWidget {
         ),
       );
     }
+  }
+
+  Future<_ExportRange?> _pickExportRange(BuildContext context) async {
+    final selected = await showModalBottomSheet<_ExportRange>(
+      context: context,
+      backgroundColor: colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(LedgerifyRadius.xl),
+        ),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(
+                Icons.all_inbox_rounded,
+                color: colors.textSecondary,
+              ),
+              title: Text(
+                'All time',
+                style: LedgerifyTypography.bodyLarge.copyWith(
+                  color: colors.textPrimary,
+                ),
+              ),
+              subtitle: Text(
+                'Export every transaction',
+                style: LedgerifyTypography.bodySmall.copyWith(
+                  color: colors.textTertiary,
+                ),
+              ),
+              onTap: () => Navigator.pop(context, _ExportRange.allTime()),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.date_range_rounded,
+                color: colors.textSecondary,
+              ),
+              title: Text(
+                'Date range',
+                style: LedgerifyTypography.bodyLarge.copyWith(
+                  color: colors.textPrimary,
+                ),
+              ),
+              subtitle: Text(
+                'Export a specific period',
+                style: LedgerifyTypography.bodySmall.copyWith(
+                  color: colors.textTertiary,
+                ),
+              ),
+              onTap: () => Navigator.pop(context, _ExportRange.pickRange()),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!context.mounted) return null;
+    if (selected == null) return null;
+    if (selected.isAllTime) return selected;
+    if (!selected.needsPicker) return selected;
+
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(now.year, now.month, now.day),
+      initialDateRange: DateTimeRange(
+        start: DateTime(now.year, now.month, 1),
+        end: DateTime(now.year, now.month, now.day),
+      ),
+      helpText: 'Select export range',
+    );
+    if (!context.mounted) return null;
+    if (picked == null) return null;
+    return _ExportRange(start: picked.start, end: picked.end);
+  }
+
+  String _buildAllTimeFileName() {
+    final now = DateTime.now();
+    return 'ledgerify-transactions-${now.year}${_two(now.month)}${_two(now.day)}-${_two(now.hour)}${_two(now.minute)}.csv';
+  }
+
+  String _buildRangeFileName(DateTime start, DateTime end) {
+    final s = '${start.year}${_two(start.month)}${_two(start.day)}';
+    final e = '${end.year}${_two(end.month)}${_two(end.day)}';
+    return 'ledgerify-transactions-$s-$e.csv';
   }
 
   @override
@@ -661,7 +757,14 @@ class _ImportCsvTile extends StatelessWidget {
       }
 
       final content = utf8.decode(bytes, allowMalformed: true);
-      final preview = csvService.previewImportCsv(content);
+      final normalized =
+          content.replaceAll('\r\n', '\n').replaceAll('\r', '\n').trimLeft();
+      final hasHeader = normalized.startsWith(TransactionCsvCodec.commentLine);
+      final rows = await compute(decodeTransactionCsvRows, content);
+      final preview = csvService.previewImportRows(
+        rows,
+        hasFormatHeader: hasHeader,
+      );
 
       if (!context.mounted) return;
       final importResult = await Navigator.push<CsvImportResult>(
@@ -740,6 +843,31 @@ class _ImportCsvTile extends StatelessWidget {
       onTap: () => _import(context),
     );
   }
+}
+
+class _ExportRange {
+  final DateTime? start;
+  final DateTime? end;
+  final bool isAllTime;
+  final bool needsPicker;
+
+  const _ExportRange({
+    required this.start,
+    required this.end,
+  })  : isAllTime = false,
+        needsPicker = false;
+
+  _ExportRange.allTime()
+      : start = null,
+        end = null,
+        isAllTime = true,
+        needsPicker = false;
+
+  _ExportRange.pickRange()
+      : start = null,
+        end = null,
+        isAllTime = false,
+        needsPicker = true;
 }
 
 /// Custom Categories tile
