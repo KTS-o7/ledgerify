@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+  Ledgerify Widget Configuration
+  
+  Battery optimization:
+  - updatePeriodMillis="0" disables system periodic updates
+  - Widget is updated manually when:
+    1. App goes to background (user will see fresh data)
+    2. Theme changes
+    3. Expense is added (via app calling syncData)
+  - This approach uses less battery than periodic system updates
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:minResizeWidth="180dp"
+    android:minResizeHeight="80dp"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/widget_ledgerify"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable"
+    android:previewLayout="@layout/widget_ledgerify"
+    android:description="@string/widget_description" />

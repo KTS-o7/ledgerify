@@ -71,6 +71,14 @@ Most expense tracking apps feel over-engineered or cluttered with features you d
 - **Daily Reminder** - Prompt to log expenses (time configurable)
 - **Quiet Hours** - No notifications during specified period
 
+### Home Screen Widget
+- **Native Android widget** - Quick access without opening the app
+- **Budget progress** - Visual progress bar showing monthly spending
+- **Context-aware messaging** - Time-of-day greetings, budget alerts, upcoming expenses
+- **Quick-add buttons** - 4 category shortcuts that auto-learn from your spending habits
+- **Theme sync** - Widget matches app theme (dark/light)
+- **Configurable update frequency** - Manual, 30min, 1hr, 2hr, 4hr, or 6hr
+
 ### Appearance
 - Dark theme (default) - Premium, calm aesthetic
 - Light theme - Clean, professional look
@@ -211,6 +219,7 @@ lib/
 - **timezone** - Scheduled notification support
 - **intl** - Date and currency formatting
 - **uuid** - Unique ID generation
+- **home_widget** - Native home screen widget support
 
 ## Data Models
 
@@ -232,6 +241,7 @@ lib/
 | 11 | Income |
 | 12 | RecurringIncome |
 | 13 | NotificationPreferences |
+| 17 | WidgetConfig |
 
 ### Categories (Built-in)
 

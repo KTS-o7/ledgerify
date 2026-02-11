@@ -4,10 +4,13 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../models/expense.dart';
+import '../models/widget_config.dart';
 import '../services/custom_category_service.dart';
 import '../services/expense_service.dart';
 import '../services/income_service.dart';
@@ -19,6 +22,7 @@ import '../services/tag_service.dart';
 import '../services/theme_service.dart';
 import '../services/transaction_csv_codec.dart';
 import '../services/transaction_csv_service.dart';
+import '../services/widget_service.dart';
 import '../theme/ledgerify_theme.dart';
 import 'category_management_screen.dart';
 import 'csv_import_preview_screen.dart';
@@ -41,6 +45,7 @@ class SettingsScreen extends StatelessWidget {
   final NotificationPreferencesService notificationPrefsService;
   final SmsPermissionService smsPermissionService;
   final SmsTransactionService smsTransactionService;
+  final WidgetService? widgetService;
 
   const SettingsScreen({
     super.key,
@@ -53,6 +58,7 @@ class SettingsScreen extends StatelessWidget {
     required this.notificationPrefsService,
     required this.smsPermissionService,
     required this.smsTransactionService,
+    this.widgetService,
   });
 
   @override
@@ -118,6 +124,64 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
+
+          // Widget section (only show if widgetService is available)
+          if (widgetService != null) ...[
+            LedgerifySpacing.verticalXl,
+            _SectionHeader(title: 'Home Widget', colors: colors),
+            LedgerifySpacing.verticalSm,
+            _SettingsCard(
+              colors: colors,
+              child: Column(
+                children: [
+                  _WidgetUpdateFrequencyTile(
+                    widgetService: widgetService!,
+                    colors: colors,
+                  ),
+                  Divider(
+                    height: 1,
+                    indent: 56,
+                    endIndent: 16,
+                    color: colors.surfaceHighlight,
+                  ),
+                  _WidgetShowBudgetTile(
+                    widgetService: widgetService!,
+                    colors: colors,
+                  ),
+                  Divider(
+                    height: 1,
+                    indent: 56,
+                    endIndent: 16,
+                    color: colors.surfaceHighlight,
+                  ),
+                  _WidgetShowAlertsTile(
+                    widgetService: widgetService!,
+                    colors: colors,
+                  ),
+                  Divider(
+                    height: 1,
+                    indent: 56,
+                    endIndent: 16,
+                    color: colors.surfaceHighlight,
+                  ),
+                  _WidgetQuickAddCategoriesTile(
+                    widgetService: widgetService!,
+                    colors: colors,
+                  ),
+                  Divider(
+                    height: 1,
+                    indent: 56,
+                    endIndent: 16,
+                    color: colors.surfaceHighlight,
+                  ),
+                  _WidgetSyncNowTile(
+                    widgetService: widgetService!,
+                    colors: colors,
+                  ),
+                ],
+              ),
+            ),
+          ],
 
           LedgerifySpacing.verticalXl,
 
@@ -1237,6 +1301,726 @@ class _NerdStatsTile extends StatelessWidget {
               smsTransactionService: smsTransactionService,
             ),
           ),
+        );
+      },
+    );
+  }
+}
+
+/// Widget update frequency selection tile
+class _WidgetUpdateFrequencyTile extends StatelessWidget {
+  final WidgetService widgetService;
+  final LedgerifyColorScheme colors;
+
+  const _WidgetUpdateFrequencyTile({
+    required this.widgetService,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: widgetService.configBox.listenable(),
+      builder: (context, box, _) {
+        final config = widgetService.config;
+        final currentFrequency = config.updateFrequency;
+
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: LedgerifySpacing.lg,
+            vertical: LedgerifySpacing.xs,
+          ),
+          leading: Icon(
+            Icons.update_rounded,
+            color: colors.textSecondary,
+          ),
+          title: Text(
+            'Update frequency',
+            style: LedgerifyTypography.bodyLarge.copyWith(
+              color: colors.textPrimary,
+            ),
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                currentFrequency.displayName,
+                style: LedgerifyTypography.bodyMedium.copyWith(
+                  color: colors.textTertiary,
+                ),
+              ),
+              LedgerifySpacing.horizontalSm,
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colors.textTertiary,
+              ),
+            ],
+          ),
+          onTap: () => _showFrequencyBottomSheet(context, currentFrequency),
+        );
+      },
+    );
+  }
+
+  void _showFrequencyBottomSheet(
+      BuildContext context, WidgetUpdateFrequency currentFrequency) {
+    final colors = LedgerifyColors.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colors.surfaceElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: LedgerifyRadius.borderRadiusTopXl,
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(LedgerifySpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 32,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.textTertiary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              LedgerifySpacing.verticalLg,
+
+              // Title
+              Text(
+                'Update frequency',
+                style: LedgerifyTypography.headlineSmall.copyWith(
+                  color: colors.textPrimary,
+                ),
+              ),
+              LedgerifySpacing.verticalSm,
+              Text(
+                'How often the widget refreshes data',
+                style: LedgerifyTypography.bodySmall.copyWith(
+                  color: colors.textTertiary,
+                ),
+              ),
+              LedgerifySpacing.verticalLg,
+
+              // Options
+              ...WidgetUpdateFrequency.values.map((frequency) => InkWell(
+                    onTap: () {
+                      widgetService.setUpdateFrequency(frequency);
+                      Navigator.pop(context);
+                    },
+                    borderRadius: LedgerifyRadius.borderRadiusMd,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: LedgerifySpacing.md,
+                        horizontal: LedgerifySpacing.sm,
+                      ),
+                      child: Row(
+                        children: [
+                          // Radio indicator
+                          Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: frequency == currentFrequency
+                                    ? colors.accent
+                                    : colors.textTertiary,
+                                width: 2,
+                              ),
+                            ),
+                            child: frequency == currentFrequency
+                                ? Center(
+                                    child: Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: colors.accent,
+                                      ),
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          LedgerifySpacing.horizontalMd,
+
+                          // Label
+                          Text(
+                            frequency.displayName,
+                            style: LedgerifyTypography.bodyLarge.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )),
+
+              LedgerifySpacing.verticalSm,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget show budget progress toggle tile
+class _WidgetShowBudgetTile extends StatelessWidget {
+  final WidgetService widgetService;
+  final LedgerifyColorScheme colors;
+
+  const _WidgetShowBudgetTile({
+    required this.widgetService,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: widgetService.configBox.listenable(),
+      builder: (context, box, _) {
+        final config = widgetService.config;
+        final showBudget = config.showBudgetProgress;
+
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: LedgerifySpacing.lg,
+            vertical: LedgerifySpacing.xs,
+          ),
+          leading: Icon(
+            Icons.pie_chart_rounded,
+            color: colors.textSecondary,
+          ),
+          title: Text(
+            'Show budget progress',
+            style: LedgerifyTypography.bodyLarge.copyWith(
+              color: colors.textPrimary,
+            ),
+          ),
+          subtitle: Text(
+            'Display spent vs budget on widget',
+            style: LedgerifyTypography.bodySmall.copyWith(
+              color: colors.textTertiary,
+            ),
+          ),
+          trailing: Switch(
+            value: showBudget,
+            onChanged: (value) {
+              widgetService.updateConfig(
+                config.copyWith(showBudgetProgress: value),
+              );
+            },
+            activeThumbColor: colors.accent,
+          ),
+          onTap: () {
+            widgetService.updateConfig(
+              config.copyWith(showBudgetProgress: !showBudget),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+/// Widget show alerts toggle tile
+class _WidgetShowAlertsTile extends StatelessWidget {
+  final WidgetService widgetService;
+  final LedgerifyColorScheme colors;
+
+  const _WidgetShowAlertsTile({
+    required this.widgetService,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: widgetService.configBox.listenable(),
+      builder: (context, box, _) {
+        final config = widgetService.config;
+        final showAlerts = config.showAlerts;
+
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: LedgerifySpacing.lg,
+            vertical: LedgerifySpacing.xs,
+          ),
+          leading: Icon(
+            Icons.info_rounded,
+            color: colors.textSecondary,
+          ),
+          title: Text(
+            'Show contextual alerts',
+            style: LedgerifyTypography.bodyLarge.copyWith(
+              color: colors.textPrimary,
+            ),
+          ),
+          subtitle: Text(
+            'Time-based tips and reminders',
+            style: LedgerifyTypography.bodySmall.copyWith(
+              color: colors.textTertiary,
+            ),
+          ),
+          trailing: Switch(
+            value: showAlerts,
+            onChanged: (value) {
+              widgetService.updateConfig(
+                config.copyWith(showAlerts: value),
+              );
+            },
+            activeThumbColor: colors.accent,
+          ),
+          onTap: () {
+            widgetService.updateConfig(
+              config.copyWith(showAlerts: !showAlerts),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+/// Widget quick-add categories customization tile
+class _WidgetQuickAddCategoriesTile extends StatelessWidget {
+  final WidgetService widgetService;
+  final LedgerifyColorScheme colors;
+
+  const _WidgetQuickAddCategoriesTile({
+    required this.widgetService,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: widgetService.configBox.listenable(),
+      builder: (context, box, _) {
+        final config = widgetService.config;
+        final isAutoLearn = config.isAutoLearn;
+        final categories = widgetService.getQuickAddCategories();
+
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: LedgerifySpacing.lg,
+            vertical: LedgerifySpacing.xs,
+          ),
+          leading: Icon(
+            Icons.grid_view_rounded,
+            color: colors.textSecondary,
+          ),
+          title: Text(
+            'Quick-add categories',
+            style: LedgerifyTypography.bodyLarge.copyWith(
+              color: colors.textPrimary,
+            ),
+          ),
+          subtitle: Text(
+            isAutoLearn
+                ? 'Auto (${categories.map((c) => c.displayName).join(', ')})'
+                : categories.map((c) => c.displayName).join(', '),
+            style: LedgerifyTypography.bodySmall.copyWith(
+              color: colors.textTertiary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: Icon(
+            Icons.chevron_right_rounded,
+            color: colors.textTertiary,
+          ),
+          onTap: () => _showCategoryPicker(context, config, categories),
+        );
+      },
+    );
+  }
+
+  void _showCategoryPicker(
+    BuildContext context,
+    WidgetConfig config,
+    List<ExpenseCategory> currentCategories,
+  ) {
+    final colors = LedgerifyColors.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colors.surfaceElevated,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: LedgerifyRadius.borderRadiusTopXl,
+      ),
+      builder: (context) => _CategoryPickerSheet(
+        widgetService: widgetService,
+        config: config,
+        currentCategories: currentCategories,
+        colors: colors,
+      ),
+    );
+  }
+}
+
+/// Bottom sheet for picking quick-add categories
+class _CategoryPickerSheet extends StatefulWidget {
+  final WidgetService widgetService;
+  final WidgetConfig config;
+  final List<ExpenseCategory> currentCategories;
+  final LedgerifyColorScheme colors;
+
+  const _CategoryPickerSheet({
+    required this.widgetService,
+    required this.config,
+    required this.currentCategories,
+    required this.colors,
+  });
+
+  @override
+  State<_CategoryPickerSheet> createState() => _CategoryPickerSheetState();
+}
+
+class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
+  late List<ExpenseCategory> _selectedCategories;
+  late bool _isAutoLearn;
+
+  @override
+  void initState() {
+    super.initState();
+    _isAutoLearn = widget.config.isAutoLearn;
+    _selectedCategories = List.from(widget.currentCategories);
+  }
+
+  void _toggleCategory(ExpenseCategory category) {
+    setState(() {
+      if (_selectedCategories.contains(category)) {
+        _selectedCategories.remove(category);
+      } else if (_selectedCategories.length < 4) {
+        _selectedCategories.add(category);
+      }
+    });
+  }
+
+  void _setAutoLearn(bool value) {
+    setState(() {
+      _isAutoLearn = value;
+      if (value) {
+        _selectedCategories = widget.widgetService.getQuickAddCategories();
+      }
+    });
+  }
+
+  void _save() {
+    if (_isAutoLearn) {
+      // Clear custom categories to enable auto-learn
+      widget.widgetService.updateConfig(
+        widget.config.copyWith(clearQuickAddCategories: true),
+      );
+    } else {
+      // Save custom category selection
+      widget.widgetService.updateConfig(
+        widget.config.copyWith(
+          quickAddCategories: _selectedCategories.map((c) => c.index).toList(),
+        ),
+      );
+    }
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(LedgerifySpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 32,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: widget.colors.textTertiary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            LedgerifySpacing.verticalLg,
+
+            // Title
+            Text(
+              'Quick-add categories',
+              style: LedgerifyTypography.headlineSmall.copyWith(
+                color: widget.colors.textPrimary,
+              ),
+            ),
+            LedgerifySpacing.verticalSm,
+            Text(
+              'Choose up to 4 categories for the widget',
+              style: LedgerifyTypography.bodySmall.copyWith(
+                color: widget.colors.textTertiary,
+              ),
+            ),
+            LedgerifySpacing.verticalLg,
+
+            // Auto-learn toggle
+            InkWell(
+              onTap: () => _setAutoLearn(!_isAutoLearn),
+              borderRadius: LedgerifyRadius.borderRadiusMd,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: LedgerifySpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    Checkbox(
+                      value: _isAutoLearn,
+                      onChanged: (v) => _setAutoLearn(v ?? false),
+                      activeColor: widget.colors.accent,
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Auto-learn from spending',
+                            style: LedgerifyTypography.bodyLarge.copyWith(
+                              color: widget.colors.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            'Shows your most-used categories',
+                            style: LedgerifyTypography.bodySmall.copyWith(
+                              color: widget.colors.textTertiary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            if (!_isAutoLearn) ...[
+              LedgerifySpacing.verticalMd,
+              Divider(color: widget.colors.surfaceHighlight),
+              LedgerifySpacing.verticalMd,
+
+              // Category grid
+              Text(
+                'Select categories (${_selectedCategories.length}/4)',
+                style: LedgerifyTypography.labelMedium.copyWith(
+                  color: widget.colors.textSecondary,
+                ),
+              ),
+              LedgerifySpacing.verticalSm,
+
+              Wrap(
+                spacing: LedgerifySpacing.sm,
+                runSpacing: LedgerifySpacing.sm,
+                children: ExpenseCategory.values.map((category) {
+                  final isSelected = _selectedCategories.contains(category);
+                  final canSelect =
+                      isSelected || _selectedCategories.length < 4;
+
+                  return FilterChip(
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          category.icon,
+                          size: 16,
+                          color: isSelected
+                              ? widget.colors.textPrimary
+                              : widget.colors.textSecondary,
+                        ),
+                        LedgerifySpacing.horizontalXs,
+                        Text(category.displayName),
+                      ],
+                    ),
+                    selected: isSelected,
+                    onSelected:
+                        canSelect ? (_) => _toggleCategory(category) : null,
+                    selectedColor: widget.colors.accent.withValues(alpha: 0.2),
+                    checkmarkColor: widget.colors.accent,
+                    labelStyle: LedgerifyTypography.bodyMedium.copyWith(
+                      color: isSelected
+                          ? widget.colors.textPrimary
+                          : (canSelect
+                              ? widget.colors.textSecondary
+                              : widget.colors.textTertiary),
+                    ),
+                    backgroundColor: widget.colors.surface,
+                    side: BorderSide(
+                      color: isSelected
+                          ? widget.colors.accent
+                          : widget.colors.surfaceHighlight,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+
+            LedgerifySpacing.verticalXl,
+
+            // Save button
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: _save,
+                style: FilledButton.styleFrom(
+                  backgroundColor: widget.colors.accent,
+                  foregroundColor: widget.colors.background,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: LedgerifySpacing.md,
+                  ),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: LedgerifyRadius.borderRadiusMd,
+                  ),
+                ),
+                child: Text(
+                  'Save',
+                  style: LedgerifyTypography.labelLarge.copyWith(
+                    color: widget.colors.background,
+                  ),
+                ),
+              ),
+            ),
+
+            LedgerifySpacing.verticalSm,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget sync now tile
+class _WidgetSyncNowTile extends StatefulWidget {
+  final WidgetService widgetService;
+  final LedgerifyColorScheme colors;
+
+  const _WidgetSyncNowTile({
+    required this.widgetService,
+    required this.colors,
+  });
+
+  @override
+  State<_WidgetSyncNowTile> createState() => _WidgetSyncNowTileState();
+}
+
+class _WidgetSyncNowTileState extends State<_WidgetSyncNowTile> {
+  bool _isSyncing = false;
+
+  Future<void> _syncNow() async {
+    if (_isSyncing) return;
+
+    setState(() => _isSyncing = true);
+
+    try {
+      // Determine current theme
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      await widget.widgetService.syncDataImmediate(isDarkMode: isDark);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Widget synced',
+              style: LedgerifyTypography.bodyMedium.copyWith(
+                color: widget.colors.textPrimary,
+              ),
+            ),
+            backgroundColor: widget.colors.surface,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Sync failed',
+              style: LedgerifyTypography.bodyMedium.copyWith(
+                color: widget.colors.textPrimary,
+              ),
+            ),
+            backgroundColor: widget.colors.surface,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSyncing = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: widget.widgetService.configBox.listenable(),
+      builder: (context, box, _) {
+        final config = widget.widgetService.config;
+        final lastSynced = config.lastSynced;
+
+        String subtitleText;
+        if (lastSynced == null) {
+          subtitleText = 'Never synced';
+        } else {
+          final diff = DateTime.now().difference(lastSynced);
+          if (diff.inMinutes < 1) {
+            subtitleText = 'Synced just now';
+          } else if (diff.inMinutes < 60) {
+            subtitleText = 'Synced ${diff.inMinutes}m ago';
+          } else if (diff.inHours < 24) {
+            subtitleText = 'Synced ${diff.inHours}h ago';
+          } else {
+            subtitleText = 'Synced ${diff.inDays}d ago';
+          }
+        }
+
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: LedgerifySpacing.lg,
+            vertical: LedgerifySpacing.xs,
+          ),
+          leading: _isSyncing
+              ? SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(widget.colors.accent),
+                  ),
+                )
+              : Icon(
+                  Icons.sync_rounded,
+                  color: widget.colors.textSecondary,
+                ),
+          title: Text(
+            'Sync now',
+            style: LedgerifyTypography.bodyLarge.copyWith(
+              color: widget.colors.textPrimary,
+            ),
+          ),
+          subtitle: Text(
+            subtitleText,
+            style: LedgerifyTypography.bodySmall.copyWith(
+              color: widget.colors.textTertiary,
+            ),
+          ),
+          onTap: _isSyncing ? null : _syncNow,
         );
       },
     );

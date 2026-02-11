@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ledgerify</string>
+    <string name="widget_name">Ledgerify Quick Add</string>
+    <string name="widget_description">Track your expenses and view budget at a glance</string>
+</resources>

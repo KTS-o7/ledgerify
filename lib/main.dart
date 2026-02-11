@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:home_widget/home_widget.dart';
 import 'models/custom_category.dart';
+import 'models/expense.dart';
 import 'models/goal.dart';
 import 'models/income.dart';
 import 'models/merchant_history.dart';
@@ -27,7 +29,9 @@ import 'services/sms_transaction_service.dart';
 import 'services/tag_service.dart';
 import 'services/theme_service.dart';
 import 'services/transaction_parsing_service.dart';
+import 'services/widget_service.dart';
 import 'screens/main_shell.dart';
+import 'screens/add_expense_screen.dart';
 import 'theme/ledgerify_theme.dart';
 
 /// Main entry point for the Ledgerify app.
@@ -89,6 +93,7 @@ void main() async {
   final notificationService = NotificationService();
   final categoryDefaultService = CategoryDefaultService();
   final merchantHistoryService = MerchantHistoryService();
+  final widgetService = WidgetService();
 
   final smsPermissionService = SmsPermissionService();
   final transactionParsingService = TransactionParsingService();
@@ -109,6 +114,7 @@ void main() async {
     notificationService.init(),
     categoryDefaultService.init(),
     merchantHistoryService.init(),
+    widgetService.init(),
     // Open boxes in parallel
     Hive.openBox<Tag>('tags'),
     Hive.openBox<CustomCategory>('custom_categories'),
@@ -149,6 +155,14 @@ void main() async {
   // Wire up services for budget notifications
   expenseService.setBudgetServices(budgetService, notificationService);
 
+  // Wire up widget service with data services
+  widgetService.setServices(
+    expenseService: expenseService,
+    budgetService: budgetService,
+    recurringExpenseService: recurringService,
+    recurringIncomeService: recurringIncomeService,
+  );
+
   // Run the app first, then handle notifications
   runApp(LedgerifyApp(
     expenseService: expenseService,
@@ -166,9 +180,10 @@ void main() async {
     notificationPrefsService: notificationPrefsService,
     smsPermissionService: smsPermissionService,
     smsTransactionService: smsTransactionService,
+    widgetService: widgetService,
   ));
 
-  // Handle notifications and recurring items after first frame renders
+  // Handle notifications, recurring items, and widget sync after first frame renders
   // This prevents blocking the initial app startup
   WidgetsBinding.instance.addPostFrameCallback((_) async {
     // Request notification permission
@@ -186,6 +201,16 @@ void main() async {
     } catch (e) {
       debugPrint('Error generating recurring items: $e');
     }
+
+    // Sync home screen widget data
+    try {
+      final isDark =
+          WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+              Brightness.dark;
+      await widgetService.syncData(isDarkMode: isDark);
+    } catch (e) {
+      debugPrint('Error syncing widget data: $e');
+    }
   });
 }
 
@@ -193,7 +218,7 @@ void main() async {
 ///
 /// Supports light and dark themes with system preference option.
 /// Philosophy: Quiet Finance — calm, premium, trustworthy.
-class LedgerifyApp extends StatelessWidget {
+class LedgerifyApp extends StatefulWidget {
   final ExpenseService expenseService;
   final ThemeService themeService;
   final RecurringExpenseService recurringService;
@@ -209,6 +234,7 @@ class LedgerifyApp extends StatelessWidget {
   final NotificationPreferencesService notificationPrefsService;
   final SmsPermissionService smsPermissionService;
   final SmsTransactionService smsTransactionService;
+  final WidgetService widgetService;
 
   const LedgerifyApp({
     super.key,
@@ -227,16 +253,103 @@ class LedgerifyApp extends StatelessWidget {
     required this.notificationPrefsService,
     required this.smsPermissionService,
     required this.smsTransactionService,
+    required this.widgetService,
   });
+
+  @override
+  State<LedgerifyApp> createState() => _LedgerifyAppState();
+}
+
+class _LedgerifyAppState extends State<LedgerifyApp>
+    with WidgetsBindingObserver {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  bool? _lastKnownDarkMode;
+
+  @override
+  void initState() {
+    super.initState();
+    // Register widget callback handler for deep links
+    HomeWidget.widgetClicked.listen(_handleWidgetClick);
+    // Listen for app lifecycle changes
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Sync widget when app goes to background (user will see updated widget)
+    if (state == AppLifecycleState.paused) {
+      _syncWidgetOnBackground();
+    }
+  }
+
+  /// Force sync when going to background (immediate, no debounce)
+  void _syncWidgetOnBackground() {
+    final isDark =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+            Brightness.dark;
+    widget.widgetService.syncDataImmediate(isDarkMode: isDark);
+  }
+
+  /// Sync widget data only when theme changes (debounced)
+  void _syncWidgetIfNeeded({bool? isDarkMode}) {
+    final dark = isDarkMode ??
+        (WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+            Brightness.dark);
+
+    // Only sync if theme actually changed
+    if (_lastKnownDarkMode != dark) {
+      _lastKnownDarkMode = dark;
+      widget.widgetService.syncData(isDarkMode: dark);
+    }
+  }
+
+  /// Handle widget click deep links
+  void _handleWidgetClick(Uri? uri) {
+    if (uri == null) return;
+
+    final categoryIndex = WidgetService.parseQuickAddCallback(uri);
+    if (categoryIndex != null) {
+      _openAddExpense(categoryIndex >= 0 ? categoryIndex : null);
+    }
+  }
+
+  /// Open AddExpenseScreen with optional pre-selected category
+  void _openAddExpense(int? categoryIndex) {
+    final category = categoryIndex != null &&
+            categoryIndex >= 0 &&
+            categoryIndex < ExpenseCategory.values.length
+        ? ExpenseCategory.values[categoryIndex]
+        : null;
+
+    _navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (context) => AddExpenseScreen(
+          expenseService: widget.expenseService,
+          recurringService: widget.recurringService,
+          tagService: widget.tagService,
+          customCategoryService: widget.customCategoryService,
+          categoryDefaultService: widget.categoryDefaultService,
+          merchantHistoryService: widget.merchantHistoryService,
+          preSelectedCategory: category,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     // Listen to theme changes
     return ValueListenableBuilder<AppThemeMode>(
-      valueListenable: themeService.themeMode,
+      valueListenable: widget.themeService.themeMode,
       builder: (context, appThemeMode, _) {
         return ValueListenableBuilder<bool>(
-          valueListenable: themeService.useDynamicColor,
+          valueListenable: widget.themeService.useDynamicColor,
           builder: (context, useDynamicColor, _) {
             return DynamicColorBuilder(
               builder: (lightDynamic, darkDynamic) {
@@ -270,15 +383,20 @@ class LedgerifyApp extends StatelessWidget {
                       activeDynamicScheme?.surface ?? activeTokens.background,
                 );
 
+                // Schedule widget sync only if theme changed (not on every build)
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _syncWidgetIfNeeded(isDarkMode: isDark);
+                });
+
                 return MaterialApp(
+                  navigatorKey: _navigatorKey,
                   title: 'Ledgerify',
                   debugShowCheckedModeBanner: false,
 
                   // Apply Ledgerify themes
                   theme: LedgerifyTheme.buildTheme(
                     tokens: lightTokens,
-                    materialColorScheme:
-                        useDynamicColor ? lightDynamic : null,
+                    materialColorScheme: useDynamicColor ? lightDynamic : null,
                   ),
                   darkTheme: LedgerifyTheme.buildTheme(
                     tokens: darkTokens,
@@ -288,21 +406,22 @@ class LedgerifyApp extends StatelessWidget {
 
                   // Main shell with bottom navigation
                   home: MainShell(
-                    expenseService: expenseService,
-                    themeService: themeService,
-                    recurringService: recurringService,
-                    budgetService: budgetService,
-                    tagService: tagService,
-                    customCategoryService: customCategoryService,
-                    categoryDefaultService: categoryDefaultService,
-                    merchantHistoryService: merchantHistoryService,
-                    goalService: goalService,
-                    incomeService: incomeService,
-                    recurringIncomeService: recurringIncomeService,
-                    notificationService: notificationService,
-                    notificationPrefsService: notificationPrefsService,
-                    smsPermissionService: smsPermissionService,
-                    smsTransactionService: smsTransactionService,
+                    expenseService: widget.expenseService,
+                    themeService: widget.themeService,
+                    recurringService: widget.recurringService,
+                    budgetService: widget.budgetService,
+                    tagService: widget.tagService,
+                    customCategoryService: widget.customCategoryService,
+                    categoryDefaultService: widget.categoryDefaultService,
+                    merchantHistoryService: widget.merchantHistoryService,
+                    goalService: widget.goalService,
+                    incomeService: widget.incomeService,
+                    recurringIncomeService: widget.recurringIncomeService,
+                    notificationService: widget.notificationService,
+                    notificationPrefsService: widget.notificationPrefsService,
+                    smsPermissionService: widget.smsPermissionService,
+                    smsTransactionService: widget.smsTransactionService,
+                    widgetService: widget.widgetService,
                   ),
                 );
               },

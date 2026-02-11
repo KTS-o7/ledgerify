@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="@drawable/widget_background">
+
+    <!-- Status Row: Budget progress -->
+    <LinearLayout
+        android:id="@+id/status_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="8dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/budget_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="₹6,800 / ₹10,000"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/safe_spend_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="₹8,500 safe (12 days)"
+                android:textColor="#B3FFFFFF"
+                android:textSize="12sp"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/percentage_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="68%"
+            android:textColor="#A8E6CF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:paddingStart="8dp"
+            android:paddingEnd="0dp" />
+
+    </LinearLayout>
+
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/budget_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:max="100"
+        android:progress="68"
+        android:progressDrawable="@drawable/widget_progress_bar"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Quick Actions Row -->
+    <LinearLayout
+        android:id="@+id/actions_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingTop="4dp"
+        android:paddingBottom="8dp">
+
+        <!-- Category 1 -->
+        <LinearLayout
+            android:id="@+id/cat_1_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="4dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/cat_1_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/ic_menu_add"
+                android:tint="@android:color/white"
+                android:contentDescription="Category 1" />
+
+            <TextView
+                android:id="@+id/cat_1_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Food"
+                android:textColor="#B3FFFFFF"
+                android:textSize="10sp"
+                android:maxLines="1" />
+
+        </LinearLayout>
+
+        <!-- Category 2 -->
+        <LinearLayout
+            android:id="@+id/cat_2_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="4dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/cat_2_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/ic_menu_add"
+                android:tint="@android:color/white"
+                android:contentDescription="Category 2" />
+
+            <TextView
+                android:id="@+id/cat_2_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Travel"
+                android:textColor="#B3FFFFFF"
+                android:textSize="10sp"
+                android:maxLines="1" />
+
+        </LinearLayout>
+
+        <!-- Category 3 -->
+        <LinearLayout
+            android:id="@+id/cat_3_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="4dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/cat_3_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/ic_menu_add"
+                android:tint="@android:color/white"
+                android:contentDescription="Category 3" />
+
+            <TextView
+                android:id="@+id/cat_3_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Shop"
+                android:textColor="#B3FFFFFF"
+                android:textSize="10sp"
+                android:maxLines="1" />
+
+        </LinearLayout>
+
+        <!-- Category 4 -->
+        <LinearLayout
+            android:id="@+id/cat_4_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="4dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/cat_4_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/ic_menu_add"
+                android:tint="@android:color/white"
+                android:contentDescription="Category 4" />
+
+            <TextView
+                android:id="@+id/cat_4_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bills"
+                android:textColor="#B3FFFFFF"
+                android:textSize="10sp"
+                android:maxLines="1" />
+
+        </LinearLayout>
+
+        <!-- Add Button -->
+        <LinearLayout
+            android:id="@+id/add_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="4dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/add_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/ic_input_add"
+                android:tint="#A8E6CF"
+                android:contentDescription="Add expense" />
+
+            <TextView
+                android:id="@+id/add_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Add"
+                android:textColor="#A8E6CF"
+                android:textSize="10sp"
+                android:maxLines="1" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Alert Row: Contextual message -->
+    <LinearLayout
+        android:id="@+id/alert_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingTop="4dp"
+        android:background="@drawable/widget_alert_background"
+        android:padding="8dp"
+        android:visibility="visible">
+
+        <ImageView
+            android:id="@+id/alert_icon"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@android:drawable/ic_menu_today"
+            android:tint="#B3FFFFFF"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="Alert" />
+
+        <TextView
+            android:id="@+id/alert_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Netflix ₹649 tomorrow"
+            android:textColor="#B3FFFFFF"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+    </LinearLayout>
+
+</LinearLayout>

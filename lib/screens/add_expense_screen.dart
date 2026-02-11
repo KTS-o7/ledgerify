@@ -36,6 +36,10 @@ class AddExpenseScreen extends StatefulWidget {
   final MerchantHistoryService? merchantHistoryService;
   final Expense? expenseToEdit;
 
+  /// Pre-selected category for new expenses (e.g., from widget quick-add).
+  /// Ignored if [expenseToEdit] is provided.
+  final ExpenseCategory? preSelectedCategory;
+
   const AddExpenseScreen({
     super.key,
     required this.expenseService,
@@ -45,6 +49,7 @@ class AddExpenseScreen extends StatefulWidget {
     this.categoryDefaultService,
     this.merchantHistoryService,
     this.expenseToEdit,
+    this.preSelectedCategory,
   });
 
   @override
@@ -145,7 +150,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   /// Gets a smart category suggestion using CategoryDefaultService.
   /// Falls back to food if service is not available.
+  /// Uses [preSelectedCategory] if provided (e.g., from widget quick-add).
   ExpenseCategory _getSuggestedCategory() {
+    // Use pre-selected category if provided (e.g., from widget)
+    if (widget.preSelectedCategory != null) {
+      return widget.preSelectedCategory!;
+    }
+
     final service = widget.categoryDefaultService;
     if (service == null) {
       return ExpenseCategory.food;

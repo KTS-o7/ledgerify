@@ -16,6 +16,7 @@ import '../services/sms_permission_service.dart';
 import '../services/sms_transaction_service.dart';
 import '../services/tag_service.dart';
 import '../services/theme_service.dart';
+import '../services/widget_service.dart';
 import '../theme/ledgerify_theme.dart';
 import 'analytics_screen.dart';
 import 'dashboard_screen.dart';
@@ -49,6 +50,7 @@ class MainShell extends StatefulWidget {
   final NotificationPreferencesService notificationPrefsService;
   final SmsPermissionService smsPermissionService;
   final SmsTransactionService smsTransactionService;
+  final WidgetService? widgetService;
 
   const MainShell({
     super.key,
@@ -67,6 +69,7 @@ class MainShell extends StatefulWidget {
     required this.notificationPrefsService,
     required this.smsPermissionService,
     required this.smsTransactionService,
+    this.widgetService,
   });
 
   @override
@@ -156,6 +159,7 @@ class _MainShellState extends State<MainShell> {
               notificationPrefsService: widget.notificationPrefsService,
               smsPermissionService: widget.smsPermissionService,
               smsTransactionService: widget.smsTransactionService,
+              widgetService: widget.widgetService,
             ),
           ],
         ),
