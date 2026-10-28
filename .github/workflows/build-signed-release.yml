@@ -14,6 +14,9 @@ on:
 # - KEY_ALIAS: Key alias name
 # - KEY_PASSWORD: Key password
 
+permissions:
+  contents: read
+
 jobs:
   build-signed-android:
     name: Build Signed APK & AAB
@@ -30,7 +33,7 @@ jobs:
           java-version: '17'
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
@@ -50,10 +53,12 @@ jobs:
       # Create key.properties file
       - name: Create key.properties
         run: |
-          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
-          echo "storeFile=upload-keystore.jks" >> android/key.properties
+          {
+            echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}"
+            echo "keyPassword=${{ secrets.KEY_PASSWORD }}"
+            echo "keyAlias=${{ secrets.KEY_ALIAS }}"
+            echo "storeFile=upload-keystore.jks"
+          } > android/key.properties
 
       - name: Build Signed APK
         run: flutter build apk --release
@@ -62,9 +67,11 @@ jobs:
         run: flutter build appbundle --release
 
       - name: Rename artifacts with version
+        env:
+          VERSION: ${{ github.event.inputs.version }}
         run: |
-          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/ledgerify-${{ github.event.inputs.version }}.apk
-          mv build/app/outputs/bundle/release/app-release.aab build/app/outputs/bundle/release/ledgerify-${{ github.event.inputs.version }}.aab
+          mv build/app/outputs/flutter-apk/app-release.apk "build/app/outputs/flutter-apk/ledgerify-${VERSION}.apk"
+          mv build/app/outputs/bundle/release/app-release.aab "build/app/outputs/bundle/release/ledgerify-${VERSION}.aab"
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4

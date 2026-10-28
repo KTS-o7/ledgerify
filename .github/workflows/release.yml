@@ -28,13 +28,15 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   android:
     name: Build + publish GitHub Release
     runs-on: ubuntu-latest
     environment: release
+    permissions:
+      contents: write  # softprops/action-gh-release creates the tag + GitHub Release
 
     steps:
       - name: Checkout
@@ -50,7 +52,7 @@ jobs:
           java-version: "17"
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: "stable"
           cache: true
@@ -58,9 +60,10 @@ jobs:
       - name: Validate version input
         id: version
         shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          VERSION="${{ inputs.version }}"
 
           if [[ "$VERSION" == v* ]]; then
             echo "Input version must be semver only (no leading 'v'): $VERSION" >&2
@@ -129,10 +132,12 @@ jobs:
       - name: Create key.properties
         if: ${{ inputs.signed }}
         run: |
-          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
-          echo "storeFile=upload-keystore.jks" >> android/key.properties
+          {
+            echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}"
+            echo "keyPassword=${{ secrets.KEY_PASSWORD }}"
+            echo "keyAlias=${{ secrets.KEY_ALIAS }}"
+            echo "storeFile=upload-keystore.jks"
+          } > android/key.properties
 
       - name: Build APK (Release)
         run: |
@@ -176,7 +181,7 @@ jobs:
             build/app/outputs/ledgerify-${{ steps.version.outputs.tag }}-sha256sums.txt
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Ledgerify ${{ steps.version.outputs.tag }}
