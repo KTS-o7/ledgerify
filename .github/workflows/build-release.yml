@@ -60,13 +60,13 @@ jobs:
           mv build/app/outputs/bundle/release/app-release.aab "build/app/outputs/bundle/release/ledgerify-v${VERSION}.aab"
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ledgerify-v${{ inputs.version }}-apk
           path: build/app/outputs/flutter-apk/ledgerify-v${{ inputs.version }}.apk
 
       - name: Upload App Bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ledgerify-v${{ inputs.version }}-aab
           path: build/app/outputs/bundle/release/ledgerify-v${{ inputs.version }}.aab
@@ -105,7 +105,7 @@ jobs:
           rm -rf Payload
 
       - name: Upload iOS Build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ledgerify-v${{ inputs.version }}-ios
           path: ledgerify-v${{ inputs.version }}-unsigned.ipa
